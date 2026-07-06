@@ -406,6 +406,23 @@
   }
   .site-footer b { color: #c9c2b0; font-weight: 700; }
 
+  /* 카드 기술 상세 접기 */
+  .rdetail { margin-top: 6px; }
+  .rdetail summary {
+    cursor: pointer;
+    list-style: none;
+    font-size: 11px;
+    color: #9b9484;
+    display: inline-block;
+  }
+  .rdetail summary::-webkit-details-marker { display: none; }
+  .rdetail summary::before { content: '▸ '; color: var(--accent); }
+  .rdetail[open] summary::before { content: '▾ '; }
+  .rdetail > div { margin-top: 4px; color: #9b9484; }
+
+  /* 버튼 인라인 SVG 아이콘 */
+  .bicon { vertical-align: -2px; margin-right: 5px; }
+
   /* === 모바일 컴팩트 레이아웃 (640px 이하) === */
   @media (max-width: 640px) {
     .wrap {
@@ -489,8 +506,8 @@
     <div class="tune-row">
       <span class="tune-label">내 수구 색</span>
       <div class="tune-options">
-        <button data-myball="white" class="on">⚪ 흰공</button>
-        <button data-myball="yellow">🟡 노란공</button>
+        <button data-myball="white" class="on"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f7f4ea" stroke="#8b8574"/></svg> 흰공</button>
+        <button data-myball="yellow"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f0c542" stroke="#b89220"/></svg> 노란공</button>
       </div>
     </div>
   </div>
@@ -569,8 +586,9 @@
 
   <div class="actions">
     <button class="tool primary" id="g4-calc">경로 3개 제안</button>
-    <button class="tool" id="g4-play">▶ 재생</button>
-    <button class="tool" id="g4-photo">📷 사진 인식</button>
+    <button class="tool" id="g4-play"><svg class="bicon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg> 재생</button>
+    <button class="tool" id="g4-share">이미지 저장</button>
+    <button class="tool" id="g4-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
     <button class="tool" id="g4-reset">초기 배치</button>
     <button class="tool" id="g4-clearRoute">경로 지우기</button>
   </div>
@@ -623,7 +641,7 @@
     <b>테이블 보정</b> · 실제 공이 예측 경로보다 <b>짧게 반사</b>되면 쿠션 보정 「− 짧게」,
     <b>길게 반사</b>되면 「+ 길게」를 눌러 모델을 내 테이블에 맞추세요. 공이 예측보다
     덜/더 굴러가면 구름 보정을 조절합니다. 보정값은 이 기기에 영구 저장됩니다.<br><br>
-    <b>📷 사진 인식</b> · 당구대가 화면 중앙에 오도록 최대한 위에서 찍으면 인식률이
+    <b><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</b> · 당구대가 화면 중앙에 오도록 최대한 위에서 찍으면 인식률이
     높습니다. 노란 점 4개의 기준은 <b>쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점</b>이며
     (나무 프레임·레일 윗면 아님), 자동 감지가 테이블 본체의 천 영역만 골라
     쿠션 윗면 폭(≈5cm)만큼 안쪽으로 보정해 줍니다.
@@ -665,8 +683,9 @@
 
   <div class="actions">
     <button class="tool primary" id="g3-calc">시스템 계산</button>
-    <button class="tool primary" id="g3-phys">🎯 물리 경로 제안</button>
-    <button class="tool" id="g3-play">▶ 재생</button>
+    <button class="tool primary" id="g3-phys">물리 경로 제안</button>
+    <button class="tool" id="g3-play"><svg class="bicon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg> 재생</button>
+    <button class="tool" id="g3-share">이미지 저장</button>
     <button class="tool" id="g3-example">예시 배치</button>
     <button class="tool" id="g3-reset">초기화</button>
   </div>
@@ -785,6 +804,16 @@ const CUSHION_PRESETS={
   long:  {label:'긴 쿠션',   e:0.90, muc:0.14, spread:1.05},
 };
 function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+
+// 협조적 청크 실행 — 브라우저에선 주기적으로 이벤트 루프에 양보해
+// 계산 중에도 UI가 멈추지 않는다. 테스트(Node)에선 즉시 진행(동기 동등).
+const IS_BROWSER=typeof requestAnimationFrame==='function';
+// MessageChannel 매크로태스크 — setTimeout(0)의 4ms 클램프 없이 양보
+const yieldTick=IS_BROWSER?(function(){
+  const ch=new MessageChannel(); let pending=null;
+  ch.port1.onmessage=()=>{ const r=pending; pending=null; if(r) r(); };
+  return ()=>new Promise(r=>{ pending=r; ch.port2.postMessage(0); });
+})():()=>Promise.resolve();
 
 // ⑥ 테이블 캘리브레이션 — 실제 샷이 예측보다 짧게/길게 나오면 사용자가
 // 미세 조정한 값을 localStorage 에 영구 저장해 내 테이블에 맞춘다.
@@ -1077,7 +1106,7 @@ function gauss(){
   while(!v) v=Math.random();
   return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
 }
-function monteCarlo(c,P,n,baseSpeed){
+async function monteCarlo(c,P,n,baseSpeed,onSim){
   let ok=0;
   const sp0=baseSpeed||P.speed;
   for(let i=0;i<n;i++){
@@ -1091,6 +1120,7 @@ function monteCarlo(c,P,n,baseSpeed){
     // 쿠션 수 규칙이 설정돼 있으면 그 조건까지 만족해야 성공.
     const r=simulateShot(dir,spd,spin,P,false,null,2);
     if(r.success&&cushOK(r.cushAtSecond==null?0:r.cushAtSecond)) ok++;
+    if(onSim) await onSim();
   }
   return ok/n;
 }
@@ -1114,11 +1144,20 @@ const SPINS=[
 // 연속으로 성공하는 오프셋 구간(run)의 폭 = 그 경로의 조준 허용오차.
 // 폭 1칸짜리 요행 경로는 버리고, 구간 중앙을 대표 후보로 삼는다.
 const NOFF=44;
-function solve(){
+async function solve(onProgress){
   const P=physParams();
   const cue=balls.cue;
   const cands=[];
   const skill=P.skill;
+  // 진행률 + 이벤트 루프 양보 (8시뮬마다) — UI 프리즈 방지
+  let done=0, est=1;
+  const bump=async()=>{
+    done++;
+    if((done&7)===0){
+      if(onProgress) onProgress(Math.min(99,Math.round(done/est*100)));
+      await yieldTick();
+    }
+  };
   // 쿠션 수 규칙이 있으면 필요한 만큼 샷 속도를 자동 승급
   // (2~3쿠션을 돌려면 보통 파워로는 에너지가 부족하다)
   // 쿠션수순 정렬일 때도 다쿠션 후보가 존재하도록 속도를 올려 탐색한다.
@@ -1128,7 +1167,7 @@ function solve(){
   // 3쿠션 룰은 혼합 당점(밀어/끌어+옆)이 사실상 필수 — 룰을 선택했다는 건
   // 그 기술을 치겠다는 뜻이므로 중급 이상에서는 제한을 푼다 (초급은 유지)
   const spinAllowed=(cushRule===3&&skill!==SKILLS.beg)?SKILLS.adv.spinOK:skill.spinOK;
-  const scanDirect=(N)=>{
+  const scanDirect=async(N)=>{
     for(const [fk,sk] of [['r1','r2'],['r2','r1']]){
       const first=balls[fk];
       const aimBase=norm(sub(first,cue));
@@ -1152,6 +1191,7 @@ function solve(){
           const aimPt=add({x:first.x,y:first.y},mul(perp,off*BALL_R*2));
           const dir=norm(sub(aimPt,cue));
           const r=simulateShot(dir,effSpeed,spin,P,false,fk);
+          await bump();
           const tc=r.cushAtSecond==null?0:r.cushAtSecond;
           if(r.success&&cushOK(tc)){
             const item={fk,sk,spin,dir,off,cush:tc,cushBefore:0,kiss:r.kiss};
@@ -1165,7 +1205,13 @@ function solve(){
   };
   // 3쿠션 룰은 조준 창이 좁다 — 스캔 해상도 2배
   const baseN=cushRule===3?NOFF*2:NOFF;
-  scanDirect(baseN);
+  {
+    // 진행률 추정 총량: 직접 스캔 + 뱅크 스캔 + MC(풀 24×30) + 정밀화(3×60)
+    const SA=SPINS.filter(spinAllowed).length;
+    const BA=SPINS.filter(s=>({none:1,draw:1,follow:1,left:1,right:1})[s.key]&&spinAllowed(s)).length;
+    est=2*SA*(baseN+1) + 2*4*BA*45 + 24*30 + 3*60 + 30;
+  }
+  await scanDirect(baseN);
   // ── 뱅크샷 탐색 ──
   // 첫 쿠션 접점을 벽 4개를 따라 훑고, 쿠션을 먼저 맞은 뒤(≤2회)
   // 제1적구에 닿아 득점하는 경로를 시뮬레이션으로 찾는다.
@@ -1200,6 +1246,7 @@ function solve(){
           if(len(d0)<BALL_R*2){ flush(); continue; }
           const dir=norm(d0);
           const r=simulateShot(dir,effSpeed,spin,P,false,fk,2);
+          await bump();
           const tc=r.cushAtSecond==null?0:r.cushAtSecond;
           if(r.success&&r.cushBefore>=1&&cushOK(tc)){
             const item={fk,sk,spin,dir,cush:tc-r.cushBefore,
@@ -1215,7 +1262,7 @@ function solve(){
   }
   // 폴백: 좁은 창 배치(먼 거리·길목 차단 등)는 성공 구간이 스캔 간격보다
   // 좁아 모두 걸러질 수 있다 — 해상도를 2배로 올려 한 번 더 훑는다.
-  if(!cands.length) scanDirect(baseN*2);
+  if(!cands.length){ est+=2*3*(baseN*2+1); await scanDirect(baseN*2); }
   if(!cands.length) return [];
   // 1차 순위: 허용오차 넓고, 쿠션(선행+후행) 적고, 혼합회전·키스 없는 순
   for(const c of cands){
@@ -1231,9 +1278,10 @@ function solve(){
   for(const c of extra) if(!pool.includes(c)) pool.push(c);
   const routesOut=[];
   for(const c of pool){
-    const prob=monteCarlo(c,P,30,effSpeed);
+    const prob=await monteCarlo(c,P,30,effSpeed,bump);
     if(prob<0.03) continue;
     const r=simulateShot(c.dir,effSpeed,c.spin,P,true,c.fk,c.cushBefore?2:0);
+    await bump();
     if(!r.success||!r.firstInfo) continue;
     const cuePath=r.paths.cue;
     let pathLen=0;
@@ -1256,6 +1304,7 @@ function solve(){
       aimSide=(d.x*fv.y-d.y*fv.x)>=0?'L':'R';
     }
     routesOut.push({
+      dir:c.dir, speed:effSpeed,        // 정밀 재실측용
       first:c.fk, second:c.sk, spin:c.spin, aimSide, anim:r.frames,
       thickness:r.firstInfo.thickness, cushions:c.cush,
       cushBefore:c.cushBefore||0,
@@ -1272,6 +1321,11 @@ function solve(){
     });
   }
   allRoutes=routesOut;
+  // ⑤ 표시될 상위 3개는 추가 60회로 정밀 실측 (총 90회 → 표시 분산 ±5%p 이내)
+  for(const r of sortedRoutes()){
+    const p2=await monteCarlo(r,P,60,r.speed,bump);
+    r.prob=(r.prob*30+p2*60)/90;
+  }
   return sortedRoutes();
 }
 
@@ -1525,15 +1579,16 @@ function renderCards(){
         <span class="swatch" style="background:${ROUTE_COLORS[i]}"></span>
         <span class="rtitle">${r.cushBefore>0?'뱅크샷 · ':''}${STRAT[r.spin.key]||r.spin.label}</span>
         <span class="badges">
-          <span class="badge">성공률 ${Math.round(r.prob*100)}%</span>
+          <span class="badge">성공률 ${Math.round(r.prob*20)*5}%</span>
           ${r.gather!=null?`<span class="badge gather">공 모임 ${r.gather}%</span>`:''}
         </span>
       </div>
       <div class="desc">수구 → ${r.cushBefore>0?`<b>쿠션 ${r.cushBefore}회</b> → `:''}${f} <b>${thickLabel} 두께</b> 맞힘 ·
         수구 분리각 <b>약 ${defl}°</b><br>
-        → ${r.cushions>0?`쿠션 ${r.cushions}회 → `:''}${s} 도착${r.kiss?' · <span style="color:#d9582b">⚠ 키스 경유</span>':''}<br>
+        → ${r.cushions>0?`쿠션 ${r.cushions}회 → `:''}${s} 도착${r.kiss?' · <span style="color:#d9582b">⚠ 키스 경유</span>':''}
+        <details class="rdetail"><summary>기술 상세</summary><div>
         보정 <b>${r.tuningText}</b> · 오차 밴드 <b>±${Math.round((r.uncertainty||18)/2)}px</b>
-        · 성공률은 실전 오차 몬테카를로 30회 실측</div>
+        · 성공률은 실전 오차 몬테카를로 90회 실측 (5% 단위 표시)</div></details></div>
       <div class="metrics">
         <div class="metric">
           <div class="mlabel">권장 당점</div>
@@ -1576,6 +1631,7 @@ function hitB(p){for(const k in balls) if(len(sub(balls[k],p))<BALL_R+10) return
 function onDown(e){
   e.preventDefault();
   stopAnim(false);
+  solveGen++;                 // 진행 중인 계산 결과 무효화
   const p=cpos(e), k=hitB(p);
   if(k){dragging=k;activeBall=k;syncTb();}
   else{const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
@@ -1639,13 +1695,19 @@ document.querySelectorAll('#g4-sortseg button').forEach(b=>
     }
   }));
 const calcBtn=document.getElementById('g4-calc');
+let solveGen=0;   // 계산 중 공이 움직이면 낡은 결과를 버리기 위한 세대 토큰
 calcBtn.addEventListener('click',()=>{
-  calcBtn.textContent='계산 중…'; calcBtn.disabled=true;
-  setTimeout(()=>{
-    routes=solve();selected=0;renderCards();draw();
+  if(calcBtn.disabled) return;
+  calcBtn.disabled=true;
+  calcBtn.textContent='계산 중…';
+  const myGen=++solveGen;
+  solve(p=>{ calcBtn.textContent=`계산 중… ${p}%`; }).then(rs=>{
+    if(myGen!==solveGen) return;        // 계산 중 배치가 바뀜 — 폐기
+    routes=rs; selected=0; renderCards(); draw();
     drawPhoto();               // 사진이 열려 있으면 경로를 사진에도 표시
+  }).catch(()=>{}).finally(()=>{
     calcBtn.textContent='경로 3개 제안'; calcBtn.disabled=false;
-  },30);
+  });
 });
 // ⑥ 캘리브레이션 버튼
 document.querySelectorAll('#g4-tuning [data-cal]').forEach(b=>
@@ -1686,6 +1748,29 @@ document.getElementById('g4-clearRoute').addEventListener('click',()=>{
 document.getElementById('g4-play').addEventListener('click',()=>{
   if(!routes.length){ return; }
   playRoute();
+});
+// 현재 당구대(선택 경로 포함)를 PNG로 공유/저장 — 모바일은 시스템 공유 시트
+function shareCanvas(canvas,name){
+  try{
+    canvas.toBlob(function(blob){
+      if(!blob) return;
+      try{
+        const file=new File([blob],name,{type:'image/png'});
+        if(typeof navigator!=='undefined'&&navigator.share&&
+           navigator.canShare&&navigator.canShare({files:[file]})){
+          navigator.share({files:[file],title:'Hello Billiard'}).catch(function(){});
+          return;
+        }
+      }catch(e){}
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob); a.download=name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){URL.revokeObjectURL(a.href);},3000);
+    },'image/png');
+  }catch(e){}
+}
+document.getElementById('g4-share').addEventListener('click',()=>{
+  draw(); shareCanvas(cv,'hello-billiard.png');
 });
 
 /* ===== 📷 사진 인식 =====
@@ -3210,10 +3295,26 @@ const SPINS3=[
   {key:'drawL', v:-0.8, h:-1, label:'끌어 + 좌'},
   {key:'drawR', v:-0.8, h:1,  label:'끌어 + 우'},
 ];
-function solve3(){
+const IS_BROWSER3=typeof requestAnimationFrame==='function';
+const yieldTick3=IS_BROWSER3?(function(){
+  const ch=new MessageChannel(); let pending=null;
+  ch.port1.onmessage=()=>{ const r=pending; pending=null; if(r) r(); };
+  return ()=>new Promise(r=>{ pending=r; ch.port2.postMessage(0); });
+})():()=>Promise.resolve();
+async function solve3(onProgress){
   const P=phyParams();
   const cue=balls.cue;
   const cands=[];
+  let done=0;
+  const spinN=P.skill.keys?Object.keys(P.skill.keys).length:SPINS3.length;
+  const est=2*spinN*73 + 10*24 + 3*24 + 5;
+  const bump=async()=>{
+    done++;
+    if((done&7)===0){
+      if(onProgress) onProgress(Math.min(99,Math.round(done/est*100)));
+      await yieldTick3();
+    }
+  };
   for(const fk of ['obj','target']){
     const first=balls[fk];
     const aimBase=norm(sub(first,cue));
@@ -3234,6 +3335,7 @@ function solve3(){
         const aimPt={x:first.x+perp.x*off*BALL_R*2, y:first.y+perp.y*off*BALL_R*2};
         const dir=norm(sub(aimPt,cue));
         const r=simulate3(dir,P.speed,spin,P,false);
+        await bump();
         if(r.success&&r.first===fk){
           const item={fk, spin, dir, cush:r.cushAtSecond};
           if(run.length&&run[0].cush!==item.cush) flush();
@@ -3247,17 +3349,23 @@ function solve3(){
   for(const c of cands) c.pre=c.tol*3-c.cush;
   cands.sort((a,b)=>b.pre-a.pre);
   // 상위 후보만 몬테카를로 성공률 실측
-  const out=[];
-  for(const c of cands.slice(0,10)){
-    let ok=0; const N=24;
+  const mc3=async(c,N)=>{
+    let ok=0;
     for(let i=0;i<N;i++){
       const dir=rot3(c.dir,gauss3()*P.aimSigma);
       const spd=P.speed*(1+gauss3()*P.spdSigma);
       const spin={v:clamp(c.spin.v+gauss3()*P.spinSigma,-1,1),
                   h:clamp(c.spin.h+gauss3()*P.spinSigma,-1,1)};
       if(simulate3(dir,spd,spin,P,false).success) ok++;
+      await bump();
     }
-    const prob=ok/N;
+    return ok/N;
+  };
+  const out=[];
+  for(const c of cands.slice(0,10)){
+    const N=24;
+    const prob=await mc3(c,N);
+    const ok=Math.round(prob*N);
     // 쓰리쿠션은 원래 성공률이 낮다 — 1회라도 재현되면 후보 유지
     if(ok<1) continue;
     const r=simulate3(c.dir,P.speed,c.spin,P,true);
@@ -3287,6 +3395,12 @@ function solve3(){
     if(picked.length>=3) break;
     if(!picked.includes(r)) picked.push(r);
   }
+  // 표시될 경로는 추가 24회로 정밀 실측 (총 48회 — 표시 분산 축소)
+  for(const r of picked){
+    const p2=await mc3(r,24);
+    r.prob=(r.prob*24+p2*24)/48;
+  }
+  picked.sort((a,b)=>b.prob-a.prob);
   return picked;
 }
 
@@ -3319,13 +3433,15 @@ function renderPhyCards(){
         <span class="swatch" style="background:${PHY_COLORS[i]}"></span>
         <span class="rtitle">${r.spin.label}</span>
         <span class="badges">
-          <span class="badge">성공률 ${Math.round(r.prob*100)}%</span>
+          <span class="badge">성공률 ${Math.round(r.prob*20)*5}%</span>
           ${r.gather!=null?`<span class="badge gather">공 모임 ${r.gather}%</span>`:''}
         </span>
       </div>
       <div class="desc">수구 → ${NAME[r.fk]} <b>${thickLabel} 두께</b>
-        → 쿠션 <b>${r.cush}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점<br>
-        추천 파워 <b>강(4레일)</b> · 성공률은 실전 오차 몬테카를로 24회 실측</div>
+        → 쿠션 <b>${r.cush}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점 ·
+        추천 파워 <b>강(4레일)</b>
+        <details class="rdetail"><summary>기술 상세</summary><div>
+        성공률은 실전 오차 몬테카를로 48회 실측 (5% 단위 표시)</div></details></div>
       <div class="metrics">
         <div class="metric">
           <div class="mlabel">권장 당점</div>
@@ -3377,18 +3493,43 @@ function drawPhyRoute(r,color,alpha){
   }
   ctx.restore();
 }
+let solveGen3=0;
 document.getElementById('g3-phys').addEventListener('click',()=>{
   const btn=document.getElementById('g3-phys');
+  if(btn.disabled) return;
   btn.textContent='계산 중…'; btn.disabled=true;
   stopAnim3(false);
-  setTimeout(()=>{
+  const myGen=++solveGen3;
+  solve3(p=>{ btn.textContent=`계산 중… ${p}%`; }).then(rs=>{
+    if(myGen!==solveGen3) return;
     solution=null;
-    phyRoutes=solve3(); phySel=0;
+    phyRoutes=rs; phySel=0;
     renderPhyCards(); draw();
-    btn.textContent='🎯 물리 경로 제안'; btn.disabled=false;
-  },30);
+  }).catch(()=>{}).finally(()=>{
+    btn.textContent='물리 경로 제안'; btn.disabled=false;
+  });
 });
 document.getElementById('g3-play').addEventListener('click',()=>{ playRoute3(); });
+document.getElementById('g3-share').addEventListener('click',()=>{
+  draw();
+  try{
+    cv.toBlob(function(blob){
+      if(!blob) return;
+      try{
+        const file=new File([blob],'hello-billiard-3c.png',{type:'image/png'});
+        if(typeof navigator!=='undefined'&&navigator.share&&
+           navigator.canShare&&navigator.canShare({files:[file]})){
+          navigator.share({files:[file],title:'Hello Billiard'}).catch(function(){});
+          return;
+        }
+      }catch(e){}
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob); a.download='hello-billiard-3c.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){URL.revokeObjectURL(a.href);},3000);
+    },'image/png');
+  }catch(e){}
+});
 // 실력 단계 (4구와 공유 — 양쪽 버튼 모두 동기화)
 function syncSkill3(){
   const k=getSkill3();
@@ -3420,6 +3561,7 @@ function hitB(p){
 function onDown(e){
   e.preventDefault();
   stopAnim3(false);
+  solveGen3++;                // 진행 중인 계산 결과 무효화
   const p=cpos(e), k=hitB(p);
   if(k){dragging=k;activeBall=k;syncTb();}
   else{const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
