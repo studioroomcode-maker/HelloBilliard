@@ -1,0 +1,3513 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Hello Billiard · 당구 AI 코치</title>
+<meta name="theme-color" content="#14110d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hello Billiard">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Spline+Sans+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+
+  :root {
+    --felt: #1f6b4a;
+    --rail: #5b3a21;
+    --rail-light: #6f4a2c;
+    --ink: #0e1a14;
+    --paper: #f4f1e8;
+    --accent: #e8b53e;
+    --warn: #d9582b;
+    --c1: #f4f1e8;
+    --c2: #5fb8e8;
+    --c3: #c98ce0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #14110d;
+    color: var(--paper);
+    font-family: 'Bricolage Grotesque', sans-serif;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    /* 노치·제스처 바 등 안전영역 확보 (설치형 앱 전체화면 대응) */
+    padding: calc(24px + env(safe-area-inset-top))
+             calc(16px + env(safe-area-inset-right))
+             calc(60px + env(safe-area-inset-bottom))
+             calc(16px + env(safe-area-inset-left));
+  }
+  header { margin-bottom: 18px; }
+  h1 {
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  h1 .sub {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+  .stage {
+    background: var(--rail);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.5), inset 0 2px 0 var(--rail-light);
+  }
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 6px;
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 10px; }
+  .tool {
+    flex: 1 1 auto;
+    min-width: 70px;
+    background: #211c14;
+    border: 1.5px solid #3a3024;
+    color: var(--paper);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 11px 8px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: transform .08s, background .15s, border-color .15s;
+  }
+  .tool:active { transform: scale(.96); }
+  .tool.active { background: var(--accent); color: var(--ink); border-color: var(--accent); }
+  .tool .dot {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: -1px;
+    border: 1.5px solid rgba(0,0,0,.35);
+  }
+  .actions { display: flex; gap: 8px; }
+  .actions .tool { background: #2c2419; }
+  .actions .tool.primary { background: var(--felt); border-color: #18563c; }
+  .routes { margin-top: 16px; display: grid; gap: 10px; }
+  .rcard {
+    background: #1b1610;
+    border: 1.5px solid #312819;
+    border-radius: 11px;
+    padding: 13px 15px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .rcard:hover { background: #221c14; }
+  .rcard.sel { border-color: var(--accent); background: #241d12; }
+  .rcard .top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .rcard .swatch { width: 22px; height: 5px; border-radius: 3px; }
+  .rcard .rtitle { font-weight: 800; font-size: 14px; }
+  .rcard .badge {
+    margin-left: auto;
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 12px;
+    background: #2c2419;
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: var(--accent);
+  }
+  .rcard .badges {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+  }
+  .rcard .badges .badge { margin-left: 0; }
+  .rcard .badge.gather { color: #5fd08a; }
+  .rcard .desc { font-family: 'Spline Sans Mono', monospace; font-size: 12px; line-height: 1.6; color: #c9c2b0; }
+  .rcard .spin {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 8px; font-size: 12px; color: #9b9484;
+  }
+  .rcard .metrics {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-top: 11px;
+    border-top: 1px solid #312819; padding-top: 11px;
+  }
+  .rcard .metric {
+    background: #221c14; border-radius: 9px;
+    padding: 9px 6px 8px; text-align: center;
+  }
+  .rcard .metric .mlabel {
+    font-size: 10px; color: #9b9484; margin-bottom: 6px;
+    letter-spacing: 0.02em;
+  }
+  .rcard .metric .mvis {
+    display: flex; align-items: center; justify-content: center;
+    height: 38px;
+  }
+  .rcard .metric .mval {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 11px; font-weight: 700; color: var(--paper);
+    margin-top: 5px;
+  }
+  .panel { margin-top: 14px; background: #1b1610; border: 1.5px solid #312819; border-radius: 11px; padding: 13px 15px; }
+  .hint { font-size: 12px; color: #9b9484; line-height: 1.6; }
+  .empty { color: #9b9484; font-family: 'Spline Sans Mono', monospace; font-size: 13px; }
+  .tune-controls {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0 10px;
+  }
+  .tune-row {
+    display: grid;
+    grid-template-columns: 86px 1fr;
+    align-items: center;
+    gap: 8px;
+  }
+  .tune-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: #c9c2b0;
+  }
+  .tune-options {
+    display: flex;
+    gap: 6px;
+  }
+  .tune-options button {
+    flex: 1;
+    min-width: 0;
+    background: #211c14;
+    border: 1.5px solid #3a3024;
+    color: var(--paper);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 9px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .tune-options button.on {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--ink);
+  }
+  .tune-options button.cal-val {
+    flex: 0 0 52px;
+    background: #2c2419;
+    color: var(--accent);
+    font-family: 'Spline Sans Mono', monospace;
+    cursor: default;
+  }
+  /* 섹션 라벨 · 경로 헤더 */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #9b9484;
+    margin: 18px 0 8px;
+  }
+  .routes-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  .routes-head .section-label { margin: 0; }
+  .routes-head .seg { margin: 0; flex: 1 1 300px; max-width: 560px; }
+  .routes-head .seg button { padding: 8px 6px; }
+  .mode-panel > .actions { margin-top: 16px; }
+  .routes { margin-top: 10px; }
+
+  /* 구장 조건 접이식 섹션 */
+  details.venue summary {
+    cursor: pointer;
+    list-style: none;
+    background: #211c14;
+    border: 1.5px solid #3a3024;
+    border-radius: 9px;
+    padding: 11px 12px;
+    font-weight: 800;
+    font-size: 13px;
+    color: #c9c2b0;
+    transition: border-color .15s, background .15s;
+  }
+  details.venue summary::-webkit-details-marker { display: none; }
+  details.venue summary::before {
+    content: '▸';
+    color: var(--accent);
+    margin-right: 8px;
+  }
+  details.venue[open] summary::before { content: '▾'; }
+  details.venue[open] summary { border-color: var(--accent); }
+  details.venue summary:hover { background: #2c2419; }
+  details.venue .venue-sub {
+    font-weight: 500;
+    font-size: 11px;
+    color: #9b9484;
+    margin-left: 6px;
+  }
+  @media (max-width: 640px) {
+    .tune-row { grid-template-columns: 1fr; }
+    .tune-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+
+  
+  
+  
+  
+  
+  
+  
+  .tabs { display:flex; gap:6px; margin-bottom:14px; }
+  .tabs button {
+    flex:1; background:#1b1610; border:1.5px solid #312819;
+    color:#9b9484; font-family:inherit; font-weight:700; font-size:13px;
+    padding:12px 8px; border-radius:10px 10px 0 0; cursor:pointer;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .tabs button.on { background:var(--rail); color:var(--paper); border-color:var(--rail-light); }
+  .stage {
+    background:var(--rail); border-radius:0 14px 14px 14px; padding:30px;
+    box-shadow:0 18px 40px rgba(0,0,0,.5), inset 0 2px 0 var(--rail-light);
+  }
+  canvas { width:100%; height:auto; display:block; border-radius:6px; touch-action:none; cursor:crosshair; }
+  .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 10px; }
+  .tool {
+    flex:1 1 auto; min-width:90px; background:#211c14;
+    border:1.5px solid #3a3024; color:var(--paper);
+    font-family:inherit; font-weight:700; font-size:13px;
+    padding:11px 8px; border-radius:9px; cursor:pointer;
+    transition:transform .08s, background .15s, border-color .15s;
+  }
+  .tool:active { transform:scale(.96); }
+  .tool.active { background:var(--accent); color:var(--ink); border-color:var(--accent); }
+  .tool .dot {
+    display:inline-block; width:11px; height:11px; border-radius:50%;
+    margin-right:5px; vertical-align:-1px; border:1.5px solid rgba(0,0,0,.35);
+  }
+  .actions { display:flex; gap:8px; }
+  .actions .tool.primary { background:var(--felt); border-color:#18563c; }
+  .calc {
+    margin-top:16px; background:#1b1610; border:1.5px solid #312819;
+    border-radius:12px; padding:16px 18px;
+  }
+  .calc h2 {
+    font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:12px;
+  }
+  .formula {
+    font-family:'Spline Sans Mono',monospace; font-size:13px;
+    background:#241d12; border-radius:8px; padding:10px 12px;
+    margin-bottom:14px; color:#c9c2b0; line-height:1.6;
+  }
+  .nums { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+  .numbox { background:#241d12; border-radius:9px; padding:11px 8px; text-align:center; }
+  .numbox .lbl { font-size:11px; color:#9b9484; margin-bottom:4px; }
+  .numbox .val {
+    font-family:'Spline Sans Mono',monospace; font-weight:700;
+    font-size:22px; color:var(--accent);
+  }
+  .numbox.cue .val { color:var(--cue); }
+  .numbox.target .val { color:var(--warn); }
+  .result {
+    font-family:'Spline Sans Mono',monospace; font-size:13px;
+    line-height:1.8; border-top:1px solid #312819; padding-top:12px;
+  }
+  .result b { color:var(--accent); }
+  .result .hit { color:#5fd08a; }
+  .result .miss { color:var(--warn); }
+  .seg { display:flex; gap:6px; margin-bottom:12px; }
+  .seg button {
+    flex:1; background:#211c14; border:1.5px solid #3a3024;
+    color:var(--paper); font-family:inherit; font-weight:700; font-size:12px;
+    padding:9px 6px; border-radius:8px; cursor:pointer;
+  }
+  .seg button.on { background:var(--accent); color:var(--ink); border-color:var(--accent); }
+  .panel {
+    margin-top:14px; background:#1b1610; border:1.5px solid #312819;
+    border-radius:11px; padding:13px 16px;
+  }
+  .panel h3 { font-size:12px; color:var(--accent); margin-bottom:6px; letter-spacing:0.05em; }
+  .hint { font-size:12px; color:#9b9484; line-height:1.65; }
+  .combo {
+    display:inline-block; background:#241d12; border:1px solid #3a3024;
+    border-radius:7px; padding:5px 9px; margin:3px 4px 0 0;
+    font-family:'Spline Sans Mono',monospace; font-size:12px;
+  }
+  .combo.best { border-color:var(--accent); color:var(--accent); }
+
+
+  /* === 통합 셸 === */
+  .app-header { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+  .sport-tabs { display:flex; gap:8px; margin-bottom:20px; }
+  .sport-tabs button {
+    flex:1; background:#1b1610; border:2px solid #312819;
+    color:#9b9484; font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:800; font-size:15px; padding:15px 10px; border-radius:12px;
+    cursor:pointer; transition:all .15s; letter-spacing:-0.01em;
+  }
+  .sport-tabs button.on {
+    background:linear-gradient(180deg,#2a8a5f,#1f6b4a);
+    color:#f4f1e8; border-color:#3aa876;
+    box-shadow:0 6px 16px rgba(31,107,74,.4);
+  }
+  .sport-tabs button .big { display:block; font-size:19px; margin-bottom:3px; }
+  .sport-tabs button .small { display:block; font-size:11px; font-weight:500; opacity:.8; }
+  .mode-panel { display:none; }
+  .mode-panel.show { display:block; }
+
+  /* === 접근성·터치 표준 (UI/UX 점검 반영) === */
+  button { touch-action: manipulation; }           /* 모바일 300ms 탭 지연 제거 */
+  .tool, .tune-options button, .seg button,
+  .tabs button, .sport-tabs button, details.venue summary {
+    min-height: 44px;                              /* 최소 터치 타깃 44px */
+  }
+  :focus-visible {                                 /* 키보드 포커스 링 */
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  button:focus:not(:focus-visible) { outline: none; }
+  .tune-options button, .seg button {
+    transition: background .15s, border-color .15s, color .15s, transform .08s;
+  }
+  .tune-options button:active:not(:disabled),
+  .seg button:active { transform: scale(.96); }    /* 누름 피드백 통일 */
+  .actions { flex-wrap: wrap; }                    /* 375px에서 버튼 줄바꿈 */
+  .actions .tool { min-width: 96px; }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: .01ms !important; }
+    /* ▶ 재생 애니메이션은 사용자가 명시적으로 요청한 동작이라 유지 */
+  }
+
+  .site-footer {
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1px solid #312819;
+    text-align: center;
+    font-size: 12px;
+    color: #9b9484;
+    letter-spacing: .02em;
+  }
+  .site-footer b { color: #c9c2b0; font-weight: 700; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="app-header">
+    <h1>Hello Billiard
+      <span class="sub">당구 AI 코치 — 4구 경로 시뮬레이터 + 3구 시스템 계산기</span>
+    </h1>
+  </div>
+
+  <div class="sport-tabs" id="sportTabs">
+    <button data-mode="m4" class="on">
+      <span class="big">4구</span>
+      <span class="small">실측 분리각 · 회전 · 다중 경로</span>
+    </button>
+    <button data-mode="m3">
+      <span class="big">3구 (쓰리쿠션)</span>
+      <span class="small">파이브앤하프 · 플러스 · 볼 시스템</span>
+    </button>
+  </div>
+
+  <div class="mode-panel show" id="panel-m4">
+<div class="stage">
+    <canvas id="g4-table" width="840" height="460" role="img" aria-label="4구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
+  </div>
+
+  <div class="section-label">공 선택 — 누른 뒤 당구대를 탭하거나 드래그</div>
+  <div class="toolbar" id="g4-toolbar">
+    <button class="tool active" data-ball="cue"><span class="dot" style="background:#f7f4ea"></span>내 수구</button>
+    <button class="tool" data-ball="cue2"><span class="dot" style="background:#f0c542"></span>상대 수구</button>
+    <button class="tool" data-ball="r1"><span class="dot" style="background:#d23b2b"></span>적구 1</button>
+    <button class="tool" data-ball="r2"><span class="dot" style="background:#d23b2b"></span>적구 2</button>
+  </div>
+
+  <div class="section-label">샷 · 개인 설정</div>
+  <div class="tune-controls" id="g4-tuning">
+    <div class="tune-row">
+      <span class="tune-label">샷 파워</span>
+      <div class="tune-options">
+        <button data-tune="power" data-value="soft">약</button>
+        <button data-tune="power" data-value="normal" class="on">보통</button>
+        <button data-tune="power" data-value="hard">강</button>
+      </div>
+    </div>
+    <div class="tune-row">
+      <span class="tune-label">쿠션 수</span>
+      <div class="tune-options">
+        <button data-crule="any" class="on">추천</button>
+        <button data-crule="1">1쿠션</button>
+        <button data-crule="2">2쿠션</button>
+        <button data-crule="3">3쿠션↑</button>
+      </div>
+    </div>
+    <details class="venue">
+      <summary>구장 조건 <span class="venue-sub">천 상태 · 쿠션 · 테이블 보정</span></summary>
+      <div class="tune-controls" style="margin:8px 0 0">
+        <div class="tune-row">
+          <span class="tune-label">천 상태</span>
+          <div class="tune-options">
+            <button data-tune="cloth" data-value="slow">느림</button>
+            <button data-tune="cloth" data-value="normal" class="on">보통</button>
+            <button data-tune="cloth" data-value="fast">빠름</button>
+          </div>
+        </div>
+        <div class="tune-row">
+          <span class="tune-label">쿠션</span>
+          <div class="tune-options">
+            <button data-tune="cushion" data-value="short">짧음</button>
+            <button data-tune="cushion" data-value="normal" class="on">보통</button>
+            <button data-tune="cushion" data-value="long">김</button>
+          </div>
+        </div>
+        <div class="tune-row">
+          <span class="tune-label">쿠션 보정</span>
+          <div class="tune-options">
+            <button data-cal="cush" data-d="-1">− 짧게</button>
+            <button class="cal-val" id="calCush" disabled>0</button>
+            <button data-cal="cush" data-d="1">+ 길게</button>
+          </div>
+        </div>
+        <div class="tune-row">
+          <span class="tune-label">구름 보정</span>
+          <div class="tune-options">
+            <button data-cal="roll" data-d="-1">− 짧게</button>
+            <button class="cal-val" id="calRoll" disabled>0</button>
+            <button data-cal="roll" data-d="1">+ 길게</button>
+          </div>
+        </div>
+      </div>
+    </details>
+    <div class="tune-row">
+      <span class="tune-label">내 수구 색</span>
+      <div class="tune-options">
+        <button data-myball="white" class="on">⚪ 흰공</button>
+        <button data-myball="yellow">🟡 노란공</button>
+      </div>
+    </div>
+    <div class="tune-row">
+      <span class="tune-label">내 실력</span>
+      <div class="tune-options">
+        <button data-skill="beg">초급</button>
+        <button data-skill="mid" class="on">중급</button>
+        <button data-skill="adv">상급</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="tool primary" id="g4-calc">경로 3개 제안</button>
+    <button class="tool" id="g4-play">▶ 재생</button>
+    <button class="tool" id="g4-photo">📷 사진 인식</button>
+    <button class="tool" id="g4-reset">초기 배치</button>
+    <button class="tool" id="g4-clearRoute">경로 지우기</button>
+  </div>
+
+  <input type="file" id="g4-file" accept="image/*" style="display:none">
+  <div class="panel" id="g4-photoPanel" style="display:none">
+    <h3 style="font-size:12px;color:var(--accent);letter-spacing:.05em;margin-bottom:8px">
+      📷 사진 인식 — 모서리 맞추기</h3>
+    <canvas id="g4-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
+      style="width:100%;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
+    <div class="actions" style="margin-top:10px">
+      <button class="tool primary" id="g4-detect">공 인식 → 경로 계산</button>
+      <button class="tool" id="g4-swapCue">수구 ⇄ 상대</button>
+      <button class="tool" id="g4-photoCancel">닫기</button>
+    </div>
+    <p class="hint" id="g4-photoMsg" style="margin-top:8px"></p>
+  </div>
+
+  <div class="routes-head">
+    <div class="section-label">제안 경로</div>
+    <div class="seg" id="g4-sortseg">
+      <button data-sort="best" class="on">추천순</button>
+      <button data-sort="cush">쿠션수순</button>
+      <button data-sort="prob">성공률순</button>
+      <button data-sort="gather">공모임순</button>
+    </div>
+  </div>
+
+  <div class="routes" id="g4-routes">
+    <div class="panel"><span class="empty">공을 배치하고 ‘경로 3개 제안’을 누르세요.</span></div>
+  </div>
+
+  <div class="panel">
+    <p class="hint">엔진은 무회전·끌어치기·밀어치기·좌우 시네루를 조합해 득점 경로를 탐색하고,
+    전략이 서로 다른 경로 3개를 추려 제안합니다. 카드를 누르면 해당 경로가 당구대에 표시됩니다.<br><br>
+    <b>v4 물리 엔진</b> · 실측 비율(공 65.5mm / 대대 2844mm)로 스케일을 맞춘
+    시간 스텝 시뮬레이션입니다. 미끄럼→구름 마찰 전이를 수치 적분해 끌어/밀어치기의
+    곡선 경로와 쿠션 후 커브가 그대로 재현되고(알시아토레 실측: 구름 1/2두께 분리각 ≈34°,
+    스턴 ≈90° 탄젠트라인), 4개 공 전부를 추적해 키스와 파울(상대 수구 접촉) 경로는
+    자동으로 걸러집니다. 직접 샷 외에 <b>뱅크샷</b>(쿠션을 1~2회 먼저 맞고 적구로
+    가는 경로)도 첫 쿠션 접점을 훑어 탐색합니다. 카드의 <b>성공률(%)</b>은
+    조준각·파워·당점에 실전 오차를 준 몬테카를로 시뮬레이션 30회의 실제 득점
+    비율이며, 우연히 뱅크로 이어져 득점하는 경우도 규칙대로 인정합니다.<br><br>
+    <b>내 실력</b> · 초급은 무회전·끌기·밀기만, 그것도 <b>중심에서 반 팁 이내</b>의
+    당점으로만 계산하며(극단 상/하단 당점 제외), 얇은 두께 경로를 빼고 실행 오차를
+    크게 잡아 성공률이 현실적으로 표시됩니다. 상급은 혼합 당점·얇은 두께까지 모든
+    기술을 사용하고 정밀 오차로 계산합니다. 카드의
+    <b>공 모임도(%)</b>는 득점 후 공들이 멈춘 위치가 다음 모아치기에 얼마나
+    유리한지를 나타냅니다 (설정은 3구 탭과 공유).<br><br>
+    <b>테이블 보정</b> · 실제 공이 예측 경로보다 <b>짧게 반사</b>되면 쿠션 보정 「− 짧게」,
+    <b>길게 반사</b>되면 「+ 길게」를 눌러 모델을 내 테이블에 맞추세요. 공이 예측보다
+    덜/더 굴러가면 구름 보정을 조절합니다. 보정값은 이 기기에 영구 저장됩니다.<br><br>
+    <b>📷 사진 인식</b> · 당구대가 화면 중앙에 오도록 최대한 위에서 찍으면 인식률이
+    높습니다. 노란 점 4개의 기준은 <b>쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점</b>이며
+    (나무 프레임·레일 윗면 아님), 자동 감지가 테이블 본체의 천 영역만 골라
+    쿠션 윗면 폭(≈5cm)만큼 안쪽으로 보정해 줍니다.
+    카메라 위치를 사진에서 역산해 쿠션 벽 높이(37mm)와 공 높이(33mm)가 만드는
+    원근 시차도 자동 보정되며, 그늘로 반쪽만 보이는 공은 공 반지름 원 맞춤으로
+    중심을 재보정합니다. <b>내 수구 색</b>(흰공/노란공)은 설정에서 선택할 수 있고,
+    흰공 2개 세트처럼 두 수구를 자동 구분할 수 없을 때는 임의 배정 후 안내가 뜨니
+    [수구 ⇄ 상대] 버튼으로 바꾸면 됩니다.
+    공 색은 조명에 강한 상대 기준으로 분류되고(노란 조명에서 흰공이 노랗게 보여도
+    구분), 인식 직후 최적 경로가 자동 계산되어 <b>사진 위에도 원근에 맞춰 겹쳐
+    표시</b>됩니다. 경로 카드를 누르면 사진의 경로도 함께 바뀝니다.
+    사진은 기기 밖으로 전송되지 않습니다.</p>
+  </div>
+  </div>
+
+  <div class="mode-panel" id="panel-m3">
+<div class="tabs" id="g3-tabs">
+    <button data-sys="five" class="on">파이브앤하프</button>
+    <button data-sys="plus">플러스</button>
+    <button data-sys="ball">볼 시스템</button>
+  </div>
+
+  <div class="stage">
+    <canvas id="g3-table" width="860" height="460" role="img" aria-label="3구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
+  </div>
+
+  <div class="section-label">공 선택 — 누른 뒤 당구대를 탭하거나 드래그</div>
+  <div class="toolbar" id="g3-toolbar"></div>
+
+  <div class="tune-controls" style="margin:14px 0 0">
+    <div class="tune-row">
+      <span class="tune-label">내 실력</span>
+      <div class="tune-options" id="g3-skillseg">
+        <button data-skill="beg">초급</button>
+        <button data-skill="mid" class="on">중급</button>
+        <button data-skill="adv">상급</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="tool primary" id="g3-calc">시스템 계산</button>
+    <button class="tool primary" id="g3-phys">🎯 물리 경로 제안</button>
+    <button class="tool" id="g3-play">▶ 재생</button>
+    <button class="tool" id="g3-example">예시 배치</button>
+    <button class="tool" id="g3-reset">초기화</button>
+  </div>
+
+  <div class="routes" id="g3-phyRoutes"></div>
+
+  <div class="calc">
+    <h2 id="g3-calcTitle">파이브앤하프 계산</h2>
+    <div class="seg" id="g3-tipseg">
+      <button data-tip="1">2팁 (약한 회전)</button>
+      <button data-tip="2" class="on">3팁 (표준)</button>
+      <button data-tip="3">맥시멈 (최대 회전)</button>
+    </div>
+    <div class="formula" id="g3-formula"></div>
+    <div class="nums" id="g3-nums"></div>
+    <div class="result" id="g3-result">공을 배치하고 ‘시스템 계산’을 누르세요.</div>
+  </div>
+
+  <div class="panel">
+    <h3 id="g3-panelTitle">시스템 설명</h3>
+    <p class="hint" id="g3-panelText"></p>
+  </div>
+  </div>
+
+  <footer class="site-footer">
+    © 2026 <b>Studioroom</b> · Hello Billiard — All rights reserved.
+  </footer>
+</div>
+
+<script>
+// ===== 4구 모드 (스코프 격리) =====
+(function(){
+
+const cv = document.getElementById('g4-table');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const RAIL = 36;
+const play = { x0: RAIL, y0: RAIL, x1: W-RAIL, y1: H-RAIL };
+// ① 실측 스케일 — 대대 2844×1422mm, 4구 공 지름 65.5mm 를 픽셀 비율 그대로 반영.
+// (기존 13px 는 실제 비율보다 ~50% 커서 두께·차단·쿠션 도착점이 전부 어긋났음)
+const MM = (play.x1-play.x0)/2844;    // px per mm
+const BALL_R = 32.75*MM;              // ≈8.8px
+const G_PX = 9800*MM;                 // 중력가속도 9.8m/s² → px/s²
+
+const balls = {
+  // 4구 정식 초구 배치 (헤드 스폿 x≈228 / 풋 스폿 x≈612, 중심선 y≈230)
+  // 내 수구: 헤드 스폿 약간 아래 / 적구1: 헤드 스폿 약간 위
+  // 적구2: 풋 스폿 / 상대 수구: 풋 스폿 오른쪽 끝
+  cue:  { x: 228, y: 268, color:'#f7f4ea', ring:'#cfc8b4' },
+  r1:   { x: 228, y: 196, color:'#d23b2b', ring:'#9c281c' },
+  r2:   { x: 612, y: 230, color:'#d23b2b', ring:'#9c281c' },
+  cue2: { x: 720, y: 230, color:'#f0c542', ring:'#b89220' },
+};
+const defaults = JSON.parse(JSON.stringify(
+  Object.fromEntries(Object.entries(balls).map(([k,v])=>[k,{x:v.x,y:v.y}]))
+));
+const ROUTE_COLORS = ['#f4f1e8','#5fb8e8','#c98ce0'];
+
+let activeBall='cue', dragging=null, routes=[], selected=0;
+let sortMode='best', allRoutes=[];   // 정렬 필터 — 계산된 전체 후보를 보관해 재정렬
+const tuneState={power:'normal', cloth:'normal', cushion:'normal'};
+// 쿠션 수 규칙 — 'any'=추천(무관), 1/2=정확히 그 횟수, 3=3회 이상 (쓰리쿠션 룰).
+// 기준: 수구가 '두 번째 적구'를 맞히기 전까지 닿은 쿠션 총수 (첫 적구 전 뱅크 포함)
+let cushRule='any';
+function cushOK(n){
+  if(cushRule==='any') return true;
+  if(cushRule===3) return n>=3;
+  return n===cushRule;
+}
+// 프리셋 = 실제 물리 파라미터 (속도 px/s, 마찰계수, 쿠션 반발계수)
+const POWER_PRESETS={
+  soft:  {label:'약',   speed:520,  level:2, aimSigma:0.0070, spread:1.15},
+  normal:{label:'보통', speed:850,  level:3, aimSigma:0.0096, spread:1.00},
+  hard:  {label:'강',   speed:1300, level:4, aimSigma:0.0140, spread:1.20},
+};
+const CLOTH_PRESETS={
+  slow:  {label:'느린 천', mus:0.22, mur:0.015, spread:1.15},
+  normal:{label:'보통 천', mus:0.20, mur:0.012, spread:1.00},
+  fast:  {label:'빠른 천', mus:0.18, mur:0.009, spread:0.92},
+};
+const CUSHION_PRESETS={
+  short: {label:'짧은 쿠션', e:0.80, muc:0.26, spread:1.10},
+  normal:{label:'보통 쿠션', e:0.85, muc:0.20, spread:1.00},
+  long:  {label:'긴 쿠션',   e:0.90, muc:0.14, spread:1.05},
+};
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+
+// ⑥ 테이블 캘리브레이션 — 실제 샷이 예측보다 짧게/길게 나오면 사용자가
+// 미세 조정한 값을 localStorage 에 영구 저장해 내 테이블에 맞춘다.
+const calib=loadCalib();
+function loadCalib(){
+  try{
+    const c=JSON.parse(localStorage.getItem('hb4_calib')||'{}');
+    return {cush:clamp(c.cush|0,-5,5), roll:clamp(c.roll|0,-5,5)};
+  }catch(e){ return {cush:0, roll:0}; }
+}
+function saveCalib(){
+  try{ localStorage.setItem('hb4_calib',JSON.stringify(calib)); }catch(e){}
+}
+
+// ── 실력 3단계 — 초급은 두께·회전 제어가 어렵다는 전제 ──
+// · 회전: 초급 = 무회전/끌기/밀기만, 중급 = 혼합 회전 제외, 상급 = 전부
+// · 두께: 초급은 아주 얇은 샷(스침) 제외
+// · 실행 오차: 몬테카를로의 조준·회전·파워 오차 배율 → 성공률이 실력을 반영
+// tipScale: 당점 사용 폭 — 초급은 중심에서 반 팁 이상 못 벗어난다는 전제.
+// 시뮬레이션·몬테카를로·당점 그림이 전부 축소된 당점으로 일관 계산된다.
+const SKILLS={
+  beg:{label:'초급', aim:1.9, spin:1.8, spd:1.5, maxOff:0.72, tipScale:0.5, spinOK:s=>s.h===0},
+  mid:{label:'중급', aim:1.0, spin:1.0, spd:1.0, maxOff:0.85, tipScale:1.0, spinOK:s=>!(s.v!==0&&s.h!==0)},
+  adv:{label:'상급', aim:0.6, spin:0.6, spd:0.8, maxOff:0.92, tipScale:1.0, spinOK:()=>true},
+};
+function getSkill(){
+  try{
+    const k=localStorage.getItem('hb_skill');
+    return SKILLS[k]?k:'mid';
+  }catch(e){ return 'mid'; }
+}
+
+function physParams(){
+  const p=POWER_PRESETS[tuneState.power];
+  const c=CLOTH_PRESETS[tuneState.cloth];
+  const k=CUSHION_PRESETS[tuneState.cushion];
+  const sk=SKILLS[getSkill()];
+  return {
+    skill:sk,
+    speed:p.speed, level:p.level,
+    mus:c.mus,                                    // 미끄럼 마찰
+    mur:c.mur*Math.pow(1.07,-calib.roll),         // 구름 저항 (+보정 = 더 멀리 굴러감)
+    ec:clamp(k.e+calib.cush*0.015,0.60,0.97),     // 쿠션 반발 (+보정 = 더 길게)
+    muc:clamp(k.muc-calib.cush*0.02,0.06,0.40),   // 쿠션 접선 마찰
+    ebb:0.93, mubb:0.06,                          // 공-공 반발·마찰(스로우)
+    aimSigma:p.aimSigma*c.spread*k.spread*sk.aim, // 조준각 오차 표준편차 (rad)
+    spdSigma:0.05*sk.spd, spinSigma:0.08*sk.spin, // 파워·당점 오차 (몬테카를로용)
+    spread:p.spread*c.spread*k.spread,
+    labels:`${p.label} · ${c.label} · ${k.label} · ${sk.label}`,
+  };
+}
+
+// ---------- 기하 유틸 ----------
+const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
+const add=(a,b)=>({x:a.x+b.x,y:a.y+b.y});
+const mul=(a,s)=>({x:a.x*s,y:a.y*s});
+const len=a=>Math.hypot(a.x,a.y);
+const norm=a=>{const l=len(a)||1;return{x:a.x/l,y:a.y/l};};
+const dot2=(a,b)=>a.x*b.x+a.y*b.y;
+const rot=(a,t)=>({x:a.x*Math.cos(t)-a.y*Math.sin(t), y:a.x*Math.sin(t)+a.y*Math.cos(t)});
+
+/* ===== ② 시간 스텝 물리 시뮬레이터 (v4) =====
+   알시아토레(콜로라도주립대) 당구 물리를 수치 적분으로 추적:
+   · 공 상태 = 위치 + 속도 + 각속도(상하회전 wx,wy / 좌우회전 wz)
+   · 미끄럼(μs) → 구름(μr) 마찰 전이 — 끌기/밀기의 곡선 경로가 자연 발생
+   · 쿠션 = 법선 반발(e) + 접선 마찰(μc) — 시네루·입사각·속도에 반응
+   · 공-공 = 반발 0.93 + 마찰 스로우
+   좌표계: x→우, y→아래, z→테이블 속 (오른손계).
+   우 시네루(h=+1) = 위에서 볼 때 반시계 = wz<0. */
+const DT=0.0025, MAX_T=6, SLIDE_EPS=2, STOP_EPS=4;
+
+function mkSimBalls(){
+  return ['cue','r1','r2','cue2'].map(k=>(
+    {k, x:balls[k].x, y:balls[k].y, vx:0, vy:0, wx:0, wy:0, wz:0}
+  ));
+}
+
+// 큐 샷 초기화 — 당점 0.55R 기준: ω0 = 2.5·(b/R)·(V/R)
+function setShot(b,dir,speed,spin){
+  b.vx=dir.x*speed; b.vy=dir.y*speed;
+  const wv=1.375*spin.v*speed/BALL_R;      // 상하회전 (v>0 밀어 = 순방향 과회전)
+  b.wx=-wv*dir.y; b.wy=wv*dir.x;
+  b.wz=-1.375*spin.h*speed/BALL_R;         // 좌우회전 (우 = wz<0)
+}
+
+function stepBall(b,P,dt){
+  const sp=Math.hypot(b.vx,b.vy);
+  const wsp=Math.hypot(b.wx,b.wy)*BALL_R;
+  if(sp<STOP_EPS && wsp<STOP_EPS){
+    b.vx=b.vy=b.wx=b.wy=0;
+    b.wz*=(1-0.6*dt);
+    return;
+  }
+  const ux=b.vx-BALL_R*b.wy, uy=b.vy+BALL_R*b.wx;  // 천 접점 미끄럼 속도
+  const u=Math.hypot(ux,uy);
+  if(u>SLIDE_EPS){
+    // 미끄럼: 마찰이 u 방향을 유지한 채 3.5μg 로 선형 감쇠시킨다
+    const iux=ux/u, iuy=uy/u;
+    const f=Math.min(1, u/(3.5*P.mus*G_PX*dt));
+    const dv=P.mus*G_PX*dt*f;
+    b.vx-=dv*iux; b.vy-=dv*iuy;
+    const dw=2.5*P.mus*G_PX/BALL_R*dt*f;
+    b.wx-=dw*iuy; b.wy+=dw*iux;
+  } else {
+    // 구름: ω를 v에 고정하고 구름저항으로 감속
+    b.wy=b.vx/BALL_R; b.wx=-b.vy/BALL_R;
+    const dv=P.mur*G_PX*dt;
+    if(sp<=dv){ b.vx=b.vy=0; b.wx=b.wy=0; }
+    else { b.vx-=dv*b.vx/sp; b.vy-=dv*b.vy/sp; }
+  }
+  b.wz*=(1-0.12*dt);
+  b.x+=b.vx*dt; b.y+=b.vy*dt;
+}
+
+// 공-공 충돌 — 겹침 해소 + 반발 + 마찰 스로우. 충돌 시 접촉 정보 반환.
+function collideBB(a,b,P){
+  const dx=b.x-a.x, dy=b.y-a.y;
+  const d=Math.hypot(dx,dy);
+  if(d===0||d>=2*BALL_R) return null;
+  const nx=dx/d, ny=dy/d;
+  const push=(2*BALL_R-d)/2+0.01;
+  a.x-=nx*push; a.y-=ny*push; b.x+=nx*push; b.y+=ny*push;
+  const rvx=a.vx-b.vx, rvy=a.vy-b.vy;
+  const vn=rvx*nx+rvy*ny;
+  if(vn<=0) return null;
+  const rsp=Math.hypot(rvx,rvy)||1;
+  const cut=Math.abs(rvx*ny-rvy*nx)/rsp;   // sin(컷각) → 두께 = 1−sin
+  const j=(1+P.ebb)/2*vn;
+  a.vx-=j*nx; a.vy-=j*ny;
+  b.vx+=j*nx; b.vy+=j*ny;
+  // 스로우: 접점의 상대 미끄럼(좌우회전 + 컷 성분)에 의한 마찰 임펄스
+  const tx=-ny, ty=nx;
+  const ut=(rvx*tx+rvy*ty)+BALL_R*(a.wz+b.wz);
+  const jt=Math.min(P.mubb*(1+P.ebb)*vn, Math.abs(ut)/7)*Math.sign(ut);
+  a.vx-=jt*tx*0.5; a.vy-=jt*ty*0.5;
+  b.vx+=jt*tx*0.5; b.vy+=jt*ty*0.5;
+  return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, thickness:1-cut};
+}
+
+// 쿠션 — ① 공 반지름만큼 안쪽에서 접촉. 법선 반발 + 접선 마찰(시네루 반응).
+// 시네루 보정(파이브앤하프 차트 캘리브레이션):
+//  · 접선 상한: 무회전=강체 스틱 2/7, 회전 비율에 따라 0.5까지 — 고무가
+//    공을 감싸며 스틱 한계 이상으로 회전을 전달 (실측: 정면+최대 회전
+//    반발각 30~35°, 순수 스틱은 ~17%에 그침)
+//  · 시네루 홀드: 강한 회전은 법선 반발을 죽여 공이 쿠션을 타게 만든다
+function collideCushion(b,P){
+  let n=null;
+  if(b.x<play.x0+BALL_R && b.vx<0){ b.x=play.x0+BALL_R; n={x:1,y:0}; }
+  else if(b.x>play.x1-BALL_R && b.vx>0){ b.x=play.x1-BALL_R; n={x:-1,y:0}; }
+  else if(b.y<play.y0+BALL_R && b.vy<0){ b.y=play.y0+BALL_R; n={x:0,y:1}; }
+  else if(b.y>play.y1-BALL_R && b.vy>0){ b.y=play.y1-BALL_R; n={x:0,y:-1}; }
+  if(!n) return false;
+  const tx=-n.y, ty=n.x;                   // 접선 t̂ = ẑ×n̂
+  const vn=b.vx*n.x+b.vy*n.y;              // 접근 성분 (<0)
+  const vt=b.vx*tx+b.vy*ty;
+  const sp=Math.hypot(b.vx,b.vy)||1;
+  const ut=vt-b.wz*BALL_R;                 // 쿠션 접점 미끄럼
+  const jn=(1+P.ec)*Math.abs(vn);
+  const spinRatio=Math.min(1, Math.abs(b.wz)*BALL_R/sp);
+  const cap=2/7+(0.50-2/7)*spinRatio;
+  const jt=Math.min(P.muc*jn, Math.abs(ut)*cap)*Math.sign(ut);
+  const vt2=vt-jt, vn2=-P.ec*vn*(1-0.25*spinRatio);
+  b.vx=vn2*n.x+vt2*tx;
+  b.vy=vn2*n.y+vt2*ty;
+  b.wz=(b.wz+5*jt/(2*BALL_R))*0.85;        // 마찰 토크 + 고무 감쇠
+  // 쿠션 압축 중 바닥 마찰 급증 — 상하 회전이 깎이며 나가는 방향의
+  // 구름 상태로 절반쯤 재정렬된다 (쿠션 뒤 과도한 커브 방지)
+  b.wx=0.7*(b.wx*0.8)+0.3*(-b.vy/BALL_R);
+  b.wy=0.7*(b.wy*0.8)+0.3*( b.vx/BALL_R);
+  return true;
+}
+
+// ===== ③ 전체 샷 시뮬레이션 — 4개 공 전부 추적 =====
+// 키스(적구끼리·적구-수구 재충돌)와 파울(상대 수구 접촉)이 자연스럽게 반영된다.
+// firstKey 지정 시 첫 접촉이 다른 공이면 조기 실패 처리(탐색용).
+// maxPre: 첫 적구 접촉 전에 허용하는 쿠션 수 (0=직접 샷, ≥1=뱅크샷 허용)
+function simulateShot(dir,speed,spin,P,rec,firstKey,maxPre){
+  maxPre=maxPre||0;
+  const S=mkSimBalls();
+  const B={}; for(const o of S) B[o.k]=o;
+  setShot(B.cue,dir,speed,spin);
+  const res={
+    hitR1:false, hitR2:false, foul:false, firstContact:null,
+    firstInfo:null, secondInfo:null, cushAfterFirst:0, kiss:false,
+    cushAtSecond:null,   // 두 번째 적구 접촉 시점까지의 쿠션 총수 (규칙 판정용)
+    preDir:null, postDir:null, success:false,
+    paths:rec?{cue:[{x:B.cue.x,y:B.cue.y}], first:null}:null,
+    frames:rec?[]:null,  // 재생용 — 공 4개의 시간 샘플 (20ms 간격)
+  };
+  let t=0, doneT=-1, fail=false, cushBefore=0, firstT=-1, recDone=false, stepN=0;
+  while(t<MAX_T){
+    let moving=false;
+    for(const o of S){ if(o.vx||o.vy){ stepBall(o,P,DT); moving=true; } }
+    if(!moving) break;
+    const cueDir=(B.cue.vx||B.cue.vy)?Math.atan2(B.cue.vy,B.cue.vx):null;
+    // 공-공 충돌
+    for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){
+      const a=S[i], b=S[j];
+      const c=collideBB(a,b,P);
+      if(!c) continue;
+      const cueIn=(a.k==='cue'||b.k==='cue');
+      if(cueIn){
+        const other=a.k==='cue'?b.k:a.k;
+        if(other==='cue2'){ res.foul=true; }
+        else if(!res.firstContact){
+          res.firstContact=other; firstT=t;
+          res.firstInfo={x:c.x,y:c.y,thickness:c.thickness};
+          res.preDir=cueDir;
+          if(firstKey&&other!==firstKey) fail=true;
+        } else if(other!==res.firstContact){
+          if(!res.secondInfo){
+            res.secondInfo={x:c.x,y:c.y};
+            res.cushAtSecond=cushBefore+res.cushAfterFirst;
+          }
+        } else res.kiss=true;                    // 같은 적구 재충돌 = 키스
+        if(other==='r1') res.hitR1=true;
+        if(other==='r2') res.hitR2=true;
+      } else if((a.k==='r1'&&b.k==='r2')||(a.k==='r2'&&b.k==='r1')){
+        res.kiss=true;                           // 적구끼리 키스
+      }
+    }
+    // 쿠션
+    for(const o of S){
+      if(collideCushion(o,P)&&o.k==='cue'){
+        if(res.firstContact) res.cushAfterFirst++;
+        else cushBefore++;
+      }
+    }
+    if(res.foul||fail) break;
+    const success=res.hitR1&&res.hitR2;
+    if(success&&doneT<0) doneT=t;
+    // 조기 종료 — 선행 쿠션 한도 초과 / 쿠션 4회 초과 / 수구 정지 / 성공 후 여운
+    // (rec 실행은 성공 후에도 전부 멈출 때까지 굴려 최종 배치를 기록 —
+    //  경로 그리기는 여운까지만, 모임도 계산은 최종 위치로)
+    if(!res.firstContact&&cushBefore>maxPre) break;
+    if(!success&&res.cushAfterFirst>4) break;
+    if(!success&&!B.cue.vx&&!B.cue.vy) break;
+    if(doneT>=0&&t>doneT+0.45){
+      if(!rec) break;
+      recDone=true;
+    }
+    // 분리각 실측: 첫 접촉 0.12s 후(곡선이 잡힌 뒤) 진행 방향
+    if(firstT>=0&&res.postDir===null&&t>firstT+0.12&&(B.cue.vx||B.cue.vy))
+      res.postDir=Math.atan2(B.cue.vy,B.cue.vx);
+    if(rec&&!recDone){
+      recPt(res.paths.cue,B.cue,3);
+      if(res.firstContact){
+        const fb=B[res.firstContact];
+        if(!res.paths.first) res.paths.first=[{x:fb.x,y:fb.y}];
+        else recPt(res.paths.first,fb,3);
+      }
+    }
+    if(rec&&(stepN++&7)===0)
+      res.frames.push({t, p:[B.cue.x,B.cue.y,B.r1.x,B.r1.y,B.r2.x,B.r2.y,B.cue2.x,B.cue2.y]});
+    t+=DT;
+  }
+  res.success=res.hitR1&&res.hitR2&&!res.foul&&!fail;
+  res.cushBefore=cushBefore;
+  if(rec){
+    res.final={};
+    for(const o of S) res.final[o.k]={x:o.x,y:o.y};
+    res.frames.push({t, p:[B.cue.x,B.cue.y,B.r1.x,B.r1.y,B.r2.x,B.r2.y,B.cue2.x,B.cue2.y]});
+  }
+  return res;
+}
+function recPt(arr,b,minD){
+  const l=arr[arr.length-1];
+  if(Math.hypot(b.x-l.x,b.y-l.y)>=minD) arr.push({x:b.x,y:b.y});
+}
+function bandWidth(cushions,P){
+  return clamp((10+cushions*7)*P.spread,10,44);
+}
+// 공 모임도 — 득점 후 최종 배치에서 내 수구·적구 2개의 평균 간격을
+// 퍼센트로 환산 (가까울수록 다음 모아치기가 쉽다)
+function gatherScore(fin){
+  if(!fin||!fin.cue||!fin.r1||!fin.r2) return null;
+  const diag=Math.hypot(play.x1-play.x0,play.y1-play.y0);
+  const d=(len(sub(fin.cue,fin.r1))+len(sub(fin.cue,fin.r2))+len(sub(fin.r1,fin.r2)))/3;
+  const t=clamp((d-BALL_R*8)/(diag*0.45-BALL_R*8),0,1);
+  return Math.round(5+(1-t)*90);
+}
+
+// ===== ④ 몬테카를로 성공률 =====
+// 조준각·파워·당점에 실전 오차(가우시안)를 준 시뮬레이션 N회로
+// "이 경로를 실제로 쳤을 때 득점할 확률"을 실측한다.
+// 4구 득점은 순서 무관 — 두 적구를 모두 맞히고 상대 수구를 안 건드리면 성공.
+function gauss(){
+  let u=0,v=0;
+  while(!u) u=Math.random();
+  while(!v) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function monteCarlo(c,P,n,baseSpeed){
+  let ok=0;
+  const sp0=baseSpeed||P.speed;
+  for(let i=0;i<n;i++){
+    const dir=rot(c.dir,gauss()*P.aimSigma);
+    const spd=sp0*(1+gauss()*P.spdSigma);
+    const spin={
+      v:clamp(c.spin.v+gauss()*P.spinSigma,-1,1),
+      h:clamp(c.spin.h+gauss()*P.spinSigma,-1,1),
+    };
+    // 실제 4구 규칙 그대로 판정: 순서 무관, 선행 쿠션(뱅크) 경유도 득점.
+    // 쿠션 수 규칙이 설정돼 있으면 그 조건까지 만족해야 성공.
+    const r=simulateShot(dir,spd,spin,P,false,null,2);
+    if(r.success&&cushOK(r.cushAtSecond==null?0:r.cushAtSecond)) ok++;
+  }
+  return ok/n;
+}
+
+const SPINS=[
+  {key:'none',  v:0,    h:0,    label:'무회전'},
+  {key:'draw',  v:-1,   h:0,    label:'끌어치기'},
+  {key:'follow',v:1,    h:0,    label:'밀어치기'},
+  {key:'left',  v:-0.3, h:-1,   label:'좌 시네루'},
+  {key:'right', v:-0.3, h:1,    label:'우 시네루'},
+  // 혼합 회전 — 상하 성분(끌림/밀림)과 좌우 성분(옆휨)을 함께 가진다.
+  // 상하값을 순수(±1)보다 약간 낮춰(±0.7) 회전이 상하·좌우로 나뉘는 현실을 반영.
+  {key:'drawL', v:-0.7, h:-1,   label:'끌어 + 좌'},
+  {key:'drawR', v:-0.7, h:1,    label:'끌어 + 우'},
+  {key:'follL', v:0.7,  h:-1,   label:'밀어 + 좌'},
+  {key:'follR', v:0.7,  h:1,    label:'밀어 + 우'},
+];
+
+// ===== 경로 탐색 =====
+// 두께(조준 오프셋)를 미세 간격으로 훑으며 매번 '진짜 시뮬레이션'을 돌린다.
+// 연속으로 성공하는 오프셋 구간(run)의 폭 = 그 경로의 조준 허용오차.
+// 폭 1칸짜리 요행 경로는 버리고, 구간 중앙을 대표 후보로 삼는다.
+const NOFF=44;
+function solve(){
+  const P=physParams();
+  const cue=balls.cue;
+  const cands=[];
+  const skill=P.skill;
+  // 쿠션 수 규칙이 있으면 필요한 만큼 샷 속도를 자동 승급
+  // (2~3쿠션을 돌려면 보통 파워로는 에너지가 부족하다)
+  // 쿠션수순 정렬일 때도 다쿠션 후보가 존재하도록 속도를 올려 탐색한다.
+  const effSpeed=cushRule===3?Math.max(P.speed,1350)
+                :cushRule===2?Math.max(P.speed,1050)
+                :sortMode==='cush'?Math.max(P.speed,1150):P.speed;
+  // 3쿠션 룰은 혼합 당점(밀어/끌어+옆)이 사실상 필수 — 룰을 선택했다는 건
+  // 그 기술을 치겠다는 뜻이므로 중급 이상에서는 제한을 푼다 (초급은 유지)
+  const spinAllowed=(cushRule===3&&skill!==SKILLS.beg)?SKILLS.adv.spinOK:skill.spinOK;
+  const scanDirect=(N)=>{
+    for(const [fk,sk] of [['r1','r2'],['r2','r1']]){
+      const first=balls[fk];
+      const aimBase=norm(sub(first,cue));
+      const perp={x:-aimBase.y,y:aimBase.x};
+      for(const baseSpin of SPINS){
+        if(!spinAllowed(baseSpin)) continue;       // 실력별 회전 제한
+        // 실력별 당점 축소 — 초급은 중심 부근 당점으로만 계산
+        const spin={key:baseSpin.key, label:baseSpin.label,
+                    v:baseSpin.v*skill.tipScale, h:baseSpin.h*skill.tipScale};
+        let run=[];
+        const flush=()=>{
+          if(run.length>=2){
+            const mid=run[Math.floor(run.length/2)];
+            cands.push({...mid, tol:run.length});
+          }
+          run=[];
+        };
+        for(let i=0;i<=N;i++){
+          const off=-0.92+1.84*i/N;
+          if(Math.abs(off)>skill.maxOff){ flush(); continue; } // 초급은 얇은 샷 제외
+          const aimPt=add({x:first.x,y:first.y},mul(perp,off*BALL_R*2));
+          const dir=norm(sub(aimPt,cue));
+          const r=simulateShot(dir,effSpeed,spin,P,false,fk);
+          const tc=r.cushAtSecond==null?0:r.cushAtSecond;
+          if(r.success&&cushOK(tc)){
+            const item={fk,sk,spin,dir,off,cush:tc,cushBefore:0,kiss:r.kiss};
+            if(run.length&&run[0].cush!==item.cush) flush();
+            run.push(item);
+          } else flush();
+        }
+        flush();
+      }
+    }
+  };
+  // 3쿠션 룰은 조준 창이 좁다 — 스캔 해상도 2배
+  const baseN=cushRule===3?NOFF*2:NOFF;
+  scanDirect(baseN);
+  // ── 뱅크샷 탐색 ──
+  // 첫 쿠션 접점을 벽 4개를 따라 훑고, 쿠션을 먼저 맞은 뒤(≤2회)
+  // 제1적구에 닿아 득점하는 경로를 시뮬레이션으로 찾는다.
+  // 혼합 회전은 뱅크에서 실전성이 낮아 기본 5가지 회전만 쓴다.
+  const NBANK=44;
+  const bankWalls=[
+    {ax:'y', v:play.y0+BALL_R}, {ax:'y', v:play.y1-BALL_R},
+    {ax:'x', v:play.x0+BALL_R}, {ax:'x', v:play.x1-BALL_R},
+  ];
+  const BANK_KEYS={none:1,draw:1,follow:1,left:1,right:1};
+  for(const [fk,sk] of [['r1','r2'],['r2','r1']]){
+    for(const wall of bankWalls){
+      for(const baseSpin of SPINS){
+        if(!BANK_KEYS[baseSpin.key]) continue;
+        if(!skill.spinOK(baseSpin)) continue;
+        const spin={key:baseSpin.key, label:baseSpin.label,
+                    v:baseSpin.v*skill.tipScale, h:baseSpin.h*skill.tipScale};
+        let run=[];
+        const flush=()=>{
+          if(run.length>=2){
+            const mid=run[Math.floor(run.length/2)];
+            cands.push({...mid, tol:run.length});
+          }
+          run=[];
+        };
+        for(let i=0;i<=NBANK;i++){
+          const s=i/NBANK;
+          const pt=wall.ax==='y'
+            ? {x:play.x0+BALL_R+s*(play.x1-play.x0-2*BALL_R), y:wall.v}
+            : {x:wall.v, y:play.y0+BALL_R+s*(play.y1-play.y0-2*BALL_R)};
+          const d0=sub(pt,{x:cue.x,y:cue.y});
+          if(len(d0)<BALL_R*2){ flush(); continue; }
+          const dir=norm(d0);
+          const r=simulateShot(dir,effSpeed,spin,P,false,fk,2);
+          const tc=r.cushAtSecond==null?0:r.cushAtSecond;
+          if(r.success&&r.cushBefore>=1&&cushOK(tc)){
+            const item={fk,sk,spin,dir,cush:tc-r.cushBefore,
+                        cushBefore:r.cushBefore,kiss:r.kiss};
+            if(run.length&&(run[0].cush!==item.cush||
+               run[0].cushBefore!==item.cushBefore)) flush();
+            run.push(item);
+          } else flush();
+        }
+        flush();
+      }
+    }
+  }
+  // 폴백: 좁은 창 배치(먼 거리·길목 차단 등)는 성공 구간이 스캔 간격보다
+  // 좁아 모두 걸러질 수 있다 — 해상도를 2배로 올려 한 번 더 훑는다.
+  if(!cands.length) scanDirect(baseN*2);
+  if(!cands.length) return [];
+  // 1차 순위: 허용오차 넓고, 쿠션(선행+후행) 적고, 혼합회전·키스 없는 순
+  for(const c of cands){
+    c.pre=c.tol*3 - (c.cush+c.cushBefore)*4
+      - (c.spin.v!==0&&c.spin.h!==0?4:0) - (c.kiss?6:0);
+  }
+  cands.sort((a,b)=>b.pre-a.pre);
+  // ④ 상위 후보 + 쿠션수 상위 후보(쿠션수순 정렬용)를 몬테카를로로 실측
+  const byCush=[...cands].sort((a,b)=>
+    (b.cushBefore+b.cush)-(a.cushBefore+a.cush)||b.pre-a.pre);
+  const pool=sortMode==='cush'?byCush.slice(0,16):cands.slice(0,16);
+  const extra=sortMode==='cush'?cands.slice(0,8):byCush.slice(0,8);
+  for(const c of extra) if(!pool.includes(c)) pool.push(c);
+  const routesOut=[];
+  for(const c of pool){
+    const prob=monteCarlo(c,P,30,effSpeed);
+    if(prob<0.03) continue;
+    const r=simulateShot(c.dir,effSpeed,c.spin,P,true,c.fk,c.cushBefore?2:0);
+    if(!r.success||!r.firstInfo) continue;
+    const cuePath=r.paths.cue;
+    let pathLen=0;
+    for(let i=1;i<cuePath.length;i++) pathLen+=len(sub(cuePath[i],cuePath[i-1]));
+    let cueDeflect=0;
+    if(r.preDir!==null&&r.postDir!==null){
+      let dAng=Math.abs(r.postDir-r.preDir)*180/Math.PI;
+      if(dAng>180) dAng=360-dAng;
+      cueDeflect=dAng;
+    }
+    const gather=gatherScore(r.final);
+    // 조준 측(두께 방향) — 접촉 직전 진행방향 기준으로 적구 중심이
+    // 왼쪽에 있으면 수구가 적구의 오른쪽을 지나감 = '오른쪽 두께'... 의
+    // 반대. 부호 정의: cross>0 = 적구 중심이 진행방향의 오른쪽 = 왼쪽 두께.
+    let aimSide='L';
+    if(r.preDir!==null){
+      const d={x:Math.cos(r.preDir), y:Math.sin(r.preDir)};
+      const fb=balls[c.fk];
+      const fv={x:fb.x-r.firstInfo.x, y:fb.y-r.firstInfo.y};
+      aimSide=(d.x*fv.y-d.y*fv.x)>=0?'L':'R';
+    }
+    routesOut.push({
+      first:c.fk, second:c.sk, spin:c.spin, aimSide, anim:r.frames,
+      thickness:r.firstInfo.thickness, cushions:c.cush,
+      cushBefore:c.cushBefore||0,
+      cueDeflect, cuePath, pathLen,
+      r1Path:r.paths.first||[],
+      hits:[r.firstInfo,r.secondInfo].filter(Boolean),
+      prob, kiss:r.kiss, gather,
+      inputPowerLevel:P.level,
+      tuningText:P.labels,
+      uncertainty:bandWidth(c.cush+(c.cushBefore||0),P),
+      score:prob*100 + c.tol*0.6 - (c.cush+(c.cushBefore||0))*2
+        - (c.spin.v!==0&&c.spin.h!==0?3:0)
+        + (gather||0)*0.05,             // 모임 좋은 경로에 소폭 가점
+    });
+  }
+  allRoutes=routesOut;
+  return sortedRoutes();
+}
+
+// 정렬 필터 — 재계산 없이 보관된 후보에서 상위 3개를 다시 추린다
+function pickTop(list,key){
+  const sorted=[...list].sort((a,b)=>key(b)-key(a));
+  const picked=[];
+  for(const r of sorted){
+    if(picked.length>=3) break;
+    if(picked.some(p=>similar(p,r))) continue;
+    picked.push(r);
+  }
+  return picked;
+}
+function sortedRoutes(){
+  if(!allRoutes.length) return [];
+  if(sortMode==='cush')
+    return pickTop(allRoutes,r=>(r.cushBefore+r.cushions)*1e4+r.prob*100+(r.gather||0)*0.01);
+  if(sortMode==='prob')
+    return pickTop(allRoutes,r=>r.prob*1e4+(r.gather||0));
+  if(sortMode==='gather')
+    return pickTop(allRoutes,r=>(r.gather==null?-1:r.gather)*1e4+r.prob*100);
+  return pickDiverse(allRoutes);
+}
+
+// 전략이 겹치지 않게 3개 추리기
+function pickDiverse(found){
+  if(!found.length) return [];
+  found.sort((a,b)=>b.score-a.score);
+  const picked=[];
+  const usedSpin=new Set();
+  // 1순위: 최고점
+  picked.push(found[0]); usedSpin.add(found[0].spin.key);
+  // 2,3순위: 회전 종류가 다른 것 우선
+  for(const f of found){
+    if(picked.length>=3) break;
+    if(usedSpin.has(f.spin.key)) continue;
+    // 경로가 너무 비슷하면 skip
+    if(picked.some(p=>similar(p,f))) continue;
+    picked.push(f); usedSpin.add(f.spin.key);
+  }
+  // 그래도 모자라면 점수순 채움
+  for(const f of found){
+    if(picked.length>=3) break;
+    if(picked.includes(f)) continue;
+    if(picked.some(p=>similar(p,f))) continue;
+    picked.push(f);
+  }
+  return picked;
+}
+function similar(a,b){
+  return a.first===b.first && a.cushions===b.cushions &&
+         (a.cushBefore||0)===(b.cushBefore||0) &&
+         Math.abs(a.thickness-b.thickness)<0.15;
+}
+
+// ---------- 그리기 ----------
+function draw(){
+  ctx.fillStyle='#1f6b4a'; ctx.fillRect(0,0,W,H);
+  const g=ctx.createRadialGradient(W/2,H/2,60,W/2,H/2,W/1.4);
+  g.addColorStop(0,'rgba(255,255,255,.05)'); g.addColorStop(1,'rgba(0,0,0,.28)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#16573b'; ctx.lineWidth=2;
+  ctx.strokeRect(play.x0,play.y0,play.x1-play.x0,play.y1-play.y0);
+  ctx.fillStyle='rgba(244,241,232,.4)';
+  for(let i=1;i<8;i++){const x=play.x0+(play.x1-play.x0)*i/8;
+    d(x,play.y0-17,2);d(x,play.y1+17,2);}
+  for(let i=1;i<4;i++){const y=play.y0+(play.y1-play.y0)*i/4;
+    d(play.x0-17,y,2);d(play.x1+17,y,2);}
+  // 선택되지 않은 경로 흐리게, 선택된 경로 진하게
+  routes.forEach((r,i)=>{ if(i!==selected) drawRoute(r,ROUTE_COLORS[i],.22); });
+  if(routes[selected]) drawRoute(routes[selected],ROUTE_COLORS[selected],1);
+  // 재생 중이면 공을 애니메이션 위치에 그린다
+  const AIDX={cue:0,r1:2,r2:4,cue2:6};
+  for(const k in balls){
+    const b=anim&&anim.cur
+      ?{...balls[k], x:anim.cur[AIDX[k]], y:anim.cur[AIDX[k]+1]}
+      :balls[k];
+    drawBall(b,k===activeBall&&!anim);
+  }
+}
+
+// ===== ▶ 경로 재생 — 대표 시뮬레이션 프레임을 실시간 애니메이션 =====
+let anim=null;
+function stopAnim(redraw){
+  if(!anim) return;
+  if(anim.raf) cancelAnimationFrame(anim.raf);
+  anim=null;
+  if(redraw!==false) draw();
+}
+function playRoute(){
+  const r=routes[selected];
+  if(!r||!r.anim||r.anim.length<2) return;
+  stopAnim(false);
+  anim={frames:r.anim, t0:performance.now(), i:0, raf:null, cur:null};
+  const step=()=>{
+    if(!anim) return;
+    const fr=anim.frames;
+    const t=(performance.now()-anim.t0)/1000;
+    const endT=fr[fr.length-1].t;
+    if(t>=endT){
+      anim.cur=fr[fr.length-1].p; anim.raf=null; draw();
+      // 최종 배치를 잠시 보여준 뒤 원위치로
+      setTimeout(()=>{ if(anim&&!anim.raf){ anim=null; draw(); } },900);
+      return;
+    }
+    let i=anim.i;
+    while(i<fr.length-1&&fr[i+1].t<=t) i++;
+    anim.i=i;
+    const a=fr[i], b=fr[Math.min(i+1,fr.length-1)];
+    const u=b.t>a.t?(t-a.t)/(b.t-a.t):0;
+    anim.cur=a.p.map((v,j)=>v+(b.p[j]-v)*u);
+    draw();
+    anim.raf=requestAnimationFrame(step);
+  };
+  anim.raf=requestAnimationFrame(step);
+}
+function d(x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
+function drawBall(b,active){
+  ctx.beginPath();ctx.arc(b.x,b.y,BALL_R,0,7);
+  ctx.fillStyle=b.color;ctx.fill();
+  ctx.lineWidth=active?3:2;
+  ctx.strokeStyle=active?'#e8b53e':b.ring;ctx.stroke();
+  ctx.beginPath();ctx.arc(b.x-4,b.y-4,BALL_R/3,0,7);
+  ctx.fillStyle='rgba(255,255,255,.5)';ctx.fill();
+}
+// 경로는 시뮬레이션이 기록한 폴리라인 그대로 그린다 —
+// 끌기/밀기 곡선·쿠션 후 커브가 실제 물리 결과로 담겨 있다.
+function drawRoute(r,color,alpha){
+  ctx.save();ctx.globalAlpha=alpha;
+  if(alpha>.7){
+    ctx.globalAlpha=0.13*alpha;
+    strokePath(r.cuePath,color,r.uncertainty||16);
+    ctx.globalAlpha=alpha;
+  }
+  line(r.cuePath,color,3);
+  ctx.globalAlpha=alpha*0.8;
+  line(r.r1Path,'#e8b53e',2.5);
+  for(const p of r.hits){
+    ctx.beginPath();ctx.arc(p.x,p.y,5,0,7);
+    ctx.fillStyle=color;ctx.fill();
+    ctx.strokeStyle='#14110d';ctx.lineWidth=1.5;ctx.stroke();
+  }
+  ctx.restore();
+}
+function strokePath(pts,color,w){
+  if(!pts||pts.length<2) return;
+  ctx.strokeStyle=color;ctx.lineWidth=w;ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.stroke();
+}
+function line(pts,color,w){
+  if(!pts||pts.length<2) return;
+  ctx.strokeStyle=color;ctx.lineWidth=w;ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.stroke();
+  const a=pts[pts.length-2],b=pts[pts.length-1];
+  const ang=Math.atan2(b.y-a.y,b.x-a.x);
+  ctx.save();ctx.translate(b.x,b.y);ctx.rotate(ang);
+  ctx.fillStyle=color;ctx.beginPath();
+  ctx.moveTo(0,0);ctx.lineTo(-11,-5);ctx.lineTo(-11,5);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+
+
+// ---------- 경로 카드 출력 ----------
+function tipSVG(spin){
+  // 30x30 원에 당점 위치 표시
+  let cx=15,cy=15;
+  cx+=spin.h*8; cy-=spin.v*8;
+  return `<svg width="30" height="30" viewBox="0 0 30 30">
+    <circle cx="15" cy="15" r="13" fill="#f4f1e8" stroke="#cfc8b4" stroke-width="2"/>
+    <line x1="15" y1="4" x2="15" y2="26" stroke="#d8d2bf" stroke-width="1"/>
+    <line x1="4" y1="15" x2="26" y2="15" stroke="#d8d2bf" stroke-width="1"/>
+    <circle cx="${cx}" cy="${cy}" r="4.5" fill="#d9582b"/></svg>`;
+}
+// 두께 시각화 — 적구(빨강) 위에 수구(흰색)를 겹쳐 그려
+// 어느 정도 두께로, 어느 쪽에서 맞히는지 보여준다.
+// eighths: 1~8 · side: 'L'=왼쪽 두께(수구가 왼쪽에서 겹침) / 'R'=오른쪽 두께
+function thicknessSVG(eighths,side){
+  const R=11;                       // 공 반지름
+  const objX=32, ballY=18;          // 적구 중심
+  // 두께가 8/8(정면)이면 수구가 적구와 완전히 겹침(중심 일치),
+  // 1/8(얇게)이면 거의 안 겹침(중심이 지름만큼 떨어짐).
+  const s=(side==='R'&&eighths<8)?1:-1;      // 겹침 방향
+  const cx=objX + s*(2*R)*(1-eighths/8);
+  return `<svg width="64" height="36" viewBox="0 0 64 36">
+    <!-- 적구 -->
+    <circle cx="${objX}" cy="${ballY}" r="${R}" fill="#d23b2b" stroke="#9c281c" stroke-width="1.5"/>
+    <!-- 수구 (겹쳐서) -->
+    <circle cx="${cx}" cy="${ballY}" r="${R}" fill="#f7f4ea" stroke="#cfc8b4"
+       stroke-width="1.5" fill-opacity="0.92"/>
+    <!-- 충돌 두께 표시선 -->
+    ${eighths<8?`<line x1="${objX+s*R}" y1="3" x2="${objX+s*R}" y2="33"
+       stroke="#9b9484" stroke-width="0.8" stroke-dasharray="2,2"/>`:''}
+  </svg>`;
+}
+
+// 힘 세기 — 경로 길이·쿠션 수·회전으로 5단계 산출
+function powerLevel(r){
+  // 기준: 경로 길이를 당구대 대각선 길이로 정규화
+  const tableW=play.x1-play.x0, tableH=play.y1-play.y0;
+  const diag=Math.hypot(tableW, tableH);
+  let p = r.pathLen / diag;          // 0~2 가량
+  p += r.cushions*0.35;              // 쿠션마다 힘 추가
+  // 끌림/밀림 성분(v)에 따라 힘 가산 — 혼합 회전도 v로 반영된다.
+  if(r.spin.v < 0) p += 0.25*Math.abs(r.spin.v);   // 끌어치기 계열
+  if(r.spin.v > 0) p += 0.10*r.spin.v;             // 밀어치기 계열
+  // 1~5 단계로 환산 (직접 짧은샷=1, 중간=2~3, 긴 다쿠션=5)
+  let lvl=Math.round(p*3.0 - 0.3);
+  return Math.max(1, Math.min(5, lvl));
+}
+function powerSVG(level){
+  let bars='';
+  for(let i=0;i<5;i++){
+    const on=i<level;
+    const h=8+i*3;                   // 막대가 점점 높아짐
+    const col=on?(level>=4?'#d9582b':level>=3?'#e8b53e':'#5fd08a'):'#3a3024';
+    bars+=`<rect x="${i*11}" y="${22-h}" width="8" height="${h}" rx="1.5" fill="${col}"/>`;
+  }
+  return `<svg width="56" height="24" viewBox="0 0 56 24">${bars}</svg>`;
+}
+const POWER_LABEL={1:'아주 약하게',2:'약하게',3:'보통',4:'강하게',5:'아주 강하게'};
+
+function renderCards(){
+  const box=document.getElementById('g4-routes');
+  if(!routes.length){
+    const ruleTxt=cushRule==='any'?'':
+      ` (쿠션 수 ${cushRule===3?'3회 이상':cushRule+'회'} 조건 적용 중 — 조건을 '추천'으로 바꾸면 더 찾을 수 있습니다)`;
+    box.innerHTML='<div class="panel"><span class="empty">계산된 경로가 없습니다. '+
+      '공 배치를 바꿔 다시 시도해 보세요.'+ruleTxt+'</span></div>';
+    return;
+  }
+  const STRAT={none:'정석 — 무회전 기본 경로',draw:'끌어치기 — 각을 크게 만드는 경로',
+    follow:'밀어치기 — 적구를 따라붙는 경로',left:'좌 시네루 — 쿠션 각 조절',
+    right:'우 시네루 — 쿠션 각 조절',drawL:'끌어+좌 — 각 확대와 쿠션 조절',
+    drawR:'끌어+우 — 각 확대와 쿠션 조절',follL:'밀어+좌 — 각 축소와 쿠션 조절',
+    follR:'밀어+우 — 각 축소와 쿠션 조절'};
+  box.innerHTML=routes.map((r,i)=>{
+    const f=r.first==='r1'?'적구 1':'적구 2';
+    const s=r.second==='r1'?'적구 1':'적구 2';
+    // 두께를 8분의 N 으로 표기 (4구 표준)
+    const eighths=Math.round(r.thickness*8);
+    const thickLabel=eighths>=8?'8/8(정면)':eighths<=1?'1/8(얇게)':`${eighths}/8`;
+    const defl=Math.round(r.cueDeflect);
+    const pw=powerLevel(r);   // 경로 길이·쿠션·회전 기반 추천 파워
+    return `<div class="rcard ${i===selected?'sel':''}" data-i="${i}">
+      <div class="top">
+        <span class="swatch" style="background:${ROUTE_COLORS[i]}"></span>
+        <span class="rtitle">${r.cushBefore>0?'뱅크샷 · ':''}${STRAT[r.spin.key]||r.spin.label}</span>
+        <span class="badges">
+          <span class="badge">성공률 ${Math.round(r.prob*100)}%</span>
+          ${r.gather!=null?`<span class="badge gather">공 모임 ${r.gather}%</span>`:''}
+        </span>
+      </div>
+      <div class="desc">수구 → ${r.cushBefore>0?`<b>쿠션 ${r.cushBefore}회</b> → `:''}${f} <b>${thickLabel} 두께</b> 맞힘 ·
+        수구 분리각 <b>약 ${defl}°</b><br>
+        → ${r.cushions>0?`쿠션 ${r.cushions}회 → `:''}${s} 도착${r.kiss?' · <span style="color:#d9582b">⚠ 키스 경유</span>':''}<br>
+        보정 <b>${r.tuningText}</b> · 오차 밴드 <b>±${Math.round((r.uncertainty||18)/2)}px</b>
+        · 성공률은 실전 오차 몬테카를로 30회 실측</div>
+      <div class="metrics">
+        <div class="metric">
+          <div class="mlabel">권장 당점</div>
+          <div class="mvis">${tipSVG(r.spin)}</div>
+          <div class="mval">${r.spin.label}</div>
+        </div>
+        <div class="metric">
+          <div class="mlabel">맞히는 두께</div>
+          <div class="mvis">${thicknessSVG(eighths,r.aimSide)}</div>
+          <div class="mval">${eighths>=8?thickLabel:
+            `${r.aimSide==='R'?'오른쪽':'왼쪽'} ${thickLabel}`}</div>
+        </div>
+        <div class="metric">
+          <div class="mlabel">추천 파워</div>
+          <div class="mvis">${powerSVG(pw)}</div>
+          <div class="mval">${POWER_LABEL[pw]}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.rcard').forEach(c=>{
+    c.addEventListener('click',()=>{
+      stopAnim(false);
+      selected=+c.dataset.i; renderCards(); draw();
+      drawPhoto();   // 사진이 열려 있으면 선택 경로를 사진에도 반영
+    });
+  });
+}
+
+// ---------- 입력 ----------
+function cpos(e){
+  const r=cv.getBoundingClientRect();
+  const t=e.touches?e.touches[0]:e;
+  return {x:(t.clientX-r.left)*(W/r.width),y:(t.clientY-r.top)*(H/r.height)};
+}
+function clampB(p){return{
+  x:Math.max(play.x0+BALL_R,Math.min(play.x1-BALL_R,p.x)),
+  y:Math.max(play.y0+BALL_R,Math.min(play.y1-BALL_R,p.y))};}
+function hitB(p){for(const k in balls) if(len(sub(balls[k],p))<BALL_R+10) return k; return null;}
+function onDown(e){
+  e.preventDefault();
+  stopAnim(false);
+  const p=cpos(e), k=hitB(p);
+  if(k){dragging=k;activeBall=k;syncTb();}
+  else{const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
+    routes=[];renderCards();}
+  draw();
+}
+function onMove(e){
+  if(!dragging) return;
+  e.preventDefault();
+  const c=clampB(cpos(e));
+  balls[dragging].x=c.x;balls[dragging].y=c.y;
+  routes=[];draw();
+}
+function onUp(){dragging=null;}
+cv.addEventListener('mousedown',onDown);
+cv.addEventListener('mousemove',onMove);
+window.addEventListener('mouseup',onUp);
+cv.addEventListener('touchstart',onDown,{passive:false});
+cv.addEventListener('touchmove',onMove,{passive:false});
+window.addEventListener('touchend',onUp);
+
+function syncTb(){
+  document.querySelectorAll('#g4-toolbar .tool').forEach(b=>
+    b.classList.toggle('active',b.dataset.ball===activeBall));
+}
+function syncTuning(){
+  document.querySelectorAll('#g4-tuning button[data-tune]').forEach(b=>
+    b.classList.toggle('on',tuneState[b.dataset.tune]===b.dataset.value));
+}
+document.querySelectorAll('#g4-toolbar .tool').forEach(b=>
+  b.addEventListener('click',()=>{activeBall=b.dataset.ball;syncTb();}));
+document.querySelectorAll('#g4-tuning button[data-tune]').forEach(b=>
+  b.addEventListener('click',()=>{
+    tuneState[b.dataset.tune]=b.dataset.value;
+    syncTuning();
+    routes=[];selected=0;renderCards();draw();
+    drawPhoto();   // 사진 오버레이도 초기화 (경로가 지워졌으므로)
+  }));
+// 쿠션 수 규칙 버튼
+document.querySelectorAll('#g4-tuning [data-crule]').forEach(b=>
+  b.addEventListener('click',()=>{
+    cushRule=b.dataset.crule==='any'?'any':+b.dataset.crule;
+    document.querySelectorAll('#g4-tuning [data-crule]').forEach(x=>
+      x.classList.toggle('on',x===b));
+    routes=[];allRoutes=[];selected=0;renderCards();draw();drawPhoto();
+  }));
+// 정렬 필터 버튼 — 성공률/공모임/추천은 즉시 재정렬,
+// 쿠션수순은 다쿠션 후보 탐색이 필요해 재계산한다
+document.querySelectorAll('#g4-sortseg button').forEach(b=>
+  b.addEventListener('click',()=>{
+    const prev=sortMode;
+    sortMode=b.dataset.sort;
+    document.querySelectorAll('#g4-sortseg button').forEach(x=>
+      x.classList.toggle('on',x===b));
+    if(!routes.length) return;
+    if((sortMode==='cush')!==(prev==='cush')){
+      calcBtn.click();          // 탐색 조건이 달라짐 — 재계산
+    } else if(allRoutes.length){
+      routes=sortedRoutes(); selected=0;
+      renderCards(); draw(); drawPhoto();
+    }
+  }));
+const calcBtn=document.getElementById('g4-calc');
+calcBtn.addEventListener('click',()=>{
+  calcBtn.textContent='계산 중…'; calcBtn.disabled=true;
+  setTimeout(()=>{
+    routes=solve();selected=0;renderCards();draw();
+    drawPhoto();               // 사진이 열려 있으면 경로를 사진에도 표시
+    calcBtn.textContent='경로 3개 제안'; calcBtn.disabled=false;
+  },30);
+});
+// ⑥ 캘리브레이션 버튼
+document.querySelectorAll('#g4-tuning [data-cal]').forEach(b=>
+  b.addEventListener('click',()=>{
+    const k=b.dataset.cal;
+    calib[k]=clamp(calib[k]+ +b.dataset.d,-5,5);
+    saveCalib(); syncCalib();
+    routes=[];selected=0;renderCards();draw();
+    drawPhoto();
+  }));
+function syncCalib(){
+  document.getElementById('calCush').textContent=(calib.cush>0?'+':'')+calib.cush;
+  document.getElementById('calRoll').textContent=(calib.roll>0?'+':'')+calib.roll;
+}
+syncCalib();
+// 실력 단계 버튼 (4구 쪽 — 3구와 localStorage 공유)
+function syncSkill(){
+  const k=getSkill();
+  document.querySelectorAll('[data-skill]').forEach(b=>
+    b.classList.toggle('on',b.dataset.skill===k));
+}
+document.querySelectorAll('#g4-tuning [data-skill]').forEach(b=>
+  b.addEventListener('click',()=>{
+    try{ localStorage.setItem('hb_skill',b.dataset.skill); }catch(e){}
+    syncSkill();
+    routes=[];selected=0;renderCards();draw();drawPhoto();
+  }));
+syncSkill();
+document.getElementById('g4-reset').addEventListener('click',()=>{
+  stopAnim(false);
+  for(const k in defaults){balls[k].x=defaults[k].x;balls[k].y=defaults[k].y;}
+  routes=[];renderCards();draw();drawPhoto();
+});
+document.getElementById('g4-clearRoute').addEventListener('click',()=>{
+  stopAnim(false);
+  routes=[];renderCards();draw();drawPhoto();
+});
+document.getElementById('g4-play').addEventListener('click',()=>{
+  if(!routes.length){ return; }
+  playRoute();
+});
+
+/* ===== 📷 사진 인식 =====
+   사진 속 경기면 네 모서리(자동 감지 + 드래그 보정)로 호모그래피를 세워
+   원근을 펴고, 천 색과 다른 블롭을 찾아 공 4개를 색으로 분류한다.
+   전 과정이 브라우저 안에서만 실행된다(서버 전송 없음). */
+function rgb2hsv(r,g,b){
+  r/=255;g/=255;b/=255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+  let h=0;
+  if(d>0){
+    if(mx===r) h=((g-b)/d)%6;
+    else if(mx===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h/=6; if(h<0)h+=1;
+  }
+  return [h, mx?d/mx:0, mx];
+}
+function hueDist(a,b){ const d=Math.abs(a-b); return d>0.5?1-d:d; }
+
+// 8x9 가우스 소거 → 호모그래피 (3x3, h33=1)
+function solveLin8(A){
+  const n=8;
+  for(let c=0;c<n;c++){
+    let p=c;
+    for(let r=c+1;r<n;r++) if(Math.abs(A[r][c])>Math.abs(A[p][c])) p=r;
+    if(Math.abs(A[p][c])<1e-12) return null;
+    const tmp=A[c]; A[c]=A[p]; A[p]=tmp;
+    for(let r=0;r<n;r++){
+      if(r===c) continue;
+      const f=A[r][c]/A[c][c];
+      for(let k=c;k<=n;k++) A[r][k]-=f*A[c][k];
+    }
+  }
+  const x=new Array(n);
+  for(let i=0;i<n;i++) x[i]=A[i][8]/A[i][i];
+  return x;
+}
+function homography(src,dst){
+  const A=[];
+  for(let i=0;i<4;i++){
+    const x=src[i].x, y=src[i].y, X=dst[i].x, Y=dst[i].y;
+    A.push([x,y,1,0,0,0,-X*x,-X*y,X]);
+    A.push([0,0,0,x,y,1,-Y*x,-Y*y,Y]);
+  }
+  const h=solveLin8(A);
+  return h?[h[0],h[1],h[2],h[3],h[4],h[5],h[6],h[7],1]:null;
+}
+function applyH(H,x,y){
+  const w=H[6]*x+H[7]*y+H[8];
+  return {x:(H[0]*x+H[1]*y+H[2])/w, y:(H[3]*x+H[4]*y+H[5])/w};
+}
+
+// 사진에서 공 검출 — corners: 사진 위 경기면 [TL,TR,BR,BL] (테이블 좌표와 대응)
+function detectBalls(img,corners,playRect){
+  const step=2;
+  const GW=Math.floor((playRect.x1-playRect.x0)/step);
+  const GH=Math.floor((playRect.y1-playRect.y0)/step);
+  const src=[
+    {x:playRect.x0,y:playRect.y0},{x:playRect.x1,y:playRect.y0},
+    {x:playRect.x1,y:playRect.y1},{x:playRect.x0,y:playRect.y1}];
+  const H=homography(src,corners);
+  if(!H) return {found:{},blobs:[]};
+  const N=GW*GH;
+  const hArr=new Float32Array(N), sArr=new Float32Array(N), vArr=new Float32Array(N);
+  const rArr=new Float32Array(N), gArr=new Float32Array(N), bArr=new Float32Array(N);
+  const data=img.data, W=img.width, IH=img.height;
+  for(let gy=0;gy<GH;gy++)for(let gx=0;gx<GW;gx++){
+    const p=applyH(H, playRect.x0+(gx+0.5)*step, playRect.y0+(gy+0.5)*step);
+    const xi=Math.round(p.x), yi=Math.round(p.y);
+    const idx=gy*GW+gx;
+    if(xi<0||yi<0||xi>=W||yi>=IH){ vArr[idx]=-1; continue; }
+    // 5점 평균 샘플링 — 사진 노이즈·JPEG 아티팩트 완화
+    let r=0,g=0,bl=0,cnt=0;
+    const offs=[[0,0],[-1,0],[1,0],[0,-1],[0,1]];
+    for(const [ox,oy] of offs){
+      const xx=xi+ox, yy=yi+oy;
+      if(xx<0||yy<0||xx>=W||yy>=IH) continue;
+      const o=(yy*W+xx)*4;
+      r+=data[o]; g+=data[o+1]; bl+=data[o+2]; cnt++;
+    }
+    const hsv=rgb2hsv(r/cnt,g/cnt,bl/cnt);
+    hArr[idx]=hsv[0]; sArr[idx]=hsv[1]; vArr[idx]=hsv[2];
+    rArr[idx]=r/cnt; gArr[idx]=g/cnt; bArr[idx]=bl/cnt;
+  }
+  // 천 색 = 채도 있는 픽셀의 hue 최빈값
+  const bins=new Float32Array(64);
+  for(let i=0;i<N;i++){
+    if(vArr[i]<0||sArr[i]<0.12) continue;
+    bins[Math.min(63,Math.floor(hArr[i]*64))]++;
+  }
+  let mb=0; for(let i=1;i<64;i++) if(bins[i]>bins[mb]) mb=i;
+  const clothH=(mb+0.5)/64;
+  let clothSSum=0, clothVSum=0, clothCnt=0;
+  for(let i=0;i<N;i++)
+    if(vArr[i]>=0&&hueDist(hArr[i],clothH)<0.06){
+      clothSSum+=sArr[i]; clothVSum+=vArr[i]; clothCnt++;
+    }
+  const clothS=clothCnt?clothSSum/clothCnt:0.5;
+  const clothV=clothCnt?clothVSum/clothCnt:0.5;
+  // ── 2패스 검출: 엄격한 임계값으로 먼저 찾고, 공이 3개 미만이면
+  //    완화된 임계값으로 재시도 (어두운 조명·바랜 색 사진 대응) ──
+  const EXP=Math.PI*Math.pow(BALL_R/step,2);   // 기대 블롭 크기 (셀 단위)
+  function findBlobs(th){
+    // 공 후보: 천과 hue가 다른 유채색(빨강·노랑) 또는 '천보다 밝고 저채도'(흰공).
+    // 그림자는 hue가 천과 같아 자동 제외. 흰공은 절대값이 아니라 천 대비
+    // 상대 기준이라 노란 조명 캐스트에도 잡힌다.
+    const mask=new Uint8Array(N);
+    for(let i=0;i<N;i++){
+      if(vArr[i]<0) continue;
+      const dh=hueDist(hArr[i],clothH);
+      const colored = dh>th.dh && sArr[i]>th.s && vArr[i]>th.v;
+      const bright = (vArr[i]>clothV+0.10 && sArr[i]<clothS*0.8) ||
+                     (sArr[i]<th.sLow && vArr[i]>0.45);
+      if(colored||bright) mask[i]=1;
+    }
+    // 연결 요소 (BFS) + 크기·형태 필터
+    const seen=new Uint8Array(N);
+    let blobs=[];
+    const qx=new Int32Array(N), qy=new Int32Array(N);
+    for(let i0=0;i0<N;i0++){
+      if(!mask[i0]||seen[i0]) continue;
+      let head=0, tail=1;
+      qx[0]=i0%GW; qy[0]=Math.floor(i0/GW); seen[i0]=1;
+      let size=0,sx=0,sy=0,minx=1e9,maxx=-1,miny=1e9,maxy=-1;
+      let rsum=0,gsum=0,bsum=0;
+      while(head<tail){
+        const x=qx[head], y=qy[head]; head++;
+        const id=y*GW+x;
+        size++; sx+=x; sy+=y;
+        if(x<minx)minx=x; if(x>maxx)maxx=x;
+        if(y<miny)miny=y; if(y>maxy)maxy=y;
+        rsum+=rArr[id]; gsum+=gArr[id]; bsum+=bArr[id];
+        if(x>0){const ni=id-1; if(mask[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=x-1;qy[tail]=y;tail++;}}
+        if(x<GW-1){const ni=id+1; if(mask[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=x+1;qy[tail]=y;tail++;}}
+        if(y>0){const ni=id-GW; if(mask[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=x;qy[tail]=y-1;tail++;}}
+        if(y<GH-1){const ni=id+GW; if(mask[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=x;qy[tail]=y+1;tail++;}}
+      }
+      const bw=maxx-minx+1, bh=maxy-miny+1, aspect=bw/bh;
+      if(size<th.minSize||size>th.maxSize) continue; // 공 크기 범위 (step=2 → 정상 ~61)
+      if(aspect<0.35||aspect>2.8) continue;          // 큐대·팔처럼 길쭉한 것 제외
+      if(size/(bw*bh)<0.40) continue;                // 채움비 — 선·조각 제외
+      // 대표색 = RGB 평균 → HSV. (hue의 원형 평균은 경계 혼색에 끌려가지만
+      // RGB 평균은 다수 픽셀의 본색이 지배해 조명 캐스트·혼색에 안정적)
+      const hsv=rgb2hsv(rsum/size,gsum/size,bsum/size);
+      // 원 맞춤 중심 보정 — 그늘진 반쪽이 마스크에서 빠지면 무게중심이
+      // 밝은 쪽으로 치우친다. 공 반지름 원이 마스크를 가장 잘 덮는 중심을
+      // 0.5셀 단위로 재탐색해 실제 공 중심에 맞춘다.
+      let bx=sx/size, by=sy/size;
+      if(size<EXP*1.6){
+        const rc=BALL_R/step, rc2=rc*rc, ro2=(rc+1.5)*(rc+1.5);
+        let bestS=-1e9, bestX=bx, bestY=by;
+        for(let dy=-6;dy<=6;dy++)for(let dx=-6;dx<=6;dx++){
+          const ccx=bx+dx*0.5, ccy=by+dy*0.5;
+          let sIn=0, sRing=0;
+          const y0=Math.max(0,Math.floor(ccy-rc-2)), y1=Math.min(GH-1,Math.ceil(ccy+rc+2));
+          const x0=Math.max(0,Math.floor(ccx-rc-2)), x1=Math.min(GW-1,Math.ceil(ccx+rc+2));
+          for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++){
+            const dd=(xx-ccx)*(xx-ccx)+(yy-ccy)*(yy-ccy);
+            if(dd<=rc2){ if(mask[yy*GW+xx]) sIn++; }
+            else if(dd<=ro2){ if(mask[yy*GW+xx]) sRing++; }
+          }
+          const sc=sIn-0.7*sRing;   // 원 밖 마스크는 벌점 — 이웃 덩어리로 새지 않게
+          if(sc>bestS){ bestS=sc; bestX=ccx; bestY=ccy; }
+        }
+        bx=bestX; by=bestY;
+      }
+      blobs.push({
+        x:playRect.x0+(bx+0.5)*step,
+        y:playRect.y0+(by+0.5)*step,
+        size, h:hsv[0], s:hsv[1], v:hsv[2],
+      });
+    }
+    // 하이라이트·그림자 선으로 쪼개진 공 병합 (중심 간 거리 < 공 지름 0.8배)
+    for(let i=0;i<blobs.length;i++){
+      const a=blobs[i]; if(!a) continue;
+      for(let j=i+1;j<blobs.length;j++){
+        const b=blobs[j]; if(!b) continue;
+        if(Math.hypot(a.x-b.x,a.y-b.y)>=BALL_R*1.6) continue;
+        const tot=a.size+b.size;
+        if(tot>EXP*5) continue;    // 조명 반사 띠 등 큰 덩어리와는 병합하지 않음
+        if(a.size>=b.size){
+          a.x=(a.x*a.size+b.x*b.size)/tot; a.y=(a.y*a.size+b.y*b.size)/tot;
+          a.size=tot; blobs[j]=null;      // 색은 큰 조각 것 유지
+        } else {
+          b.x=(a.x*a.size+b.x*b.size)/tot; b.y=(a.y*a.size+b.y*b.size)/tot;
+          b.size=tot; blobs[i]=null; break;
+        }
+      }
+    }
+    return blobs.filter(Boolean);
+  }
+  // ── 분류: 빨강은 절대 hue로, 흰/노랑은 '상대 채도'로 구분 ──
+  // 노란 조명 아래에서는 흰공도 노랗게 찍히므로, 밝은 공 두 개 중
+  // 채도가 낮은 쪽을 흰공으로 판정한다 (절대 임계값보다 훨씬 강건).
+  function classify(blobs){
+    const score=b=>{const r=b.size/EXP; return r>1?1/r:r;};  // 공 크기 근접도
+    const reds=[], others=[];
+    for(const b of blobs){
+      // 빨강 창을 자홍(0.87)까지 — 영상·조명에 따라 빨간 공이 분홍빛으로 찍힌다
+      if((b.h<0.065||b.h>0.87)&&b.s>0.22) reds.push(b);
+      else others.push(b);
+    }
+    reds.sort((a,b)=>score(b)-score(a));
+    // 밝음 기준: 공은 반쪽이 그늘져 평균 밝기가 천보다 조금 높은 정도일 수
+    // 있으므로 '천 밝기의 0.95배' 이상이면 후보 (상한 0.55 — 밝은 사진 대응)
+    const vMin=Math.min(0.55, Math.max(0.30, clothV*0.95));
+    const brights=others.filter(b=>
+      b.v>vMin && (b.s<0.25 || (b.h>0.02&&b.h<0.28&&b.s<0.92)));
+    brights.sort((a,b)=>score(b)-score(a));
+    const top=brights.slice(0,2);
+    // 폴백: 흰/노랑을 다 못 찾았으면 남은 공 크기 후보 중
+    // '천보다 밝은 것'을 밝은 순으로 보충한다
+    if(top.length<2){
+      const used=new Set(top);
+      const rest=others
+        .filter(b=>!used.has(b)&&b.v>clothV&&score(b)>0.25)
+        .sort((a,b)=>b.v-a.v);
+      while(top.length<2&&rest.length) top.push(rest.shift());
+    }
+    const found={};
+    let ambiguous=false;
+    if(top.length===2){
+      top.sort((a,b)=>a.s-b.s);
+      // 두 수구의 채도가 거의 같으면(흰공 2개 세트) 자동 구분 불가 — 표시해 둔다
+      ambiguous=(top[1].s-top[0].s)<0.08 && top[0].s<0.32;
+      found.cue={x:top[0].x,y:top[0].y};
+      found.cue2={x:top[1].x,y:top[1].y};
+    } else if(top.length===1){
+      if(top[0].s<0.35) found.cue={x:top[0].x,y:top[0].y};
+      else found.cue2={x:top[0].x,y:top[0].y};
+    }
+    const rr=reds.slice(0,2);
+    if(rr.length===2&&found.cue){
+      // 수구에서 가까운 빨간 공을 적구 1로 (라벨 안정화)
+      const d0=Math.hypot(rr[0].x-found.cue.x,rr[0].y-found.cue.y);
+      const d1=Math.hypot(rr[1].x-found.cue.x,rr[1].y-found.cue.y);
+      if(d1<d0) rr.reverse();
+    }
+    if(rr[0]) found.r1={x:rr[0].x,y:rr[0].y};
+    if(rr[1]) found.r2={x:rr[1].x,y:rr[1].y};
+    return {found, ambiguous};
+  }
+  const strict={dh:0.075,s:0.18,v:0.14,sLow:0.25,minSize:14,maxSize:460};
+  const relaxed={dh:0.055,s:0.13,v:0.10,sLow:0.35,minSize:8,maxSize:620};
+  let blobs=findBlobs(strict);
+  let cls=classify(blobs);
+  if(Object.keys(cls.found).length<3){
+    const blobs2=findBlobs(relaxed);
+    const cls2=classify(blobs2);
+    if(Object.keys(cls2.found).length>Object.keys(cls.found).length){
+      blobs=blobs2; cls=cls2;
+    }
+  }
+  return {found:cls.found, ambiguous:cls.ambiguous, blobs, clothH};
+}
+
+// 경기면 모서리 자동 추정 v2 — 천 색 픽셀 중 '최대 연결 영역'만 사용한다.
+// 현수막·바닥 타일처럼 천과 색이 비슷한 것들은 테이블 본체와 떨어져 있어
+// 연결 성분이 달라 자동 배제된다. 천 색은 화면 중앙 40% 영역의 hue 최빈값.
+function autoCorners(img){
+  const W=img.width, IH=img.height, data=img.data;
+  const st=Math.max(2,Math.round(Math.max(W,IH)/240));
+  const gw=Math.floor(W/st), gh=Math.floor(IH/st);
+  const NG=gw*gh;
+  const hue=new Float32Array(NG);
+  const sat=new Float32Array(NG);
+  const val=new Float32Array(NG);
+  const ok=new Uint8Array(NG);
+  const bins=new Float32Array(64);
+  const cx0=W*0.3, cx1=W*0.7, cy0=IH*0.3, cy1=IH*0.7;
+  for(let gy=0;gy<gh;gy++)for(let gx=0;gx<gw;gx++){
+    const x=gx*st, y=gy*st;
+    const o=(y*W+x)*4;
+    const hsv=rgb2hsv(data[o],data[o+1],data[o+2]);
+    const i=gy*gw+gx;
+    hue[i]=hsv[0]; sat[i]=hsv[1]; val[i]=hsv[2];
+    if(hsv[1]>0.15&&hsv[2]>0.10){
+      ok[i]=1;
+      if(x>=cx0&&x<=cx1&&y>=cy0&&y<=cy1)
+        bins[Math.min(63,Math.floor(hsv[0]*64))]++;
+    }
+  }
+  let mb=0; for(let i=1;i<64;i++) if(bins[i]>bins[mb]) mb=i;
+  const clothH=(mb+0.5)/64;
+  const mask=new Uint8Array(NG);
+  let total=0;
+  for(let i=0;i<NG;i++)
+    if(ok[i]&&hueDist(hue[i],clothH)<0.06){ mask[i]=1; total++; }
+  const fallback=()=>{
+    const mx=W*0.08, my=IH*0.08;
+    return [{x:mx,y:my},{x:W-mx,y:my},{x:W-mx,y:IH-my},{x:mx,y:IH-my}];
+  };
+  if(total<NG*0.05) return fallback();
+  // 최대 연결 성분 (BFS)
+  const seen=new Uint8Array(NG);
+  const qx=new Int32Array(NG), qy=new Int32Array(NG);
+  let best=null, bestSize=0;
+  for(let i0=0;i0<NG;i0++){
+    if(!mask[i0]||seen[i0]) continue;
+    let head=0, tail=1;
+    qx[0]=i0%gw; qy[0]=Math.floor(i0/gw); seen[i0]=1;
+    const cells=[];
+    while(head<tail){
+      const x=qx[head], y=qy[head]; head++;
+      cells.push(y*gw+x);
+      if(x>0){const ni=y*gw+x-1; if(mask[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=x-1;qy[tail]=y;tail++;}}
+      if(x<gw-1){const ni=y*gw+x+1; if(mask[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=x+1;qy[tail]=y;tail++;}}
+      if(y>0){const ni=(y-1)*gw+x; if(mask[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=x;qy[tail]=y-1;tail++;}}
+      if(y<gh-1){const ni=(y+1)*gw+x; if(mask[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=x;qy[tail]=y+1;tail++;}}
+    }
+    if(cells.length>bestSize){ bestSize=cells.length; best=cells; }
+  }
+  if(!best||bestSize<NG*0.05) return fallback();
+  // 글레어 흡수 성장 — 조명 반사로 하얗게 뜬 천(저채도·밝음)을 성분에
+  // 최대 10셀까지 흡수한다. 나무 레일은 유채색(s 높음)이라 성장이 막혀
+  // 바닥으로 새지 않는다.
+  {
+    const compSet=new Uint8Array(NG);
+    for(const i of best) compSet[i]=1;
+    let vSum=0;
+    for(const i of best) vSum+=val[i];
+    const clothV=vSum/best.length;
+    let frontier=best.slice();
+    for(let it=0;it<10&&frontier.length;it++){
+      const next=[];
+      for(const i of frontier){
+        const x=i%gw, y=(i/gw)|0;
+        const nb=[];
+        if(x>0)nb.push(i-1); if(x<gw-1)nb.push(i+1);
+        if(y>0)nb.push(i-gw); if(y<gh-1)nb.push(i+gw);
+        for(const ni of nb){
+          if(compSet[ni]) continue;
+          if(sat[ni]<0.25&&val[ni]>clothV+0.02){
+            compSet[ni]=1; best.push(ni); next.push(ni);
+          }
+        }
+      }
+      frontier=next;
+    }
+  }
+  // 네 변에 직선을 강건 적합해 교점으로 모서리를 구한다.
+  // 조명 반사(글레어)로 일부 영역이 마스크에서 빠져 모서리가 잘려 나가도,
+  // 나머지 변 위의 점들이 직선을 지탱하므로 교점은 올바른 위치에 남는다.
+  const comp=new Uint8Array(NG);
+  let minGX=gw,maxGX=0,minGY=gh,maxGY=0;
+  for(const i of best){
+    comp[i]=1;
+    const x=i%gw, y=(i/gw)|0;
+    if(x<minGX)minGX=x; if(x>maxGX)maxGX=x;
+    if(y<minGY)minGY=y; if(y>maxGY)maxGY=y;
+  }
+  // 모서리 라운딩 오염을 피해 중앙 64% 구간의 최외곽 점만 변 후보로 쓴다
+  const yl=Math.ceil(minGY+(maxGY-minGY)*0.18), yh=Math.floor(maxGY-(maxGY-minGY)*0.18);
+  const xl=Math.ceil(minGX+(maxGX-minGX)*0.18), xh=Math.floor(maxGX-(maxGX-minGX)*0.18);
+  const Lp=[],Rp=[],Tp=[],Bp=[];
+  for(let y=yl;y<=yh;y++){
+    let lo=-1,hi=-1;
+    for(let x=minGX;x<=maxGX;x++) if(comp[y*gw+x]){ if(lo<0)lo=x; hi=x; }
+    if(lo>=0){ Lp.push({a:y,b:lo}); Rp.push({a:y,b:hi}); }
+  }
+  for(let x=xl;x<=xh;x++){
+    let lo=-1,hi=-1;
+    for(let y=minGY;y<=maxGY;y++) if(comp[y*gw+x]){ if(lo<0)lo=y; hi=y; }
+    if(lo>=0){ Tp.push({a:x,b:lo}); Bp.push({a:x,b:hi}); }
+  }
+  // 트리밍 반복 최소제곱 — 글레어·가림으로 안쪽에 박힌 이상점을 걸러낸다
+  function robustFit(pts){
+    let P=pts, s=0, c=0;
+    for(let it=0;it<3;it++){
+      const n=P.length;
+      if(n<8) return null;
+      let sa=0,sb=0,saa=0,sab=0;
+      for(const p of P){ sa+=p.a; sb+=p.b; saa+=p.a*p.a; sab+=p.a*p.b; }
+      const den=n*saa-sa*sa;
+      if(Math.abs(den)<1e-9) return null;
+      s=(n*sab-sa*sb)/den; c=(sb-s*sa)/n;
+      if(it===2) break;
+      const resid=P.map(p=>Math.abs(p.b-(s*p.a+c)));
+      const sorted=[...resid].sort((u,v)=>u-v);
+      const th=Math.max(1.5, sorted[Math.floor(sorted.length*0.7)]);
+      P=P.filter((p,i)=>resid[i]<=th);
+    }
+    return {s,c};
+  }
+  const fL=robustFit(Lp), fR=robustFit(Rp), fT=robustFit(Tp), fB=robustFit(Bp);
+  if(fL&&fR&&fT&&fB){
+    // 세로변 x=s·y+c 와 가로변 y=s·x+c 의 교점
+    const ix=(v,h)=>{
+      const x=(v.s*h.c+v.c)/(1-v.s*h.s);
+      return {x:x*st, y:(h.s*x+h.c)*st};
+    };
+    const q=[ix(fL,fT), ix(fR,fT), ix(fR,fB), ix(fL,fB)];
+    if(q.every(p=>isFinite(p.x)&&isFinite(p.y))) return q;
+  }
+  // 직선 적합 실패 시: 대각 극점 폴백
+  let tl=null,tr=null,br=null,bl=null;
+  for(const i of best){
+    const x=(i%gw)*st, y=Math.floor(i/gw)*st;
+    if(!tl||x+y<tl.x+tl.y) tl={x,y};
+    if(!tr||x-y>tr.x-tr.y) tr={x,y};
+    if(!br||x+y>br.x+br.y) br={x,y};
+    if(!bl||x-y<bl.x-bl.y) bl={x,y};
+  }
+  return [tl,tr,br,bl];
+}
+// 모서리를 TL→TR→BR→BL 순으로 정렬 (무게중심 기준 시계방향)
+function orderCorners(cs){
+  const cx=cs.reduce((a,p)=>a+p.x,0)/4, cy=cs.reduce((a,p)=>a+p.y,0)/4;
+  const s=[...cs].sort((a,b)=>
+    Math.atan2(a.y-cy,a.x-cx)-Math.atan2(b.y-cy,b.x-cx));
+  let ti=0;
+  for(let i=1;i<4;i++) if(s[i].x+s[i].y<s[ti].x+s[ti].y) ti=i;
+  return [s[ti],s[(ti+1)%4],s[(ti+2)%4],s[(ti+3)%4]];
+}
+
+// 자동 감지된 천 바깥 경계를 쿠션 안쪽 경기면으로 투영 보정.
+// 한국 대대는 레일 윗면이 나무라서, 보이는 천의 바깥 경계 = 쿠션 윗면의
+// 바깥 모서리다. 경기면(쿠션 코)은 거기서 쿠션 윗면 폭 ≈50mm 안쪽.
+// 원근 상태 그대로 정확하도록 실측 직사각형→사진 호모그래피로 계산한다.
+function insetCorners(quad){
+  const CUSHW=50, PIW=2844, PIH=1422;
+  const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const qw=(d(quad[0],quad[1])+d(quad[3],quad[2]))/2;
+  const qh=(d(quad[0],quad[3])+d(quad[1],quad[2]))/2;
+  const OW=(qw>=qh?PIW:PIH)+2*CUSHW;    // 사진 방향에 맞춘 천 바깥 치수
+  const OH=(qw>=qh?PIH:PIW)+2*CUSHW;
+  const Hm=homography(
+    [{x:0,y:0},{x:OW,y:0},{x:OW,y:OH},{x:0,y:OH}], quad);
+  if(!Hm) return quad;
+  return [
+    applyH(Hm,CUSHW,CUSHW), applyH(Hm,OW-CUSHW,CUSHW),
+    applyH(Hm,OW-CUSHW,OH-CUSHW), applyH(Hm,CUSHW,OH-CUSHW)];
+}
+
+// ===== 카메라 위치 역산 + 높이 시차 보정 =====
+// 사진 속 경기면 사각형(실측 2844×1422mm)의 두 소실점에서 초점거리를 추정하고,
+// 평면 호모그래피를 분해해 카메라의 테이블 좌표계 위치(x,y,높이 mm)를 복원한다.
+// 이것으로 '천 바닥보다 높이 떠 있는 것'(쿠션 코 37mm, 공 중심 32.75mm)이
+// 카메라 반대쪽으로 밀려 보이는 시차를 보정한다. 수직 촬영이면 시차≈0이라 생략.
+function estimateCamera(cs,cx,cy){
+  const w=[{x:0,y:0},{x:2844,y:0},{x:2844,y:1422},{x:0,y:1422}];
+  const H=homography(w,cs);
+  if(!H) return null;
+  const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  // 초점거리 f를 가정하고 호모그래피를 분해 — err는 회전열의
+  // 직교성·등노름 잔차 (진짜 f에서 0에 가깝다)
+  const decompose=f=>{
+    const Kinv=p=>[(p[0]-cx*p[2])/f,(p[1]-cy*p[2])/f,p[2]];
+    const m1=Kinv([H[0],H[3],H[6]]);
+    const m2=Kinv([H[1],H[4],H[7]]);
+    const m3=Kinv([H[2],H[5],H[8]]);
+    const n1=Math.hypot(m1[0],m1[1],m1[2]), n2=Math.hypot(m2[0],m2[1],m2[2]);
+    const err=Math.pow(dot(m1,m2)/(n1*n2),2)+Math.pow((n1-n2)/(n1+n2),2);
+    let l=2/(n1+n2);
+    if(m3[2]*l<0) l=-l;                        // 테이블이 카메라 앞(+z)에 오도록
+    const r1=m1.map(v=>v*l), r2=m2.map(v=>v*l), t=m3.map(v=>v*l);
+    const r3=[r1[1]*r2[2]-r1[2]*r2[1],
+              r1[2]*r2[0]-r1[0]*r2[2],
+              r1[0]*r2[1]-r1[1]*r2[0]];
+    return {C:{x:-dot(r1,t), y:-dot(r2,t), z:Math.abs(dot(r3,t))}, err};
+  };
+  // 후보 1: 두 소실점의 직교 조건으로 f 직접 계산 (2점 투시에서 정확하지만
+  // 소실점이 무한대로 밀리는 1점 투시에서는 엉뚱한 값이 나온다)
+  // 후보 2: f 로그 스캔 — 분해 잔차 최소.
+  // 항상 둘 다 구해 잔차가 더 작은 쪽을 쓴다.
+  let best=null;
+  const consider=d=>{ if(!best||d.err<best.err) best=d; };
+  if(Math.abs(H[6])>1e-9&&Math.abs(H[7])>1e-9){
+    const v1x=H[0]/H[6]-cx, v1y=H[3]/H[6]-cy;
+    const v2x=H[1]/H[7]-cx, v2y=H[4]/H[7]-cy;
+    const f2=-(v1x*v2x+v1y*v2y);
+    if(isFinite(f2)&&f2>1) consider(decompose(Math.sqrt(f2)));
+  }
+  const base=Math.max(cx,cy)*2;
+  for(let k=0;k<60;k++){
+    const ff=base*0.25*Math.pow(16,k/59);      // 0.25×~4× 이미지 크기
+    consider(decompose(ff));
+  }
+  if(!best||best.err>0.03) return null;
+  const C=best.C;
+  if(!(C.z>300&&C.z<20000)) return null;       // 높이 30cm~20m 밖이면 불신
+  return {x:C.x, y:C.y, z:C.z, err:best.err};
+}
+// 높이 h(mm)의 점이 평면에 투영돼 보이는 world 좌표 q → 실제 바닥 위치
+function dropHeight(q,cam,h){
+  const k=h/cam.z;
+  return {x:q.x-k*(q.x-cam.x), y:q.y-k*(q.y-cam.y)};
+}
+// 반대 방향: 바닥 위치 w → 높이 h의 점이 평면에 투영돼 보이는 위치
+function liftHeight(w,cam,h){
+  const f=cam.z/(cam.z-h);
+  return {x:cam.x+(w.x-cam.x)*f, y:cam.y+(w.y-cam.y)*f};
+}
+
+// ---- 사진 인식 UI ----
+const photoPanel=document.getElementById('g4-photoPanel');
+const pcv=document.getElementById('g4-photoCv');
+const pctx=pcv.getContext('2d');
+const photoMsg=document.getElementById('g4-photoMsg');
+let photoImgData=null, photoCorners=null, photoDrag=-1, photoMarks=null;
+let photoH=null;      // 테이블→사진 호모그래피 (공 인식 후 설정 — 경로 오버레이용)
+let photoHinv=null;   // 사진→테이블 (탭으로 미인식 공 직접 지정용)
+let photoMissing=[];  // 미인식 공 목록 — 사진 탭 순서대로 지정된다
+let camW=null;        // 역산된 카메라 위치 (테이블 mm 좌표) — 높이 시차 보정용
+const BALL_NAMES={cue:'내 수구',cue2:'상대 수구',r1:'적구 1',r2:'적구 2'};
+function markColor(k){
+  return k==='r1'?'#ff5040':k==='r2'?'#ff9070':balls[k].color;
+}
+
+// ── 내 수구 색 설정 (흰공/노란공) — localStorage 영구 저장 ──
+let myBall=(function(){
+  try{ return localStorage.getItem('hb4_myball')==='yellow'?'yellow':'white'; }
+  catch(e){ return 'white'; }
+})();
+function applyMyBallColor(){
+  const white={color:'#f7f4ea',ring:'#cfc8b4'};
+  const yellow={color:'#f0c542',ring:'#b89220'};
+  const mine=myBall==='white'?white:yellow;
+  const theirs=myBall==='white'?yellow:white;
+  balls.cue.color=mine.color; balls.cue.ring=mine.ring;
+  balls.cue2.color=theirs.color; balls.cue2.ring=theirs.ring;
+  document.querySelectorAll('[data-myball]').forEach(b=>
+    b.classList.toggle('on',b.dataset.myball===myBall));
+  document.querySelectorAll('#g4-toolbar [data-ball="cue"] .dot')
+    .forEach(d=>d.style.background=mine.color);
+  document.querySelectorAll('#g4-toolbar [data-ball="cue2"] .dot')
+    .forEach(d=>d.style.background=theirs.color);
+}
+document.querySelectorAll('[data-myball]').forEach(b=>
+  b.addEventListener('click',()=>{
+    myBall=b.dataset.myball;
+    try{ localStorage.setItem('hb4_myball',myBall); }catch(e){}
+    applyMyBallColor(); draw(); drawPhoto();
+  }));
+applyMyBallColor();
+
+document.getElementById('g4-photo').addEventListener('click',()=>{
+  document.getElementById('g4-file').click();
+});
+document.getElementById('g4-file').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f) return;
+  const url=URL.createObjectURL(f);
+  const im=new Image();
+  im.onload=()=>{
+    URL.revokeObjectURL(url);
+    const sc=Math.min(1,1100/Math.max(im.width,im.height));
+    pcv.width=Math.round(im.width*sc);
+    pcv.height=Math.round(im.height*sc);
+    pctx.drawImage(im,0,0,pcv.width,pcv.height);
+    photoImgData=pctx.getImageData(0,0,pcv.width,pcv.height);
+    // 천 전체 경계 자동 감지 → 레일 폭만큼 안쪽(쿠션 안 경기면)으로 투영 보정
+    photoCorners=insetCorners(orderCorners(autoCorners(photoImgData)));
+    photoMarks=null; photoH=null; photoHinv=null; photoMissing=[]; camW=null;
+    photoPanel.style.display='block';
+    photoMsg.textContent='모서리를 쿠션 안쪽 경계 근처로 자동 보정했습니다. 노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인·조정한 뒤 "공 인식"을 누르세요. 벽 높이·공 높이 시차는 자동 보정됩니다.';
+    drawPhoto();
+    if(photoPanel.scrollIntoView) photoPanel.scrollIntoView({behavior:'smooth'});
+  };
+  im.onerror=()=>{ URL.revokeObjectURL(url); };
+  im.src=url;
+  e.target.value='';
+});
+function drawPhoto(){
+  if(!photoImgData) return;
+  pctx.putImageData(photoImgData,0,0);
+  if(!photoCorners) return;
+  pctx.strokeStyle='#e8b53e'; pctx.lineWidth=Math.max(2,pcv.width/400);
+  pctx.beginPath();
+  pctx.moveTo(photoCorners[0].x,photoCorners[0].y);
+  for(let i=1;i<=4;i++){const c=photoCorners[i%4]; pctx.lineTo(c.x,c.y);}
+  pctx.stroke();
+  const hr=Math.max(9,pcv.width/60);
+  for(const c of photoCorners){
+    pctx.beginPath(); pctx.arc(c.x,c.y,hr,0,7);
+    pctx.fillStyle='rgba(232,181,62,.35)'; pctx.fill();
+    pctx.lineWidth=2; pctx.strokeStyle='#e8b53e'; pctx.stroke();
+  }
+  if(photoMarks) for(const mk of photoMarks){
+    pctx.beginPath(); pctx.arc(mk.x,mk.y,hr*0.8,0,7);
+    pctx.lineWidth=3; pctx.strokeStyle=mk.color; pctx.stroke();
+  }
+  // 계산된 경로를 사진 원근에 맞춰 겹쳐 그린다
+  if(photoH&&routes.length){
+    routes.forEach((r,i)=>{ if(i!==selected) drawPhotoRoute(r,ROUTE_COLORS[i],0.22); });
+    if(routes[selected]) drawPhotoRoute(routes[selected],ROUTE_COLORS[selected],0.95);
+  }
+}
+function photoPt(p){ return applyH(photoH,p.x,p.y); }
+function strokePhotoPath(pts,color,w){
+  if(!pts||pts.length<2||!photoH) return;
+  pctx.strokeStyle=color; pctx.lineWidth=w;
+  pctx.lineJoin='round'; pctx.lineCap='round';
+  pctx.beginPath();
+  const p0=photoPt(pts[0]);
+  pctx.moveTo(p0.x,p0.y);
+  for(let i=1;i<pts.length;i++){ const p=photoPt(pts[i]); pctx.lineTo(p.x,p.y); }
+  pctx.stroke();
+}
+function drawPhotoRoute(r,color,alpha){
+  if(!photoH) return;
+  pctx.save(); pctx.globalAlpha=alpha;
+  strokePhotoPath(r.cuePath,color,Math.max(2.5,pcv.width/320));
+  // 화살촉
+  const n=r.cuePath.length;
+  if(n>=2){
+    const a=photoPt(r.cuePath[n-2]), b=photoPt(r.cuePath[n-1]);
+    const ang=Math.atan2(b.y-a.y,b.x-a.x);
+    const L=Math.max(8,pcv.width/90);
+    pctx.save();
+    pctx.translate(b.x,b.y); pctx.rotate(ang);
+    pctx.fillStyle=color; pctx.beginPath();
+    pctx.moveTo(0,0); pctx.lineTo(-L,-L*0.45); pctx.lineTo(-L,L*0.45);
+    pctx.closePath(); pctx.fill();
+    pctx.restore();
+  }
+  pctx.globalAlpha=alpha*0.75;
+  strokePhotoPath(r.r1Path,'#e8b53e',Math.max(2,pcv.width/420));
+  for(const p of r.hits||[]){
+    const q=photoPt(p);
+    pctx.beginPath(); pctx.arc(q.x,q.y,Math.max(4,pcv.width/160),0,7);
+    pctx.fillStyle=color; pctx.fill();
+    pctx.strokeStyle='#14110d'; pctx.lineWidth=1.5; pctx.stroke();
+  }
+  pctx.restore();
+}
+function ppos(e){
+  const r=pcv.getBoundingClientRect();
+  const t=e.touches?e.touches[0]:e;
+  return {x:(t.clientX-r.left)*(pcv.width/r.width),
+          y:(t.clientY-r.top)*(pcv.height/r.height)};
+}
+function pDown(e){
+  if(!photoCorners||photoPanel.style.display==='none') return;
+  e.preventDefault();
+  const p=ppos(e);
+  let best=-1, bd=1e9;
+  photoCorners.forEach((c,i)=>{
+    const d=Math.hypot(c.x-p.x,c.y-p.y);
+    if(d<bd){bd=d;best=i;}
+  });
+  if(bd<pcv.width/12){ photoDrag=best; return; }
+  // 미인식 공 직접 지정 — 탭 위치를 테이블 좌표로 변환해 배치
+  if(photoHinv&&photoMissing.length){
+    let t=applyH(photoHinv,p.x,p.y);
+    if(camW){
+      // 탭한 곳도 공 이미지 위 — 공 높이 시차를 동일하게 보정
+      const q={x:(t.x-play.x0)/MM, y:(t.y-play.y0)/MM};
+      const b=dropHeight(q,camW,32.75);
+      t={x:play.x0+b.x*MM, y:play.y0+b.y*MM};
+    }
+    if(t.x>play.x0-30&&t.x<play.x1+30&&t.y>play.y0-30&&t.y<play.y1+30){
+      const k=photoMissing.shift();
+      balls[k].x=clamp(t.x,play.x0+BALL_R,play.x1-BALL_R);
+      balls[k].y=clamp(t.y,play.y0+BALL_R,play.y1-BALL_R);
+      photoMarks=photoMarks||[];
+      photoMarks.push({x:p.x,y:p.y,color:markColor(k)});
+      routes=[]; selected=0; draw(); renderCards(); drawPhoto();
+      if(photoMissing.length){
+        photoMsg.textContent=`${BALL_NAMES[k]} 지정 완료 — 다음: 사진에서 `+
+          `${BALL_NAMES[photoMissing[0]]} 위치를 탭하세요.`;
+      } else {
+        photoMsg.textContent='모든 공 지정 완료 — 최적 경로를 계산합니다.';
+        calcBtn.click();
+      }
+    }
+  }
+}
+function pMove(e){
+  if(photoDrag<0) return;
+  e.preventDefault();
+  const p=ppos(e);
+  photoCorners[photoDrag]={x:clamp(p.x,0,pcv.width-1), y:clamp(p.y,0,pcv.height-1)};
+  drawPhoto();
+}
+function pUp(){ photoDrag=-1; }
+pcv.addEventListener('mousedown',pDown);
+pcv.addEventListener('mousemove',pMove);
+window.addEventListener('mouseup',pUp);
+pcv.addEventListener('touchstart',pDown,{passive:false});
+pcv.addEventListener('touchmove',pMove,{passive:false});
+window.addEventListener('touchend',pUp);
+
+document.getElementById('g4-photoCancel').addEventListener('click',()=>{
+  photoPanel.style.display='none';
+  photoImgData=null; photoMarks=null; photoH=null;
+  photoHinv=null; photoMissing=[]; camW=null;
+});
+// 수구 ⇄ 상대 수구 위치 교환 — 흰공 2개 세트에서 배정이 뒤바뀐 경우용
+document.getElementById('g4-swapCue').addEventListener('click',()=>{
+  const t={x:balls.cue.x,y:balls.cue.y};
+  balls.cue.x=balls.cue2.x; balls.cue.y=balls.cue2.y;
+  balls.cue2.x=t.x; balls.cue2.y=t.y;
+  if(photoH){
+    photoMarks=['cue','r1','r2','cue2'].map(k=>{
+      const pp=applyH(photoH,balls[k].x,balls[k].y);
+      return {x:pp.x,y:pp.y,color:markColor(k)};
+    });
+  }
+  routes=[]; selected=0; draw(); renderCards(); drawPhoto();
+  calcBtn.click();
+});
+document.getElementById('g4-detect').addEventListener('click',()=>{
+  if(!photoImgData||!photoCorners) return;
+  const oc=orderCorners(photoCorners);
+  // 가로/세로 방향 판정 — 변 길이 비교는 원근 압축(먼 쪽이 짧아 보임) 때문에
+  // 세로 사진에서 틀린다. 두 대응을 모두 '실측 2844×1422 직사각형' 가정으로
+  // 카메라 분해해 보고, 기하학적으로 일관된(잔차 작은) 쪽을 선택한다.
+  const cand=[oc, [oc[3],oc[0],oc[1],oc[2]]];
+  const est=cand.map(c=>estimateCamera(c,pcv.width/2,pcv.height/2));
+  let ci;
+  if(est[0]&&est[1]) ci=est[1].err<est[0].err?1:0;
+  else if(est[0]) ci=0;
+  else if(est[1]) ci=1;
+  else {
+    // 둘 다 실패(거의 수직 촬영 = 원근 압축도 없음) → 변 길이 비교 폴백
+    const dst=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+    const qw=(dst(oc[0],oc[1])+dst(oc[3],oc[2]))/2;
+    const qh=(dst(oc[0],oc[3])+dst(oc[1],oc[2]))/2;
+    ci=qh>qw*1.15?1:0;
+  }
+  const cs=cand[ci];
+  // 벽(쿠션 코) 높이 보정 — 노란 점이 가리키는 쿠션 안쪽 경계는 천 바닥보다
+  // 37mm 위에 있어, 비스듬한 사진에서는 실제 경기면보다 바깥으로 밀려 보인다.
+  // 카메라 위치를 역산해 각 모서리를 바닥 기준 위치로 되돌린다.
+  let cs2=cs;
+  camW=est[ci]||null;
+  if(camW){
+    // 표시한 모서리(쿠션 코) 사각형은 실측 2844×1422 그대로이고 바닥보다
+    // 37mm 위의 '평행 평면'이다. 따라서 추정 높이는 코 평면 기준 —
+    // 천 바닥 기준으로 37mm 더하면 정확하다 (재추정은 불안정해서 금지).
+    const NOSE=37;
+    camW={x:camW.x, y:camW.y, z:camW.z+NOSE};
+    const w=[{x:0,y:0},{x:2844,y:0},{x:2844,y:1422},{x:0,y:1422}];
+    const q=w.map(wi=>liftHeight(wi,camW,NOSE));
+    const Hp=homography(q,cs);           // 천 바닥 평면 ↔ 사진
+    if(Hp) cs2=w.map(wi=>applyH(Hp,wi.x,wi.y));
+  }
+  const res=detectBalls(photoImgData,cs2,play);
+  // 마크는 '사진에서 보이는 공'(보정 전) 위치에 — 확인용
+  const foundRaw={};
+  for(const k in res.found) foundRaw[k]={x:res.found[k].x,y:res.found[k].y};
+  // 공 높이 시차 보정 — 공 중심은 천보다 32.75mm 위에 떠 있다
+  if(camW) for(const k in res.found){
+    const q={x:(res.found[k].x-play.x0)/MM, y:(res.found[k].y-play.y0)/MM};
+    const b=dropHeight(q,camW,32.75);
+    res.found[k]={x:play.x0+b.x*MM, y:play.y0+b.y*MM};
+  }
+  // 내 수구 색 설정 반영 — 노란공이 내 수구면 흰/노랑 배정을 교환
+  if(myBall==='yellow'){
+    const w=res.found.cue, y=res.found.cue2;
+    delete res.found.cue; delete res.found.cue2;
+    if(y) res.found.cue=y;
+    if(w) res.found.cue2=w;
+    const wr=foundRaw.cue, yr=foundRaw.cue2;
+    delete foundRaw.cue; delete foundRaw.cue2;
+    if(yr) foundRaw.cue=yr;
+    if(wr) foundRaw.cue2=wr;
+  }
+  const got=[];
+  photoMissing=[];
+  for(const k of ['cue','r1','r2','cue2']){
+    if(res.found[k]){
+      balls[k].x=clamp(res.found[k].x,play.x0+BALL_R,play.x1-BALL_R);
+      balls[k].y=clamp(res.found[k].y,play.y0+BALL_R,play.y1-BALL_R);
+      got.push(BALL_NAMES[k]);
+    } else photoMissing.push(k);
+  }
+  // 호모그래피 저장 — 경로 오버레이(테이블→사진)와 탭 지정(사진→테이블)
+  // 벽 높이 보정이 반영된 cs2(천 바닥 기준 모서리)를 쓴다
+  const tblCorners=[
+    {x:play.x0,y:play.y0},{x:play.x1,y:play.y0},
+    {x:play.x1,y:play.y1},{x:play.x0,y:play.y1}];
+  photoH=homography(tblCorners,cs2);
+  photoHinv=homography(cs2,tblCorners);
+  photoMarks=[];
+  if(photoH) for(const k in foundRaw){
+    const pp=applyH(photoH,foundRaw[k].x,foundRaw[k].y);
+    photoMarks.push({x:pp.x,y:pp.y,color:markColor(k)});
+  }
+  drawPhoto();
+  if(photoMissing.length){
+    // 일부만 인식 — 미인식 공을 사진 탭으로 지정받은 뒤 계산한다
+    photoMsg.textContent=(got.length?`인식 완료: ${got.join(' · ')} — `:'⚠ 공을 인식하지 못했습니다. ')+
+      `사진에서 ${BALL_NAMES[photoMissing[0]]} 위치를 탭해 지정해 주세요.`+
+      ' (모서리 4점이 경기면에 정확한지, 조명이 충분한지도 확인)';
+    routes=[]; selected=0; draw(); renderCards();
+    return;
+  }
+  photoMsg.textContent=`인식 완료: ${got.join(' · ')}`+
+    ' — 계산된 경로가 사진 위에 겹쳐 표시됩니다. 경로 카드를 누르면 사진의 경로도 바뀝니다.'+
+    (res.ambiguous?' ⚠ 두 수구가 모두 흰색에 가까워 임의로 배정했습니다 — 바뀌었으면 [수구 ⇄ 상대]를 누르세요.':'');
+  routes=[]; selected=0; draw(); renderCards();
+  calcBtn.click();          // 최적 경로 자동 계산
+});
+
+draw();renderCards();
+
+})();
+
+// ===== 3구 모드 (스코프 격리) =====
+(function(){
+
+const cv=document.getElementById('g3-table');
+const ctx=cv.getContext('2d');
+const W=cv.width, H=cv.height;
+const M=44;
+const play={x0:M,y0:M,x1:W-M,y1:H-M};
+const PW=play.x1-play.x0, PH=play.y1-play.y0;
+// ① 실측 스케일 — 3구 공 지름 61.5mm / 대대 2844mm 비율 반영 (≈8.3px)
+const BALL_R=30.75*PW/2844;
+
+let system='five';   // five | plus | ball
+let tip=2, activeBall='cue', dragging=null, solution=null;
+
+// ---------- 공 ----------
+const balls={
+  // 3구 정식 초구 배치 (헤드 스폿 x≈237 / 풋 스폿 x≈623, 중심선 y≈230)
+  // 수구: 헤드 스폿 아래 왼쪽 / 제1적구: 헤드 스폿 / 제2적구: 풋 스폿
+  cue:    {x:200, y:285, color:'#5fb8e8', ring:'#3a8cb8', name:'수구'},
+  obj:    {x:237, y:230, color:'#e85f9c', ring:'#b03c70', name:'제1적구'},
+  target: {x:623, y:230, color:'#d9582b', ring:'#a23d1c', name:'제2적구'},
+};
+const defaults=JSON.parse(JSON.stringify(
+  Object.fromEntries(Object.entries(balls).map(([k,v])=>[k,{x:v.x,y:v.y}]))));
+
+// 모든 시스템에서 공 3개를 표시한다 — 파이브앤하프·플러스는 계산에
+// 제1적구를 쓰지 않지만(빈쿠션 시스템), 실전 배치 그대로 보이게 하고
+// 제1적구가 계산 경로를 막으면 경고를 띄운다.
+const SYS_BALLS={
+  five:['cue','obj','target'],
+  plus:['cue','obj','target'],
+  ball:['cue','obj','target'],
+};
+
+// ---------- 기하 ----------
+const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
+const len=a=>Math.hypot(a.x,a.y);
+const norm=a=>{const l=len(a)||1;return{x:a.x/l,y:a.y/l};};
+const dot2=(a,b)=>a.x*b.x+a.y*b.y;
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+// 점 p 와 선분 a-b 사이 거리
+function distToSeg(p,a,b){
+  const d=sub(b,a), L2=d.x*d.x+d.y*d.y;
+  if(L2<1e-9) return len(sub(p,a));
+  const t=clamp((dot2(sub(p,a),d))/L2,0,1);
+  return len(sub(p,{x:a.x+d.x*t, y:a.y+d.y*t}));
+}
+// 경로(점 목록)가 제1적구에 걸리는가 — 시스템 계산 경고용
+function pathBlockedByObj(path){
+  if(!path||path.length<2) return false;
+  for(let i=1;i<path.length;i++)
+    if(distToSeg(balls.obj,path[i-1],path[i])<BALL_R*2) return true;
+  return false;
+}
+
+// ===== 좌표 매핑 — 표준 파이브앤하프/플러스 배치 =====
+// 가로 테이블: 상·하 변 = 장쿠션(다이아 8칸), 좌·우 변 = 단쿠션(다이아 4칸).
+// (구버전은 좌우 변을 장쿠션으로 잘못 취급해 경로가 90° 돌아가 있었다.)
+const DX=PW/8, DY=PH/4;   // 다이아몬드 한 칸 (장축 / 단축)
+
+// -- 파이브앤하프 (표준 코너-50) --
+// 진행: 수구(우하 구역) → 상단 장쿠션(1쿠션) → 좌측 단쿠션(2쿠션)
+//       → 하단 장쿠션(3쿠션) → 우측으로 트랙선을 따라 제2적구.
+// 수구수: 우하 코너=50 · 하단 장쿠션 왼쪽으로 다이아당 +10 (60,70,80,90)
+//         · 우측 단쿠션 위로 다이아당 −10 (반 칸 위 45부터 40,35,30,25,20)
+//         — 코너 근처가 반 칸 간격이라 '파이브 앤 하프'.
+// 1쿠션수: 상단 장쿠션 — 좌상 코너=50, 오른쪽으로 다이아당 −10.
+// 3쿠션수: 하단 장쿠션 — 좌하 코너=0, 오른쪽으로 다이아당 +10.
+// 공식: 1쿠션수 = 수구수 − 3쿠션수 (기준 당점: 3팁 순방향 회전)
+function fiveC1X(v){ return play.x0+(50-v)/10*DX; }   // 1쿠션수 → 상단 접점 x
+function fiveC3X(v){ return play.x0+v/10*DX; }        // 3쿠션수 → 하단 접점 x
+
+// 수구수 읽기 — 1쿠션 접점에서 수구를 지나 연장한 선이 수구수 눈금
+// (하단 장쿠션 또는 우측 단쿠션)과 만나는 지점의 값.
+// 수구가 레일에서 떨어져 있어도 정확하다. (교점이 없으면 null)
+function fiveCueNumFrom(p1,cue){
+  const d={x:cue.x-p1.x, y:cue.y-p1.y};
+  let best=null;
+  if(d.y>1e-6){                                 // 하단 장쿠션 교점
+    const t=(play.y1-p1.y)/d.y;
+    const x=p1.x+d.x*t;
+    if(t>1.0001&&x>=play.x0-1&&x<=play.x1+1)
+      best={t, num:50+(play.x1-x)/DX*10};
+  }
+  if(d.x>1e-6){                                 // 우측 단쿠션 교점
+    const t=(play.x1-p1.x)/d.x;
+    const y=p1.y+d.y*t;
+    if(t>1.0001&&y>=play.y0-1&&y<=play.y1+1){
+      if(!best||t<best.t) best={t, num:50-(play.y1-y)/DY*10};
+    }
+  }
+  return best?best.num:null;
+}
+
+// ===== 시스템 계산 =====
+function compute(){
+  if(system==='five') return computeFive();
+  if(system==='plus') return computePlus();
+  return computeBall();
+}
+
+// --- 파이브앤하프 ---
+// 3쿠션수를 이분탐색해 '3쿠션 이후 트랙선이 제2적구를 지나는' 해를 찾는다.
+// 수구수와 1쿠션수는 서로 의존(조준선이 수구수를 정의)하므로 내부에서
+// 감쇠 반복으로 함께 수렴시킨다.
+function computeFive(){
+  const cue=balls.cue, tgt=balls.target;
+  // 당점 보정: 기준 3팁. 2팁이면 회전이 부족해 짧게 도므로 1쿠션을 깊게(+5),
+  // 맥시멈이면 길게 도므로 얕게(−3).
+  const tipAdj = tip===1?5 : tip===3?-3 : 0;
+
+  const evalC3=(c3v)=>{
+    let c1v=25, cueNum=null;
+    for(let it=0;it<14;it++){
+      const p1g={x:clamp(fiveC1X(c1v),play.x0,play.x1), y:play.y0};
+      const n=fiveCueNumFrom(p1g,cue);
+      if(n===null) return null;
+      cueNum=n;
+      const next=cueNum-c3v+tipAdj;
+      if(Math.abs(next-c1v)<0.05){ c1v=next; break; }
+      c1v=(c1v+next)/2;
+    }
+    const p1={x:fiveC1X(c1v), y:play.y0};
+    if(p1.x<play.x0-1||p1.x>play.x1+1) return {c1v,cueNum,bad:true};
+    const p3={x:fiveC3X(clamp(c3v,0,80)), y:play.y1};
+    // 2쿠션(좌측 단쿠션): 3쿠션점을 좌측 레일 너머로 거울반사해 1쿠션점과 연결
+    const m={x:2*play.x0-p3.x, y:p3.y};
+    const k=(play.x0-p1.x)/((m.x-p1.x)||1e-9);
+    const y2=p1.y+(m.y-p1.y)*k;
+    if(y2<play.y0-1||y2>play.y1+1) return {c1v,cueNum,bad:true};
+    const p2={x:play.x0, y:clamp(y2,play.y0,play.y1)};
+    // 3쿠션 이후 트랙 — 거울 반사가 아니라 실측 트랙 팬을 쓴다.
+    // (순방향 회전이 3쿠션 반사를 길게 눕히므로 기하 반사보다 훨씬 평평함)
+    // 앵커: 3쿠션 0 → 우하 코너(4쿠션 0) · 3쿠션 20 → 4쿠션 1칸 위
+    //       · 3쿠션 40(중앙) → 4쿠션 2칸(단쿠션 중앙).
+    const p4={x:play.x1, y:play.y1-(c3v/20)*DY};
+    const td={x:p4.x-p3.x, y:p4.y-p3.y};
+    // 제2적구의 트랙선 대비 부호 있는 편차(수직 거리)
+    const rx=tgt.x-p3.x, ry=tgt.y-p3.y;
+    const L=Math.hypot(td.x,td.y)||1;
+    return {c1v,cueNum,p1,p2,p3,p4,td,
+            e:(td.x*ry-td.y*rx)/L,
+            ahead:(td.x*rx+td.y*ry)>0};
+  };
+  // 3쿠션수 0~45를 훑어 편차 부호가 바뀌는 구간을 이분탐색
+  let prev=null, sol=null;
+  for(let v=0;v<=45.01;v+=3){
+    const r=evalC3(v);
+    if(!r||r.bad){ prev=null; continue; }
+    if(prev&&prev.r.e*r.e<=0&&(r.ahead||prev.r.ahead)){
+      let lo=prev.v, hi=v, eLo=prev.r.e;
+      for(let i=0;i<40;i++){
+        const mid=(lo+hi)/2, rm=evalC3(mid);
+        if(!rm||rm.bad) break;
+        if(eLo*rm.e<=0) hi=mid; else { lo=mid; eLo=rm.e; }
+      }
+      const v0=(lo+hi)/2, r0v=evalC3(v0);
+      if(r0v&&!r0v.bad&&r0v.ahead){ sol={v:v0, r:r0v}; break; }
+    }
+    prev={v,r};
+  }
+  if(!sol){
+    const cn=fiveCueNumFrom({x:fiveC1X(25),y:play.y0},cue);
+    return {sys:'five', cueNum:cn==null?0:cn, c1Num:0, c3Num:0, tipAdj,
+            path:null, valid:false, ok:false, reason:'notrack'};
+  }
+  const r=sol.r;
+  if(r.c1v<0||r.c1v>55||r.cueNum<18||r.cueNum>100){
+    return {sys:'five', cueNum:r.cueNum, c1Num:r.c1v, c3Num:sol.v, tipAdj,
+            path:null, valid:false, ok:false, reason:'c1range'};
+  }
+  // 경로 마지막 구간 = 3쿠션 → 4쿠션 트랙
+  const path=[{x:cue.x,y:cue.y}, r.p1, r.p2, r.p3, r.p4];
+  const err=Math.abs(r.e);
+  return {sys:'five', cueNum:r.cueNum, c1Num:r.c1v, c3Num:sol.v, tipAdj,
+    c1Pt:r.p1, c2Pt:r.p2, c3Pt:r.p3, path, valid:true, ok:err<30, err,
+    blocked:pathBlockedByObj(path)};
+}
+
+// --- 플러스 시스템 ---
+// 진행: 수구(하단 우측 구역) → 우측 단쿠션(1쿠션) → 상단 장쿠션(2쿠션)
+//       → 하단 장쿠션(3쿠션·도착). 제자리로 돌아오는(플러스) 짧은 각.
+// 출발수·도착수: 하단 장쿠션 — 우하 코너=0, 왼쪽으로 다이아당 +10.
+// 1쿠션수: 우측 단쿠션 — 우하 코너=0, 위로 다이아당 +10 (유효 15~40).
+// 공식: 도착(3쿠션)수 = 출발수 + 1쿠션수
+function computePlus(){
+  const cue=balls.cue, tgt=balls.target;
+  const startNum=(play.x1-cue.x)/DX*10;
+  const c3Num=(play.x1-tgt.x)/DX*10;
+  let c1Num=c3Num-startNum;
+  let c1Adj=c1Num;
+  if(tip===1) c1Adj=c1Num+4;    // 2팁: 짧게 옴 → 1쿠션 깊게
+  if(tip===3) c1Adj=c1Num-3;    // 맥시멈: 길게 옴 → 얕게
+  const nearBottom = cue.y>play.y1-PH*0.45 && tgt.y>play.y1-PH*0.45;
+  const c1Valid = c1Adj>=15 && c1Adj<=40;
+  if(!c1Valid){
+    return {sys:'plus', startNum, c1Num, c3Num, c1Adj,
+            path:null, valid:false, ok:false, reason:'c1range'};
+  }
+  const p1={x:play.x1, y:play.y1-c1Adj/10*DY};        // 1쿠션 = 우측 단쿠션
+  const p3={x:play.x1-c3Num/10*DX, y:play.y1};        // 3쿠션 = 하단 도착
+  // 2쿠션(상단 장쿠션): 3쿠션점을 상단 너머로 거울반사해 1쿠션점과 연결
+  const m={x:p3.x, y:2*play.y0-p3.y};
+  const k=(play.y0-p1.y)/((m.y-p1.y)||1e-9);
+  const x2=clamp(p1.x+(m.x-p1.x)*k, play.x0, play.x1);
+  const p2={x:x2, y:play.y0};
+  const path=[{x:cue.x,y:cue.y}, p1, p2, p3];
+  return {sys:'plus', startNum, c1Num, c3Num, c1Adj,
+          c1Pt:p1, c2Pt:p2, c3Pt:p3, path, valid:true, ok:true, nearBottom,
+          blocked:pathBlockedByObj(path)};
+}
+
+// --- 볼 시스템 (모델 A: 코너 기점 0) ---
+function computeBall(){
+  const cue=balls.cue, obj=balls.obj, tgt=balls.target;
+  // 제1적구수: 제1적구를 장축 기준 칸수로 (좌→우 1~7)
+  const objNum=1+ (obj.x-play.x0)/PW*6;
+  // 제3쿠션수: 제2적구를 단축 기준 (1~8)
+  const c3Num=1+ (tgt.y-play.y0)/PH*7;
+
+  // ── 기울기 보정값 (자료 규칙 기반) ──
+  // 큐선 = 수구가 제1적구의 절반두께를 겨냥하는 조준선 (수구→제1적구 방향).
+  // 기준: 큐선이 단축과 평행(장쿠션에 수직)이면 기울기 0.
+  // 칸수 = 큐선이 수직선에서 벗어난 정도를 장축 포인트(칸)로 환산.
+  const cueLine=norm(sub(obj,cue));
+  // 단축과 평행 = 큐선이 y축 방향(x성분 0). x성분이 기울어진 정도.
+  // 장축 1칸 = 당구대 가로의 1/8. 큐선의 가로 기울기를 칸수로.
+  // 수구~제1적구의 세로 거리 대비 가로 편차를 칸으로 환산한다.
+  const dx=obj.x-cue.x, dy=obj.y-cue.y;
+  // 세로 이동량 기준으로 가로로 몇 칸 벗어났나 (수직이면 0칸)
+  const tiltCells = dy!==0 ? Math.abs(dx/dy) * (Math.abs(dy)/(PH/4)) : Math.abs(dx)/(PW/8);
+  const cells = Math.round(tiltCells*2)/2;   // 0.5칸 단위
+
+  // 빗각/엇각 판정: 수구가 제1적구보다 '바깥쪽'(빗각)인지 '안쪽'(엇각)인지.
+  // 제1적구→제2적구 방향 대비 수구→제1적구 방향의 꺾임으로 판정.
+  const inDir=norm(sub(obj,cue));
+  const outDir=norm(sub(tgt,obj));
+  const cross=inDir.x*outDir.y-inDir.y*outDir.x;
+  const isObtuse = cross>0;   // 엇각(안쪽, 분리각 키워야 함) / else 빗각
+
+  // 거리 구간 (수구~제1적구): 근거리/중거리/원거리
+  const dist=Math.hypot(dx,dy);
+  const diag=Math.hypot(PW,PH);
+  let obtuseWeight;
+  if(dist < diag*0.33) obtuseWeight=1.0;        // 근거리 +1
+  else if(dist < diag*0.66) obtuseWeight=1.5;   // 중거리 +1.5
+  else obtuseWeight=2.0;                         // 원거리 +2
+
+  // 기울기 보정값 = 칸수 × 가중치
+  let slope;
+  if(isObtuse) slope = cells * obtuseWeight;     // 엇각: + (거리 차등)
+  else         slope = cells * (-2);             // 빗각: 칸당 -2 (거리 무관)
+  slope = Math.round(slope*2)/2;                 // 0.5 단위
+
+  // 세로 형태(장축 방향) 특수 보정: 큐선이 가파른 세로 배치면
+  // 총 볼값에 제3쿠션수의 절반을 추가로 더한다.
+  const isVertical = Math.abs(dy) > Math.abs(dx)*1.5;
+  const verticalAdj = isVertical ? c3Num/2 : 0;
+
+  const total=objNum+c3Num+slope+verticalAdj;
+  // 총합을 두께(n/8)+팁수로 분해
+  const combos=[];
+  for(let th=4;th>=1;th--){
+    const t=total-th;
+    if(t>=0&&t<=3) combos.push({thick:th, tip:Math.round(t)});
+  }
+  const objNearRail = obj.y<play.y0+40 || obj.y>play.y1-40 ||
+                      obj.x<play.x0+40 || obj.x>play.x1-40;
+  return {sys:'ball', objNum, c3Num, slope, cells, isObtuse,
+    verticalAdj, total, combos, objNearRail,
+    valid:combos.length>0};
+}
+
+// ===== 결과 출력 =====
+function showResult(s){
+  const numsEl=document.getElementById('g3-nums');
+  const resEl=document.getElementById('g3-result');
+  const tipLabel={1:'2팁',2:'3팁(표준)',3:'맥시멈'}[tip];
+
+  if(s.sys==='five'){
+    numsEl.innerHTML=numBox('수구수',s.cueNum,'cue')+
+      numBox('제1쿠션수',s.c1Num,'')+numBox('제3쿠션수',s.c3Num,'target');
+    let h=`<div>수구수 <b>${r0(s.cueNum)}</b> − 제3쿠션수 <b>${r0(s.c3Num)}</b>`+
+      `${s.tipAdj?` (당점 보정 ${s.tipAdj>0?'+':''}${s.tipAdj})`:''}`+
+      ` = 제1쿠션수 <b>${r0(s.c1Num)}</b></div>`;
+    h+=`<div>상단 장쿠션 <b>${r0(s.c1Num)} 지점</b>(좌상 코너=50) 겨냥 · `+
+      `당점 <b>${tipLabel}</b> 순방향 회전</div>`;
+    h+=verdict(s);
+    resEl.innerHTML=h;
+  } else if(s.sys==='plus'){
+    numsEl.innerHTML=numBox('출발수',s.startNum,'cue')+
+      numBox('제1쿠션수',s.c1Adj,'')+numBox('도착수',s.c3Num,'target');
+    let h=`<div>도착수 <b>${r0(s.c3Num)}</b> − 출발수 <b>${r0(s.startNum)}</b>`+
+      `${tip!==2?' (당점 보정 포함)':''} = 제1쿠션수 <b>${r0(s.c1Adj)}</b></div>`;
+    h+=`<div>우측 단쿠션 <b>${r0(s.c1Adj)} 지점</b>(우하 코너=0, 위로 10/칸) 겨냥 · `+
+      `당점 <b>${tipLabel}</b></div>`;
+    if(s.valid&&!s.nearBottom)
+      h+=`<div style="opacity:.65;font-size:12px">⚠ 플러스는 수구와 목표가 모두 `+
+        `하단 장쿠션 부근일 때 정확한 시스템입니다.</div>`;
+    h+=verdict(s);
+    resEl.innerHTML=h;
+  } else {
+    numsEl.innerHTML=numBox('제1적구수',s.objNum,'')+
+      numBox('제3쿠션수',s.c3Num,'target')+
+      numBox('기울기',s.slope,'cue');
+    const angleType = s.isObtuse ? '엇각(안쪽)' : '빗각(바깥쪽)';
+    let h=`<div>큐선 기울기 <b>${r1(s.cells)}칸</b> · <b>${angleType}</b> `+
+      `→ 기울기 보정값 <b>${s.slope>=0?'+':''}${r1(s.slope)}</b></div>`;
+    h+=`<div>제1적구수 <b>${r1(s.objNum)}</b> + 제3쿠션수 <b>${r1(s.c3Num)}</b>`+
+      ` ${s.slope>=0?'+':'−'} 기울기 <b>${Math.abs(s.slope)}</b>`+
+      `${s.verticalAdj>0?` + 세로보정 <b>${r1(s.verticalAdj)}</b>`:''}`+
+      ` = 총 볼값 <b>${r1(s.total)}</b></div>`;
+    if(s.combos.length){
+      h+=`<div style="margin-top:6px">두께·당점 조합 (총합 일정):</div><div>`;
+      s.combos.forEach((c,i)=>{
+        h+=`<span class="combo ${i===0?'best':''}">${c.thick}/8 두께 + ${c.tip}팁</span>`;
+      });
+      h+=`</div>`;
+      if(s.objNearRail){
+        h+=`<div class="miss" style="margin-top:6px">⚠ 제1적구가 쿠션에 근접 — `+
+          `키스 위험. 1/2보다 얇은 두께(2/8·3/8)에 팁수를 늘려 회전으로 보정하세요.</div>`;
+      } else {
+        h+=`<div class="hit" style="margin-top:6px">→ 첫 조합(굵게)이 두께 부담이 가장 적습니다.</div>`;
+      }
+    } else {
+      h+=`<div class="miss">⚠ 총 볼값 ${r1(s.total)}이 두께+팁 범위(1~7)를 벗어납니다. `+
+        `배치를 조정하거나 회전·기울기 보정이 필요합니다.</div>`;
+    }
+    resEl.innerHTML=h;
+  }
+}
+function numBox(lbl,val,cls){
+  return `<div class="numbox ${cls}"><div class="lbl">${lbl}</div>`+
+    `<div class="val">${typeof val==='number'?(Number.isInteger(val)?val:val.toFixed(1)):val}</div></div>`;
+}
+function verdict(s){
+  // 제1적구가 계산 경로 위에 있으면 경고 (빈쿠션 시스템은 제1적구를 무시하므로)
+  const blockWarn=s.blocked?
+    `<div class="miss">⚠ 제1적구(분홍)가 계산 경로 위에 있습니다 — 실제로는 먼저 맞아 `+
+    `진로가 바뀝니다. 배치를 확인하거나 [물리 경로 제안]을 사용하세요.</div>`:'';
+  if(!s.valid){
+    if(s.reason==='notrack' && s.sys==='five')
+      return `<div class="miss">⚠ 이 배치에서는 3쿠션 트랙이 제2적구를 지나가게 만들 수 없습니다.<br>`+
+        `파이브앤하프는 수구가 우하 구역(수구수 20~90)에 있고 제2적구가 `+
+        `3쿠션 이후 트랙(하단→우측 방향) 위에 있어야 합니다. 배치가 다르면 `+
+        `플러스·볼 시스템이 더 적합할 수 있습니다.</div>`;
+    if(s.reason==='c1range' && s.sys==='five')
+      return `<div class="miss">⚠ 제1쿠션수 ${r0(s.c1Num)} 또는 수구수 ${r0(s.cueNum)}이(가) `+
+        `유효 범위(1쿠션 0~55 · 수구수 20~90)를 벗어납니다.<br>`+
+        `수구를 우하 구역으로 옮기거나 다른 시스템을 쓰세요.</div>`;
+    if(s.reason==='c1range' && s.sys==='plus')
+      return `<div class="miss">⚠ 제1쿠션수 ${r0(s.c1Adj)}이(가) 유효 구간(15~40)을 벗어납니다.<br>`+
+        `플러스는 우측 단쿠션의 15~40 구간만 정확합니다 — 이 배치는 `+
+        `파이브앤하프가 더 적합할 수 있습니다.</div>`;
+    return `<div class="miss">⚠ 계산값이 시스템 적용 범위를 벗어납니다 — `+
+      `다른 시스템이 더 적합한 배치입니다.</div>`;
+  }
+  if(s.sys==='plus')
+    return blockWarn+`<div class="hit">→ 단-장-장 진행 · 우측 단쿠션 ${r0(s.c1Adj)} 지점을 겨냥하세요. `+
+      `도착수 ${r0(s.c3Num)} 지점(하단)으로 돌아옵니다.</div>`;
+  if(s.ok)
+    return blockWarn+`<div class="hit">→ 3쿠션 ${r0(s.c3Num)} 경유 · 트랙 오차 ${r0(s.err)}px · 득점 라인</div>`;
+  return blockWarn+`<div class="miss">→ 트랙이 목표에서 ${r0(s.err)}px 벗어남 — 당점을 바꾸거나 배치를 확인하세요.</div>`;
+}
+const r0=v=>Math.round(v);
+const r1=v=>Number.isInteger(v)?v:v.toFixed(1);
+
+// ===== 그리기 =====
+function draw(){
+  ctx.fillStyle='#1f6b4a'; ctx.fillRect(0,0,W,H);
+  const g=ctx.createRadialGradient(W/2,H/2,60,W/2,H/2,W/1.4);
+  g.addColorStop(0,'rgba(255,255,255,.05)'); g.addColorStop(1,'rgba(0,0,0,.28)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#16573b'; ctx.lineWidth=2;
+  ctx.strokeRect(play.x0,play.y0,PW,PH);
+  drawCoords();
+  if(solution) drawSolution(solution);
+  if(phyRoutes&&phyRoutes.length){
+    phyRoutes.forEach((r,i)=>{ if(i!==phySel) drawPhyRoute(r,PHY_COLORS[i],0.2); });
+    if(phyRoutes[phySel]) drawPhyRoute(phyRoutes[phySel],PHY_COLORS[phySel],1);
+  }
+  // 물리 경로 모드에서는 시스템과 무관하게 3개 공을 모두 표시
+  const active=phyRoutes?['cue','obj','target']:SYS_BALLS[system];
+  const AIDX3={cue:0,obj:2,target:4};
+  for(const k of active){
+    const b=anim3&&anim3.cur
+      ?{...balls[k], x:anim3.cur[AIDX3[k]], y:anim3.cur[AIDX3[k]+1]}
+      :balls[k];
+    drawBall(b, k===activeBall&&!anim3);
+  }
+}
+
+// ===== ▶ 경로 재생 (3구) =====
+let anim3=null;
+function stopAnim3(redraw){
+  if(!anim3) return;
+  if(anim3.raf) cancelAnimationFrame(anim3.raf);
+  anim3=null;
+  if(redraw!==false) draw();
+}
+function playRoute3(){
+  const r=phyRoutes&&phyRoutes[phySel];
+  if(!r||!r.anim||r.anim.length<2) return;
+  stopAnim3(false);
+  anim3={frames:r.anim, t0:performance.now(), i:0, raf:null, cur:null};
+  const step=()=>{
+    if(!anim3) return;
+    const fr=anim3.frames;
+    const t=(performance.now()-anim3.t0)/1000;
+    if(t>=fr[fr.length-1].t){
+      anim3.cur=fr[fr.length-1].p; anim3.raf=null; draw();
+      setTimeout(()=>{ if(anim3&&!anim3.raf){ anim3=null; draw(); } },900);
+      return;
+    }
+    let i=anim3.i;
+    while(i<fr.length-1&&fr[i+1].t<=t) i++;
+    anim3.i=i;
+    const a=fr[i], b=fr[Math.min(i+1,fr.length-1)];
+    const u=b.t>a.t?(t-a.t)/(b.t-a.t):0;
+    anim3.cur=a.p.map((v,j)=>v+(b.p[j]-v)*u);
+    draw();
+    anim3.raf=requestAnimationFrame(step);
+  };
+  anim3.raf=requestAnimationFrame(step);
+}
+
+function drawCoords(){
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  if(system==='five'){
+    ctx.font='10px "Spline Sans Mono", monospace';
+    // 수구수: 하단 장쿠션 우측 절반(50~90, 우→좌) + 우측 단쿠션(45~20, 위로)
+    ctx.fillStyle='#5fb8e8';
+    for(let v=50;v<=90;v+=10){
+      const x=play.x1-(v-50)/10*DX;
+      tick2(x,play.y1,'d'); ctx.fillText(v,x,play.y1+20);
+    }
+    [45,40,35,30,25,20].forEach(v=>{
+      const y=play.y1-(50-v)/10*DY;
+      tick(play.x1,y,'r'); ctx.fillText(v,play.x1+22,y);
+    });
+    // 1쿠션수: 상단 장쿠션 (좌상 코너 50 → 오른쪽으로 감소)
+    ctx.fillStyle='#e8b53e';
+    for(let v=50;v>=0;v-=10){
+      const x=fiveC1X(v);
+      tick2(x,play.y0,'u'); ctx.fillText(v,x,play.y0-20);
+    }
+    // 3쿠션수: 하단 장쿠션 좌측 절반 (좌하 코너 0 → 오른쪽으로)
+    ctx.fillStyle='#d9582b';
+    for(let v=0;v<=40;v+=10){
+      const x=fiveC3X(v);
+      tick2(x,play.y1,'d'); ctx.fillText(v,x,play.y1+32);
+    }
+    legend(['수구수:#5fb8e8','1쿠션수(상단):#e8b53e','3쿠션수(하단):#d9582b']);
+  } else if(system==='plus'){
+    ctx.font='10px "Spline Sans Mono", monospace';
+    // 출발·도착수: 하단 장쿠션 (우하 코너 0 → 왼쪽으로)
+    ctx.fillStyle='#5fb8e8';
+    for(let v=0;v<=80;v+=10){
+      const x=play.x1-v/10*DX;
+      tick2(x,play.y1,'d'); ctx.fillText(v,x,play.y1+20);
+    }
+    // 1쿠션수: 우측 단쿠션 (우하 코너 0 → 위로)
+    ctx.fillStyle='#e8b53e';
+    for(let v=0;v<=40;v+=10){
+      const y=play.y1-v/10*DY;
+      tick(play.x1,y,'r'); ctx.fillText(v,play.x1+22,y);
+    }
+    legend(['출발·도착수(하단):#5fb8e8','1쿠션수(우측):#e8b53e']);
+  } else {
+    ctx.font='10px "Spline Sans Mono", monospace';
+    ctx.fillStyle='#e85f9c';
+    for(let n=1;n<=7;n++){ const x=play.x0+(n-1)/6*PW; tick2(x,play.y0,'u'); ctx.fillText(n,x,play.y0-20); }
+    ctx.fillStyle='#d9582b';
+    for(let n=1;n<=8;n++){ const y=play.y0+(n-1)/7*PH; tick(play.x1,y,'r'); ctx.fillText(n,play.x1+20,y); }
+    legend(['제1적구수(상단):#e85f9c','제3쿠션수(우측):#d9582b']);
+  }
+}
+function legend(items){
+  ctx.font='9px "Spline Sans Mono", monospace';
+  ctx.textAlign='left';
+  let x=play.x0+6;
+  items.forEach(it=>{
+    const [t,c]=it.split(':');
+    ctx.fillStyle=c; ctx.fillText('● '+t, x, play.y0-30);
+    x+=t.length*6.5+24;
+  });
+  ctx.textAlign='center';
+}
+function tick(x,y,s){
+  ctx.strokeStyle='rgba(244,241,232,.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); const d=s==='l'?-7:7;
+  ctx.moveTo(x,y); ctx.lineTo(x+d,y); ctx.stroke();
+}
+function tick2(x,y,s){
+  ctx.strokeStyle='rgba(244,241,232,.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); const d=s==='u'?-7:7;
+  ctx.moveTo(x,y); ctx.lineTo(x,y+d); ctx.stroke();
+}
+
+function drawBall(b,active){
+  ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,7);
+  ctx.fillStyle=b.color; ctx.fill();
+  ctx.lineWidth=active?3:2;
+  ctx.strokeStyle=active?'#f4f1e8':b.ring; ctx.stroke();
+  ctx.beginPath(); ctx.arc(b.x-4,b.y-4,BALL_R/3,0,7);
+  ctx.fillStyle='rgba(255,255,255,.5)'; ctx.fill();
+}
+
+function drawSolution(s){
+  if(s.sys==='ball'){
+    // 볼 시스템: 수구→제1적구→제2적구 보조선만 표시 (경로 계산은 두께 의존)
+    ctx.strokeStyle='rgba(244,241,232,.4)';
+    ctx.setLineDash([5,5]); ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(balls.cue.x,balls.cue.y);
+    ctx.lineTo(balls.obj.x,balls.obj.y);
+    ctx.lineTo(balls.target.x,balls.target.y);
+    ctx.stroke(); ctx.setLineDash([]);
+    return;
+  }
+  if(!s.path) return;
+  ctx.strokeStyle=s.ok?'#f4f1e8':'#d9582b';
+  ctx.setLineDash(s.ok?[]:[7,6]);
+  ctx.lineWidth=3; ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(s.path[0].x,s.path[0].y);
+  for(let i=1;i<s.path.length;i++) ctx.lineTo(s.path[i].x,s.path[i].y);
+  ctx.stroke(); ctx.setLineDash([]);
+  const pts=[s.c1Pt,s.c2Pt,s.c3Pt].filter(Boolean);
+  pts.forEach((p,i)=>{
+    ctx.beginPath(); ctx.arc(p.x,p.y,6,0,7);
+    ctx.fillStyle='#e8b53e'; ctx.fill();
+    ctx.strokeStyle='#14110d'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='#14110d'; ctx.font='bold 9px "Bricolage Grotesque"';
+    ctx.fillText(i+1,p.x,p.y);
+  });
+}
+
+/* ===== 🎯 물리 경로 제안 — 4구 v4 시간스텝 엔진 이식 (쓰리쿠션 규칙) =====
+   득점 조건: 수구가 두 적구를 모두 맞히되, 두 번째 적구 접촉 '이전'에
+   쿠션을 3회 이상 경유해야 한다 (첫 적구 전 쿠션도 인정 = 실제 규칙).
+   물리 상수·수치 적분은 4구 엔진과 동일, 4구 테이블 보정값(hb4_calib)을 공유. */
+const MM3=PW/2844, G3PX=9800*MM3, DT3=0.0025, MAXT3=7, SLIDE3=2, STOP3=4;
+const rot3=(a,t)=>({x:a.x*Math.cos(t)-a.y*Math.sin(t), y:a.x*Math.sin(t)+a.y*Math.cos(t)});
+function gauss3(){
+  let u=0,v=0;
+  while(!u)u=Math.random();
+  while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+// 실력 3단계 — 4구와 동일 기준·저장소(hb_skill) 공유.
+// 3구는 시네루가 필수라 초급도 기본 좌/우 시네루는 허용, 혼합 당점만 제한.
+const SKILLS3={
+  beg:{label:'초급', aim:1.9, spin:1.8, spd:1.5, keys:{left:1,right:1}},
+  mid:{label:'중급', aim:1.0, spin:1.0, spd:1.0, keys:{left:1,right:1,follL:1,follR:1}},
+  adv:{label:'상급', aim:0.6, spin:0.6, spd:0.8, keys:null},   // 전부
+};
+function getSkill3(){
+  try{
+    const k=localStorage.getItem('hb_skill');
+    return SKILLS3[k]?k:'mid';
+  }catch(e){ return 'mid'; }
+}
+function phyParams(){
+  const sk=SKILLS3[getSkill3()];
+  const p={mus:0.20, mur:0.012, ec:0.85, muc:0.20, ebb:0.93, mubb:0.06,
+           speed:1450, aimSigma:0.010*sk.aim, spdSigma:0.05*sk.spd,
+           spinSigma:0.08*sk.spin, skill:sk};
+  try{
+    const c=JSON.parse(localStorage.getItem('hb4_calib')||'{}');
+    p.ec=clamp(0.85+(c.cush|0)*0.015,0.60,0.97);
+    p.muc=clamp(0.20-(c.cush|0)*0.02,0.06,0.40);
+    p.mur=0.012*Math.pow(1.07,-(c.roll|0));
+  }catch(e){}
+  return p;
+}
+function setShot3(b,dir,speed,spin){
+  b.vx=dir.x*speed; b.vy=dir.y*speed;
+  const wv=1.375*spin.v*speed/BALL_R;
+  b.wx=-wv*dir.y; b.wy=wv*dir.x;
+  b.wz=-1.375*spin.h*speed/BALL_R;
+}
+function stepBall3(b,P,dt){
+  const sp=Math.hypot(b.vx,b.vy);
+  const wsp=Math.hypot(b.wx,b.wy)*BALL_R;
+  if(sp<STOP3&&wsp<STOP3){
+    b.vx=b.vy=b.wx=b.wy=0;
+    b.wz*=(1-0.6*dt);
+    return;
+  }
+  const ux=b.vx-BALL_R*b.wy, uy=b.vy+BALL_R*b.wx;
+  const u=Math.hypot(ux,uy);
+  if(u>SLIDE3){
+    const iux=ux/u, iuy=uy/u;
+    const f=Math.min(1,u/(3.5*P.mus*G3PX*dt));
+    const dv=P.mus*G3PX*dt*f;
+    b.vx-=dv*iux; b.vy-=dv*iuy;
+    const dw=2.5*P.mus*G3PX/BALL_R*dt*f;
+    b.wx-=dw*iuy; b.wy+=dw*iux;
+  } else {
+    b.wy=b.vx/BALL_R; b.wx=-b.vy/BALL_R;
+    const dv=P.mur*G3PX*dt;
+    if(sp<=dv){ b.vx=b.vy=0; b.wx=b.wy=0; }
+    else { b.vx-=dv*b.vx/sp; b.vy-=dv*b.vy/sp; }
+  }
+  b.wz*=(1-0.12*dt);
+  b.x+=b.vx*dt; b.y+=b.vy*dt;
+}
+function collideBB3(a,b,P){
+  const dx=b.x-a.x, dy=b.y-a.y;
+  const d=Math.hypot(dx,dy);
+  if(d===0||d>=2*BALL_R) return null;
+  const nx=dx/d, ny=dy/d;
+  const push=(2*BALL_R-d)/2+0.01;
+  a.x-=nx*push; a.y-=ny*push; b.x+=nx*push; b.y+=ny*push;
+  const rvx=a.vx-b.vx, rvy=a.vy-b.vy;
+  const vn=rvx*nx+rvy*ny;
+  if(vn<=0) return null;
+  const rsp=Math.hypot(rvx,rvy)||1;
+  const cut=Math.abs(rvx*ny-rvy*nx)/rsp;
+  const j=(1+P.ebb)/2*vn;
+  a.vx-=j*nx; a.vy-=j*ny;
+  b.vx+=j*nx; b.vy+=j*ny;
+  const tx=-ny, ty=nx;
+  const ut=(rvx*tx+rvy*ty)+BALL_R*(a.wz+b.wz);
+  const jt=Math.min(P.mubb*(1+P.ebb)*vn, Math.abs(ut)/7)*Math.sign(ut);
+  a.vx-=jt*tx*0.5; a.vy-=jt*ty*0.5;
+  b.vx+=jt*tx*0.5; b.vy+=jt*ty*0.5;
+  return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, thickness:1-cut};
+}
+function collideCushion3(b,P){
+  let n=null;
+  if(b.x<play.x0+BALL_R&&b.vx<0){ b.x=play.x0+BALL_R; n={x:1,y:0}; }
+  else if(b.x>play.x1-BALL_R&&b.vx>0){ b.x=play.x1-BALL_R; n={x:-1,y:0}; }
+  else if(b.y<play.y0+BALL_R&&b.vy<0){ b.y=play.y0+BALL_R; n={x:0,y:1}; }
+  else if(b.y>play.y1-BALL_R&&b.vy>0){ b.y=play.y1-BALL_R; n={x:0,y:-1}; }
+  if(!n) return false;
+  const tx=-n.y, ty=n.x;
+  const vn=b.vx*n.x+b.vy*n.y;
+  const vt=b.vx*tx+b.vy*ty;
+  const sp=Math.hypot(b.vx,b.vy)||1;
+  const ut=vt-b.wz*BALL_R;
+  const jn=(1+P.ec)*Math.abs(vn);
+  // 시네루 보정 — 4구 collideCushion과 동일 (파이브앤하프 차트 캘리브레이션)
+  const spinRatio=Math.min(1, Math.abs(b.wz)*BALL_R/sp);
+  const cap=2/7+(0.50-2/7)*spinRatio;
+  const jt=Math.min(P.muc*jn, Math.abs(ut)*cap)*Math.sign(ut);
+  const vt2=vt-jt, vn2=-P.ec*vn*(1-0.25*spinRatio);
+  b.vx=vn2*n.x+vt2*tx;
+  b.vy=vn2*n.y+vt2*ty;
+  b.wz=(b.wz+5*jt/(2*BALL_R))*0.85;
+  // 쿠션 압축 중 바닥 마찰 급증 — 상하 회전이 깎이며 나가는 방향의
+  // 구름 상태로 절반쯤 재정렬된다 (쿠션 뒤 과도한 커브 방지)
+  b.wx=0.7*(b.wx*0.8)+0.3*(-b.vy/BALL_R);
+  b.wy=0.7*(b.wy*0.8)+0.3*( b.vx/BALL_R);
+  return true;
+}
+// 쓰리쿠션 샷 시뮬레이션 — rec 시 수구 경로 폴리라인 기록
+function simulate3(dir,speed,spin,P,rec){
+  const S=['cue','obj','target'].map(k=>(
+    {k, x:balls[k].x, y:balls[k].y, vx:0, vy:0, wx:0, wy:0, wz:0}));
+  const B={cue:S[0]};
+  setShot3(B.cue,dir,speed,spin);
+  const res={first:null, second:null, cush:0, cushAtSecond:0,
+    success:false, fail:false, firstInfo:null, secondInfo:null,
+    paths:rec?{cue:[{x:B.cue.x,y:B.cue.y}]}:null,
+    frames:rec?[]:null};
+  let t=0, doneT=-1, recDone=false, stepN=0;
+  const B3={cue:S[0],obj:S[1],target:S[2]};
+  while(t<MAXT3){
+    let moving=false;
+    for(const o of S){ if(o.vx||o.vy){ stepBall3(o,P,DT3); moving=true; } }
+    if(!moving) break;
+    for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){
+      const c=collideBB3(S[i],S[j],P);
+      if(!c) continue;
+      const cueIn=(S[i].k==='cue'||S[j].k==='cue');
+      if(!cueIn) continue;
+      const other=S[i].k==='cue'?S[j].k:S[i].k;
+      if(!res.first){ res.first=other; res.firstInfo=c; }
+      else if(other!==res.first&&!res.second){
+        res.second=other; res.cushAtSecond=res.cush; res.secondInfo=c;
+        // 규칙: 두 번째 적구 접촉 전 쿠션 3회 이상이어야 득점
+        if(res.cush>=3) res.success=true; else res.fail=true;
+      }
+    }
+    for(const o of S){
+      if(collideCushion3(o,P)&&o.k==='cue'&&!res.second) res.cush++;
+    }
+    if(res.fail) break;
+    if(res.success&&doneT<0) doneT=t;
+    if(doneT>=0&&t>doneT+0.4){
+      if(!rec) break;
+      recDone=true;      // 경로 기록은 여기까지, 최종 배치는 끝까지 굴려서
+    }
+    if(!res.second&&!B.cue.vx&&!B.cue.vy) break;
+    if(!res.second&&res.cush>6) break;         // 너무 많이 돎 — 실전성 없음
+    if(rec&&!recDone){
+      const arr=res.paths.cue, l=arr[arr.length-1];
+      if(Math.hypot(B.cue.x-l.x,B.cue.y-l.y)>=3) arr.push({x:B.cue.x,y:B.cue.y});
+    }
+    if(rec&&(stepN++&7)===0)
+      res.frames.push({t, p:[B3.cue.x,B3.cue.y,B3.obj.x,B3.obj.y,B3.target.x,B3.target.y]});
+    t+=DT3;
+  }
+  if(rec){
+    res.final={};
+    for(const o of S) res.final[o.k]={x:o.x,y:o.y};
+    res.frames.push({t, p:[B3.cue.x,B3.cue.y,B3.obj.x,B3.obj.y,B3.target.x,B3.target.y]});
+  }
+  return res;
+}
+// 경로 탐색 — 첫 적구 2종 × 시네루 조합 × 두께 37단계 전수 시뮬레이션.
+// 연속 성공 구간(run)의 중앙 = 후보, 폭 = 조준 허용오차.
+const SPINS3=[
+  {key:'left',  v:-0.2, h:-1, label:'좌 시네루'},
+  {key:'right', v:-0.2, h:1,  label:'우 시네루'},
+  {key:'follL', v:0.8,  h:-1, label:'밀어 + 좌'},
+  {key:'follR', v:0.8,  h:1,  label:'밀어 + 우'},
+  {key:'drawL', v:-0.8, h:-1, label:'끌어 + 좌'},
+  {key:'drawR', v:-0.8, h:1,  label:'끌어 + 우'},
+];
+function solve3(){
+  const P=phyParams();
+  const cue=balls.cue;
+  const cands=[];
+  for(const fk of ['obj','target']){
+    const first=balls[fk];
+    const aimBase=norm(sub(first,cue));
+    const perp={x:-aimBase.y,y:aimBase.x};
+    for(const spin of SPINS3){
+      if(P.skill.keys&&!P.skill.keys[spin.key]) continue;  // 실력별 당점 제한
+      let run=[];
+      const flush=()=>{
+        if(run.length>=2){
+          const m=run[(run.length/2)|0];
+          cands.push({...m, tol:run.length});
+        }
+        run=[];
+      };
+      // 쓰리쿠션은 조준 허용 창이 좁다 — 73단계 미세 스캔
+      for(let i=0;i<=72;i++){
+        const off=-0.92+1.84*i/72;
+        const aimPt={x:first.x+perp.x*off*BALL_R*2, y:first.y+perp.y*off*BALL_R*2};
+        const dir=norm(sub(aimPt,cue));
+        const r=simulate3(dir,P.speed,spin,P,false);
+        if(r.success&&r.first===fk){
+          const item={fk, spin, dir, cush:r.cushAtSecond};
+          if(run.length&&run[0].cush!==item.cush) flush();
+          run.push(item);
+        } else flush();
+      }
+      flush();
+    }
+  }
+  if(!cands.length) return [];
+  for(const c of cands) c.pre=c.tol*3-c.cush;
+  cands.sort((a,b)=>b.pre-a.pre);
+  // 상위 후보만 몬테카를로 성공률 실측
+  const out=[];
+  for(const c of cands.slice(0,10)){
+    let ok=0; const N=24;
+    for(let i=0;i<N;i++){
+      const dir=rot3(c.dir,gauss3()*P.aimSigma);
+      const spd=P.speed*(1+gauss3()*P.spdSigma);
+      const spin={v:clamp(c.spin.v+gauss3()*P.spinSigma,-1,1),
+                  h:clamp(c.spin.h+gauss3()*P.spinSigma,-1,1)};
+      if(simulate3(dir,spd,spin,P,false).success) ok++;
+    }
+    const prob=ok/N;
+    // 쓰리쿠션은 원래 성공률이 낮다 — 1회라도 재현되면 후보 유지
+    if(ok<1) continue;
+    const r=simulate3(c.dir,P.speed,c.spin,P,true);
+    if(!r.success||!r.firstInfo) continue;
+    // 모임도 — 최종 배치에서 세 공 평균 간격을 %로
+    let gather=null;
+    if(r.final){
+      const diag=Math.hypot(PW,PH);
+      const d=(len(sub(r.final.cue,r.final.obj))+len(sub(r.final.cue,r.final.target))+
+               len(sub(r.final.obj,r.final.target)))/3;
+      const tt=clamp((d-BALL_R*8)/(diag*0.45-BALL_R*8),0,1);
+      gather=Math.round(5+(1-tt)*90);
+    }
+    out.push({...c, prob, thickness:r.firstInfo.thickness, gather,
+      path:r.paths.cue, hits:[r.firstInfo,r.secondInfo].filter(Boolean),
+      anim:r.frames,
+      score:prob*100+c.tol+(gather||0)*0.05});
+  }
+  out.sort((a,b)=>b.score-a.score);
+  const picked=[], used=new Set();
+  for(const r of out){
+    if(picked.length>=3) break;
+    if(used.has(r.spin.key)) continue;
+    picked.push(r); used.add(r.spin.key);
+  }
+  for(const r of out){
+    if(picked.length>=3) break;
+    if(!picked.includes(r)) picked.push(r);
+  }
+  return picked;
+}
+
+// ---- 물리 경로 UI ----
+let phyRoutes=null, phySel=0;
+const PHY_COLORS=['#f4f1e8','#5fb8e8','#c98ce0'];
+function tipSVG3(spin){
+  let cx=15,cy=15;
+  cx+=spin.h*8; cy-=spin.v*8;
+  return `<svg width="30" height="30" viewBox="0 0 30 30">
+    <circle cx="15" cy="15" r="13" fill="#f4f1e8" stroke="#cfc8b4" stroke-width="2"/>
+    <line x1="15" y1="4" x2="15" y2="26" stroke="#d8d2bf" stroke-width="1"/>
+    <line x1="4" y1="15" x2="26" y2="15" stroke="#d8d2bf" stroke-width="1"/>
+    <circle cx="${cx}" cy="${cy}" r="4.5" fill="#d9582b"/></svg>`;
+}
+function renderPhyCards(){
+  const box=document.getElementById('g3-phyRoutes');
+  if(!phyRoutes){ box.innerHTML=''; return; }
+  if(!phyRoutes.length){
+    box.innerHTML='<div class="panel"><span class="empty">쓰리쿠션 득점 경로를 찾지 못했습니다 — '+
+      '배치를 바꾸거나 시스템 계산기를 활용해 보세요.</span></div>';
+    return;
+  }
+  const NAME={obj:'제1적구',target:'제2적구'};
+  box.innerHTML=phyRoutes.map((r,i)=>{
+    const eighths=Math.max(1,Math.min(8,Math.round(r.thickness*8)));
+    const thickLabel=eighths>=8?'8/8(정면)':`${eighths}/8`;
+    return `<div class="rcard ${i===phySel?'sel':''}" data-i="${i}">
+      <div class="top">
+        <span class="swatch" style="background:${PHY_COLORS[i]}"></span>
+        <span class="rtitle">${r.spin.label}</span>
+        <span class="badges">
+          <span class="badge">성공률 ${Math.round(r.prob*100)}%</span>
+          ${r.gather!=null?`<span class="badge gather">공 모임 ${r.gather}%</span>`:''}
+        </span>
+      </div>
+      <div class="desc">수구 → ${NAME[r.fk]} <b>${thickLabel} 두께</b>
+        → 쿠션 <b>${r.cush}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점<br>
+        추천 파워 <b>강(4레일)</b> · 성공률은 실전 오차 몬테카를로 24회 실측</div>
+      <div class="metrics">
+        <div class="metric">
+          <div class="mlabel">권장 당점</div>
+          <div class="mvis">${tipSVG3(r.spin)}</div>
+          <div class="mval">${r.spin.label}</div>
+        </div>
+        <div class="metric">
+          <div class="mlabel">맞히는 두께</div>
+          <div class="mvis" style="font-size:20px;font-weight:800">${thickLabel}</div>
+          <div class="mval">첫 적구 기준</div>
+        </div>
+        <div class="metric">
+          <div class="mlabel">경유 쿠션</div>
+          <div class="mvis" style="font-size:20px;font-weight:800">${r.cush}회</div>
+          <div class="mval">둘째 적구 전</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.rcard').forEach(c=>{
+    c.addEventListener('click',()=>{
+      stopAnim3(false);
+      phySel=+c.dataset.i; renderPhyCards(); draw();
+    });
+  });
+}
+function drawPhyRoute(r,color,alpha){
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.strokeStyle=color; ctx.lineWidth=3;
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(r.path[0].x,r.path[0].y);
+  for(let i=1;i<r.path.length;i++) ctx.lineTo(r.path[i].x,r.path[i].y);
+  ctx.stroke();
+  const n=r.path.length;
+  if(n>=2){
+    const a=r.path[n-2], b=r.path[n-1];
+    const ang=Math.atan2(b.y-a.y,b.x-a.x);
+    ctx.translate(b.x,b.y); ctx.rotate(ang);
+    ctx.fillStyle=color; ctx.beginPath();
+    ctx.moveTo(0,0); ctx.lineTo(-11,-5); ctx.lineTo(-11,5);
+    ctx.closePath(); ctx.fill();
+    ctx.setTransform(1,0,0,1,0,0);
+  }
+  for(const p of r.hits){
+    ctx.beginPath(); ctx.arc(p.x,p.y,5,0,7);
+    ctx.fillStyle=color; ctx.fill();
+    ctx.strokeStyle='#14110d'; ctx.lineWidth=1.5; ctx.stroke();
+  }
+  ctx.restore();
+}
+document.getElementById('g3-phys').addEventListener('click',()=>{
+  const btn=document.getElementById('g3-phys');
+  btn.textContent='계산 중…'; btn.disabled=true;
+  stopAnim3(false);
+  setTimeout(()=>{
+    solution=null;
+    phyRoutes=solve3(); phySel=0;
+    renderPhyCards(); draw();
+    btn.textContent='🎯 물리 경로 제안'; btn.disabled=false;
+  },30);
+});
+document.getElementById('g3-play').addEventListener('click',()=>{ playRoute3(); });
+// 실력 단계 (4구와 공유 — 양쪽 버튼 모두 동기화)
+function syncSkill3(){
+  const k=getSkill3();
+  document.querySelectorAll('[data-skill]').forEach(b=>
+    b.classList.toggle('on',b.dataset.skill===k));
+}
+document.querySelectorAll('#g3-skillseg [data-skill]').forEach(b=>
+  b.addEventListener('click',()=>{
+    try{ localStorage.setItem('hb_skill',b.dataset.skill); }catch(e){}
+    syncSkill3();
+    phyRoutes=null; renderPhyCards(); draw();
+  }));
+syncSkill3();
+
+// ===== 입력 =====
+function cpos(e){
+  const r=cv.getBoundingClientRect();
+  const t=e.touches?e.touches[0]:e;
+  return {x:(t.clientX-r.left)*(W/r.width),y:(t.clientY-r.top)*(H/r.height)};
+}
+function clampB(p){return{
+  x:Math.max(play.x0+BALL_R,Math.min(play.x1-BALL_R,p.x)),
+  y:Math.max(play.y0+BALL_R,Math.min(play.y1-BALL_R,p.y))};}
+function hitB(p){
+  const keys=phyRoutes?['cue','obj','target']:SYS_BALLS[system];
+  for(const k of keys) if(len(sub(balls[k],p))<BALL_R+10) return k;
+  return null;
+}
+function onDown(e){
+  e.preventDefault();
+  stopAnim3(false);
+  const p=cpos(e), k=hitB(p);
+  if(k){dragging=k;activeBall=k;syncTb();}
+  else{const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
+    solution=null;phyRoutes=null;renderPhyCards();}
+  draw();
+}
+function onMove(e){
+  if(!dragging) return;
+  e.preventDefault();
+  const c=clampB(cpos(e));
+  balls[dragging].x=c.x;balls[dragging].y=c.y;
+  solution=null; phyRoutes=null; renderPhyCards(); draw();
+}
+function onUp(){dragging=null;}
+cv.addEventListener('mousedown',onDown);
+cv.addEventListener('mousemove',onMove);
+window.addEventListener('mouseup',onUp);
+cv.addEventListener('touchstart',onDown,{passive:false});
+cv.addEventListener('touchmove',onMove,{passive:false});
+window.addEventListener('touchend',onUp);
+
+// ===== 툴바 / 탭 =====
+function syncTb(){
+  document.querySelectorAll('#g3-toolbar .tool').forEach(b=>
+    b.classList.toggle('active',b.dataset.ball===activeBall));
+}
+function buildToolbar(){
+  const tb=document.getElementById('g3-toolbar');
+  const labels={cue:'수구',obj:'제1적구',target:'제2적구(목표)'};
+  const colors={cue:'#5fb8e8',obj:'#e85f9c',target:'#d9582b'};
+  tb.innerHTML=SYS_BALLS[system].map(k=>
+    `<button class="tool ${k===activeBall?'active':''}" data-ball="${k}">`+
+    `<span class="dot" style="background:${colors[k]}"></span>${labels[k]}</button>`
+  ).join('');
+  tb.querySelectorAll('.tool').forEach(b=>
+    b.addEventListener('click',()=>{activeBall=b.dataset.ball;syncTb();}));
+}
+
+const SYS_INFO={
+  five:{
+    title:'파이브앤하프 계산',
+    formula:'제1쿠션수 = 수구수 − 제3쿠션수\n(기준 3팁 · 2팁이면 +5, 맥시멈이면 −3 보정)',
+    panelTitle:'파이브앤하프 시스템 (코너-50)',
+    panelText:'수구가 상단 장쿠션(1) → 좌측 단쿠션(2) → 하단 장쿠션(3)을 돌아 '+
+      '우측 트랙선을 따라 제2적구로 가는 쓰리쿠션 표준 계산법입니다. '+
+      '수구수는 우하 코너=50, 하단 장쿠션 왼쪽으로 60·70·80·90, 우측 단쿠션 '+
+      '위로 45·40·35·30(코너 근처가 반 칸 간격이라 "파이브 앤 하프"). '+
+      '수구수에서 제3쿠션수를 빼면 상단 장쿠션에서 겨냥할 1쿠션수(좌상 코너=50)가 '+
+      '나옵니다. 3쿠션수는 제2적구를 지나는 트랙에서 자동 역산됩니다. 당점은 3팁 순방향 회전.',
+  },
+  plus:{
+    title:'플러스 시스템 계산',
+    formula:'도착수 = 출발수 + 제1쿠션수\n→ 제1쿠션수 = 도착수 − 출발수 (유효 15~40)',
+    panelTitle:'플러스 시스템',
+    panelText:'수구가 우측 단쿠션(1) → 상단 장쿠션(2)을 거쳐 하단 장쿠션(3)으로 '+
+      '되돌아오는(플러스) 짧은 각을 다룹니다. 출발수와 도착수는 하단 장쿠션의 '+
+      '같은 눈금(우하 코너=0, 왼쪽으로 10/칸)이고, 1쿠션수는 우측 단쿠션 '+
+      '눈금(아래 0 → 위로 10/칸)입니다. 수구와 목표가 하단 장쿠션 부근일 때 정확합니다.',
+  },
+  ball:{
+    title:'볼 시스템 계산',
+    formula:'총 볼값 = 제1적구수 + 제3쿠션수 ± 진입 기울기\n총 볼값 = 두께(n/8) + 당점(팁수)',
+    panelTitle:'볼 시스템 (모델 A · 코너 기점 0)',
+    panelText:'제1적구를 실제로 맞히는 옆돌리기·제각돌리기 배치에서 두께와 당점을 한 번에 '+
+      '산출합니다. 제1적구수·제3쿠션수에 수구의 진입 기울기를 가감해 총 볼값을 구하고, '+
+      '이를 두께와 팁수의 합으로 분해합니다. 제1적구가 쿠션에 붙어 있으면 키스 위험이 있어 '+
+      '얇은 두께를 권장합니다.',
+  },
+};
+// 시스템별 표준 초기 배치 — 각 시스템이 가정하는 출발 형태에 맞춤
+// (좌표는 경로가 당구대 안에 들어오고 쿠션수가 유효 범위가 되도록 검증됨)
+const SYS_PRESET={
+  // 파이브앤하프: 수구 우하 구역(수구수 ~60), 제2적구는 3쿠션 20 트랙 위
+  five:{
+    cue:    {x:play.x1-DX*1.0, y:play.y1-DY*0.55},
+    target: {x:play.x1-DX*1.2, y:play.y1-DY*0.8},
+  },
+  // 플러스: 출발수 ~7, 도착수 ~32 → 제1쿠션수 ~25 (유효)
+  plus:{
+    cue:    {x:play.x1-DX*0.7, y:play.y1-DY*0.5},
+    target: {x:play.x1-DX*3.2, y:play.y1-DY*0.4},
+  },
+  // 볼 시스템: 큐선이 거의 수직인 옆돌리기 형태 (총 볼값이 유효 범위에 들어옴)
+  ball:{
+    cue:    {x:play.x0+PW*0.46, y:play.y1-DY*0.5},
+    obj:    {x:play.x0+PW*0.42, y:play.y0+PH*0.45},
+    target: {x:play.x1-DX*1.2,  y:play.y0+PH*0.12},
+  },
+};
+function applyPreset(){
+  const p=SYS_PRESET[system];
+  for(const k in p){ balls[k].x=p[k].x; balls[k].y=p[k].y; }
+}
+
+function applySystem(){
+  const info=SYS_INFO[system];
+  document.getElementById('g3-calcTitle').textContent=info.title;
+  document.getElementById('g3-formula').textContent=info.formula;
+  document.getElementById('g3-panelTitle').textContent=info.panelTitle;
+  document.getElementById('g3-panelText').textContent=info.panelText;
+  document.getElementById('g3-tipseg').style.display = system==='ball'?'none':'flex';
+  if(!SYS_BALLS[system].includes(activeBall)) activeBall=SYS_BALLS[system][0];
+  // 탭 전환 시 배치는 그대로 둔다 (정식 초구 유지).
+  // 시스템 가정과 안 맞으면 계산 시 경고가 표시됨.
+  buildToolbar();
+  solution=null;
+  stopAnim3(false);
+  phyRoutes=null; renderPhyCards();
+  document.getElementById('g3-result').textContent='공을 배치하고 ‘시스템 계산’을 누르세요.';
+  document.getElementById('g3-nums').innerHTML='';
+  draw();
+}
+document.querySelectorAll('#g3-tabs button').forEach(b=>
+  b.addEventListener('click',()=>{
+    system=b.dataset.sys;
+    document.querySelectorAll('#g3-tabs button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    applySystem();
+  }));
+document.querySelectorAll('#g3-tipseg button').forEach(b=>
+  b.addEventListener('click',()=>{
+    tip=+b.dataset.tip;
+    document.querySelectorAll('#g3-tipseg button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    if(solution){solution=compute();showResult(solution);draw();}
+  }));
+document.getElementById('g3-calc').addEventListener('click',()=>{
+  phyRoutes=null; renderPhyCards();
+  solution=compute(); showResult(solution); draw();
+});
+document.getElementById('g3-example').addEventListener('click',()=>{
+  // 현재 시스템이 잘 동작하는 예시 배치 불러오기
+  applyPreset();
+  phyRoutes=null; renderPhyCards();
+  solution=compute(); showResult(solution); draw();
+});
+document.getElementById('g3-reset').addEventListener('click',()=>{
+  stopAnim3(false);
+  // 정식 초구 배치로 복원
+  for(const k in defaults){ balls[k].x=defaults[k].x; balls[k].y=defaults[k].y; }
+  solution=null; phyRoutes=null; renderPhyCards(); draw();
+  document.getElementById('g3-result').textContent='공을 배치하고 ‘시스템 계산’을 누르세요.';
+  document.getElementById('g3-nums').innerHTML='';
+});
+
+applySystem();
+
+})();
+
+// ===== PWA 서비스워커 등록 (http(s)에서만 — file:// 및 테스트 환경 제외) =====
+(function(){
+  try{
+    if(typeof navigator!=='undefined' && 'serviceWorker' in navigator &&
+       typeof location!=='undefined' && /^https?:$/.test(location.protocol)){
+      window.addEventListener('load',function(){
+        navigator.serviceWorker.register('sw.js').catch(function(){});
+      });
+    }
+  }catch(e){}
+})();
+
+// ===== 종목 전환 =====
+(function(){
+  var tabs = document.querySelectorAll('#sportTabs button');
+  tabs.forEach(function(b){
+    b.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      document.getElementById('panel-m4').classList.toggle('show', b.dataset.mode==='m4');
+      document.getElementById('panel-m3').classList.toggle('show', b.dataset.mode==='m3');
+    });
+  });
+})();
+</script>
+</body>
+</html>
