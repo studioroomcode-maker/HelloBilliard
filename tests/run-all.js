@@ -14,6 +14,7 @@ const CASES = [
   { f: 'vision-html-test.js', exit0: true, match: [/5개 시나리오 전체 통과/] },
   // ── 사진 인식 실환경 (엄격 — 필드 사진 픽스처) ──
   { f: 'real-test.js', exit0: true, match: [/4공 인식 OK/, /카메라 높이 OK/] },
+  { f: 'g3-photo-test.js', exit0: true, match: [/3구 매핑 가능.*OK/] },
   { f: 'portrait-test.js', exit0: true, match: [/세로 방향 OK/, /4공 인식 OK/] },
   // ── 앱 통합 (관대 — MC 분산 허용, 크래시/단계 도달 검증) ──
   { f: 'smoke-test.js', match: [/스크립트 로드\/초기화 성공/, /4구 solve/, /3구 파이브앤하프/] },

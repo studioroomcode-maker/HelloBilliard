@@ -686,8 +686,22 @@
     <button class="tool primary" id="g3-phys">물리 경로 제안</button>
     <button class="tool" id="g3-play"><svg class="bicon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg> 재생</button>
     <button class="tool" id="g3-share">이미지 저장</button>
+    <button class="tool" id="g3-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
     <button class="tool" id="g3-example">예시 배치</button>
     <button class="tool" id="g3-reset">초기화</button>
+  </div>
+
+  <input type="file" id="g3-file" accept="image/*" style="display:none">
+  <div class="panel" id="g3-photoPanel" style="display:none">
+    <h3 style="font-size:12px;color:var(--accent);letter-spacing:.05em;margin-bottom:8px">
+      사진 인식 — 모서리 맞추기</h3>
+    <canvas id="g3-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
+      style="width:100%;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
+    <div class="actions" style="margin-top:10px">
+      <button class="tool primary" id="g3-detect">공 인식</button>
+      <button class="tool" id="g3-photoCancel">닫기</button>
+    </div>
+    <p class="hint" id="g3-photoMsg" style="margin-top:8px"></p>
   </div>
 
   <div class="routes" id="g3-phyRoutes"></div>
@@ -2568,6 +2582,16 @@ document.getElementById('g4-detect').addEventListener('click',()=>{
   calcBtn.click();          // 최적 경로 자동 계산
 });
 
+// 비전 코어를 3구 탭에서 재사용할 수 있게 노출
+// (detectBalls는 playRect 파라미터를 받아 좌표계 독립.
+//  BALL_R은 블롭 크기 필터에만 쓰여 3구 공(61.5mm)과의 7% 차이는 무시 가능)
+try{
+  if(typeof window!=='undefined'){
+    window.__hbVision={autoCorners,orderCorners,insetCorners,detectBalls,
+      estimateCamera,liftHeight,dropHeight,homography,applyH};
+  }
+}catch(e){}
+
 draw();renderCards();
 
 })();
@@ -3530,6 +3554,207 @@ document.getElementById('g3-share').addEventListener('click',()=>{
     },'image/png');
   }catch(e){}
 });
+/* ===== 사진 인식 (3구) — 4구 비전 코어(window.__hbVision) 재사용 =====
+   쓰리쿠션 공 3개: 내 수구(흰/노랑 설정 반영) + 나머지 수구 + 빨강 1개.
+   나머지 두 공은 수구에서 가까운 쪽이 제1적구(obj), 먼 쪽이 제2적구(target). */
+const p3cv=document.getElementById('g3-photoCv');
+const p3ctx=p3cv.getContext('2d');
+const p3Panel=document.getElementById('g3-photoPanel');
+const p3Msg=document.getElementById('g3-photoMsg');
+let p3Img=null, p3Corners=null, p3Drag=-1, p3Marks=null, p3Hinv=null, cam3=null;
+let p3Missing=[];
+const NAME3={cue:'수구',obj:'제1적구',target:'제2적구'};
+const MMS=PW/2844;   // px per mm (3구 좌표계)
+
+document.getElementById('g3-photo').addEventListener('click',()=>{
+  document.getElementById('g3-file').click();
+});
+document.getElementById('g3-file').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f) return;
+  const V=window.__hbVision;
+  const url=URL.createObjectURL(f);
+  const im=new Image();
+  im.onload=()=>{
+    URL.revokeObjectURL(url);
+    const sc=Math.min(1,1100/Math.max(im.width,im.height));
+    p3cv.width=Math.round(im.width*sc);
+    p3cv.height=Math.round(im.height*sc);
+    p3ctx.drawImage(im,0,0,p3cv.width,p3cv.height);
+    p3Img=p3ctx.getImageData(0,0,p3cv.width,p3cv.height);
+    p3Corners=V.insetCorners(V.orderCorners(V.autoCorners(p3Img)));
+    p3Marks=null; p3Hinv=null; cam3=null; p3Missing=[];
+    p3Panel.style.display='block';
+    p3Msg.textContent='노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인한 뒤 "공 인식"을 누르세요.';
+    drawP3();
+    if(p3Panel.scrollIntoView) p3Panel.scrollIntoView({behavior:'smooth'});
+  };
+  im.onerror=()=>{ URL.revokeObjectURL(url); };
+  im.src=url;
+  e.target.value='';
+});
+function drawP3(){
+  if(!p3Img) return;
+  p3ctx.putImageData(p3Img,0,0);
+  if(!p3Corners) return;
+  p3ctx.strokeStyle='#e8b53e'; p3ctx.lineWidth=Math.max(2,p3cv.width/400);
+  p3ctx.beginPath();
+  p3ctx.moveTo(p3Corners[0].x,p3Corners[0].y);
+  for(let i=1;i<=4;i++){const c=p3Corners[i%4]; p3ctx.lineTo(c.x,c.y);}
+  p3ctx.stroke();
+  const hr=Math.max(9,p3cv.width/60);
+  for(const c of p3Corners){
+    p3ctx.beginPath(); p3ctx.arc(c.x,c.y,hr,0,7);
+    p3ctx.fillStyle='rgba(232,181,62,.35)'; p3ctx.fill();
+    p3ctx.lineWidth=2; p3ctx.strokeStyle='#e8b53e'; p3ctx.stroke();
+  }
+  if(p3Marks) for(const mk of p3Marks){
+    p3ctx.beginPath(); p3ctx.arc(mk.x,mk.y,hr*0.8,0,7);
+    p3ctx.lineWidth=3; p3ctx.strokeStyle=mk.color; p3ctx.stroke();
+  }
+}
+function p3pos(e){
+  const r=p3cv.getBoundingClientRect();
+  const t=e.touches?e.touches[0]:e;
+  return {x:(t.clientX-r.left)*(p3cv.width/r.width),
+          y:(t.clientY-r.top)*(p3cv.height/r.height)};
+}
+function p3Down(e){
+  if(!p3Corners||p3Panel.style.display==='none') return;
+  e.preventDefault();
+  const p=p3pos(e);
+  let best=-1, bd=1e9;
+  p3Corners.forEach((c,i)=>{
+    const d=Math.hypot(c.x-p.x,c.y-p.y);
+    if(d<bd){bd=d;best=i;}
+  });
+  if(bd<p3cv.width/12){ p3Drag=best; return; }
+  // 미인식 공 탭 지정
+  if(p3Hinv&&p3Missing.length){
+    const V=window.__hbVision;
+    let t=V.applyH(p3Hinv,p.x,p.y);
+    if(cam3){
+      const q={x:(t.x-play.x0)/MMS, y:(t.y-play.y0)/MMS};
+      const b=V.dropHeight(q,cam3,30.75);
+      t={x:play.x0+b.x*MMS, y:play.y0+b.y*MMS};
+    }
+    if(t.x>play.x0-30&&t.x<play.x1+30&&t.y>play.y0-30&&t.y<play.y1+30){
+      const k=p3Missing.shift();
+      balls[k].x=clamp(t.x,play.x0+BALL_R,play.x1-BALL_R);
+      balls[k].y=clamp(t.y,play.y0+BALL_R,play.y1-BALL_R);
+      p3Marks=p3Marks||[];
+      p3Marks.push({x:p.x,y:p.y,color:balls[k].color});
+      solution=null; phyRoutes=null; renderPhyCards(); draw(); drawP3();
+      if(p3Missing.length){
+        p3Msg.textContent=`${NAME3[k]} 지정 완료 — 다음: 사진에서 ${NAME3[p3Missing[0]]} 위치를 탭하세요.`;
+      } else {
+        p3Msg.textContent='모든 공 지정 완료 — 물리 경로를 계산합니다.';
+        document.getElementById('g3-phys').click();
+      }
+    }
+  }
+}
+function p3Move(e){
+  if(p3Drag<0) return;
+  e.preventDefault();
+  const p=p3pos(e);
+  p3Corners[p3Drag]={x:clamp(p.x,0,p3cv.width-1), y:clamp(p.y,0,p3cv.height-1)};
+  drawP3();
+}
+function p3Up(){ p3Drag=-1; }
+p3cv.addEventListener('mousedown',p3Down);
+p3cv.addEventListener('mousemove',p3Move);
+window.addEventListener('mouseup',p3Up);
+p3cv.addEventListener('touchstart',p3Down,{passive:false});
+p3cv.addEventListener('touchmove',p3Move,{passive:false});
+window.addEventListener('touchend',p3Up);
+document.getElementById('g3-photoCancel').addEventListener('click',()=>{
+  p3Panel.style.display='none';
+  p3Img=null; p3Marks=null; p3Hinv=null; cam3=null; p3Missing=[];
+});
+document.getElementById('g3-detect').addEventListener('click',()=>{
+  if(!p3Img||!p3Corners) return;
+  const V=window.__hbVision;
+  const oc=V.orderCorners(p3Corners);
+  // 가로/세로 방향: 두 대응을 카메라 분해 잔차로 판별 (4구와 동일)
+  const cand=[oc,[oc[3],oc[0],oc[1],oc[2]]];
+  const est=cand.map(c=>V.estimateCamera(c,p3cv.width/2,p3cv.height/2));
+  let ci;
+  if(est[0]&&est[1]) ci=est[1].err<est[0].err?1:0;
+  else if(est[0]) ci=0;
+  else if(est[1]) ci=1;
+  else {
+    const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+    const qw=(d(oc[0],oc[1])+d(oc[3],oc[2]))/2;
+    const qh=(d(oc[0],oc[3])+d(oc[1],oc[2]))/2;
+    ci=qh>qw*1.15?1:0;
+  }
+  const cs=cand[ci];
+  // 쿠션 코(37mm) 높이 보정 → 천 바닥 기준 모서리
+  let cs2=cs;
+  cam3=est[ci]||null;
+  if(cam3){
+    const NOSE=37;
+    cam3={x:cam3.x, y:cam3.y, z:cam3.z+NOSE};
+    const w=[{x:0,y:0},{x:2844,y:0},{x:2844,y:1422},{x:0,y:1422}];
+    const q=w.map(wi=>V.liftHeight(wi,cam3,NOSE));
+    const Hp=V.homography(q,cs);
+    if(Hp) cs2=w.map(wi=>V.applyH(Hp,wi.x,wi.y));
+  }
+  const res=V.detectBalls(p3Img,cs2,play);
+  // 공 높이 시차 보정 (3구 공 중심 30.75mm)
+  if(cam3) for(const k in res.found){
+    const q={x:(res.found[k].x-play.x0)/MMS, y:(res.found[k].y-play.y0)/MMS};
+    const b=V.dropHeight(q,cam3,30.75);
+    res.found[k]={x:play.x0+b.x*MMS, y:play.y0+b.y*MMS};
+  }
+  // 3구 매핑: 내 수구(설정 색) → cue, 나머지 수구+빨강 → 가까운 순 obj/target
+  let myYellow=false;
+  try{ myYellow=localStorage.getItem('hb4_myball')==='yellow'; }catch(e){}
+  const white=res.found.cue, yellow=res.found.cue2, red=res.found.r1;
+  const myCue=myYellow?yellow:white;
+  const others=[myYellow?white:yellow, red].filter(Boolean);
+  const got=[], raw={};
+  p3Missing=[];
+  if(myCue){
+    balls.cue.x=clamp(myCue.x,play.x0+BALL_R,play.x1-BALL_R);
+    balls.cue.y=clamp(myCue.y,play.y0+BALL_R,play.y1-BALL_R);
+    got.push(NAME3.cue); raw.cue=myCue;
+  } else p3Missing.push('cue');
+  if(others.length&&myCue)
+    others.sort((a,b)=>Math.hypot(a.x-myCue.x,a.y-myCue.y)-Math.hypot(b.x-myCue.x,b.y-myCue.y));
+  for(const k of ['obj','target']){
+    const b=others.shift();
+    if(b){
+      balls[k].x=clamp(b.x,play.x0+BALL_R,play.x1-BALL_R);
+      balls[k].y=clamp(b.y,play.y0+BALL_R,play.y1-BALL_R);
+      got.push(NAME3[k]); raw[k]=b;
+    } else p3Missing.push(k);
+  }
+  // 오버레이 호모그래피(탭 지정·마크용)
+  const tbl=[{x:play.x0,y:play.y0},{x:play.x1,y:play.y0},
+             {x:play.x1,y:play.y1},{x:play.x0,y:play.y1}];
+  const Hb=V.homography(tbl,cs2);
+  p3Hinv=V.homography(cs2,tbl);
+  p3Marks=[];
+  if(Hb) for(const k in raw){
+    // 마크는 사진에서 보이는 위치(시차 보정 전이 아닌 raw는 이미 보정 후) —
+    // 확인용이므로 보정 후 좌표를 사진에 재투영
+    const pp=V.applyH(Hb,balls[k].x,balls[k].y);
+    p3Marks.push({x:pp.x,y:pp.y,color:balls[k].color});
+  }
+  drawP3();
+  solution=null; phyRoutes=null; renderPhyCards(); draw();
+  if(p3Missing.length){
+    p3Msg.textContent=(got.length?`인식 완료: ${got.join(' · ')} — `:'⚠ 공을 인식하지 못했습니다. ')+
+      `사진에서 ${NAME3[p3Missing[0]]} 위치를 탭해 지정해 주세요.`;
+    return;
+  }
+  p3Msg.textContent=`인식 완료: ${got.join(' · ')} — 제1적구는 수구에서 가까운 공으로 배정했습니다. `+
+    '아래 당구대에서 드래그로 수정할 수 있습니다. 물리 경로를 계산합니다.';
+  document.getElementById('g3-phys').click();
+});
+
 // 실력 단계 (4구와 공유 — 양쪽 버튼 모두 동기화)
 function syncSkill3(){
   const k=getSkill3();
