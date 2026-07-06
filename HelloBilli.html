@@ -3687,6 +3687,37 @@ function drawP3(){
     p3ctx.beginPath(); p3ctx.arc(mk.x,mk.y,hr*0.8,0,7);
     p3ctx.lineWidth=3; p3ctx.strokeStyle=mk.color; p3ctx.stroke();
   }
+  // 시스템 계산 경로(파이브앤하프 등)를 사진 원근에 맞춰 겹쳐 그린다
+  if(p3H&&solution&&solution.path&&solution.path.length>1){
+    const V=window.__hbVision;
+    p3ctx.save();
+    p3ctx.strokeStyle=solution.ok?'#f4f1e8':'#d9582b';
+    p3ctx.setLineDash(solution.ok?[]:[7,6]);
+    p3ctx.lineWidth=Math.max(2.5,p3cv.width/320);
+    p3ctx.lineJoin='round'; p3ctx.lineCap='round';
+    p3ctx.beginPath();
+    const s0=V.applyH(p3H,solution.path[0].x,solution.path[0].y);
+    p3ctx.moveTo(s0.x,s0.y);
+    for(let i=1;i<solution.path.length;i++){
+      const q=V.applyH(p3H,solution.path[i].x,solution.path[i].y);
+      p3ctx.lineTo(q.x,q.y);
+    }
+    p3ctx.stroke();
+    p3ctx.setLineDash([]);
+    // 쿠션 접점 ①②③
+    const pts=[solution.c1Pt,solution.c2Pt,solution.c3Pt].filter(Boolean);
+    pts.forEach((p,i)=>{
+      const q=V.applyH(p3H,p.x,p.y);
+      p3ctx.beginPath(); p3ctx.arc(q.x,q.y,Math.max(6,p3cv.width/130),0,7);
+      p3ctx.fillStyle='#e8b53e'; p3ctx.fill();
+      p3ctx.strokeStyle='#14110d'; p3ctx.lineWidth=2; p3ctx.stroke();
+      p3ctx.fillStyle='#14110d';
+      p3ctx.font='bold '+Math.max(9,p3cv.width/110)+'px "Bricolage Grotesque"';
+      p3ctx.textAlign='center'; p3ctx.textBaseline='middle';
+      p3ctx.fillText(i+1,q.x,q.y);
+    });
+    p3ctx.restore();
+  }
   // 물리 경로를 사진 원근에 맞춰 겹쳐 그린다
   if(p3H&&phyRoutes&&phyRoutes.length){
     const V=window.__hbVision;
@@ -4026,11 +4057,11 @@ document.querySelectorAll('#g3-tipseg button').forEach(b=>
     tip=+b.dataset.tip;
     document.querySelectorAll('#g3-tipseg button').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
-    if(solution){solution=compute();showResult(solution);draw();}
+    if(solution){solution=compute();showResult(solution);draw();drawP3();}
   }));
 document.getElementById('g3-calc').addEventListener('click',()=>{
   phyRoutes=null; renderPhyCards();
-  solution=compute(); showResult(solution); draw();
+  solution=compute(); showResult(solution); draw(); drawP3();
 });
 document.getElementById('g3-example').addEventListener('click',()=>{
   // 현재 시스템이 잘 동작하는 예시 배치 불러오기
