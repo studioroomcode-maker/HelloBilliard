@@ -1,0 +1,54 @@
+// Hello Billiard 테스트 러너 — 모든 검증을 순차 실행하고 기대 마커를 확인한다.
+// 사용: node tests/run-all.js  (CI와 로컬 공용, 순수 Node — 의존성 없음)
+//
+// exit0: 스크립트 자체가 실패 시 exit 1을 내는 엄격 테스트
+// match: stdout에 반드시 나타나야 하는 마커 (몬테카를로 분산이 있는 테스트는
+//        카드 개수 대신 '크래시 없이 해당 단계 도달'을 검증하는 관대한 마커 사용)
+const { spawnSync } = require('child_process');
+const path = require('path');
+
+const CASES = [
+  // ── 물리 정확도 (엄격 — 실측 앵커) ──
+  { f: 'validate-path.js', exit0: true, match: [/전체 검증 통과/] },
+  // ── 사진 인식 합성 5시나리오 (엄격 — 결정적) ──
+  { f: 'vision-html-test.js', exit0: true, match: [/5개 시나리오 전체 통과/] },
+  // ── 사진 인식 실환경 (엄격 — 필드 사진 픽스처) ──
+  { f: 'real-test.js', exit0: true, match: [/4공 인식 OK/, /카메라 높이 OK/] },
+  { f: 'portrait-test.js', exit0: true, match: [/세로 방향 OK/, /4공 인식 OK/] },
+  // ── 앱 통합 (관대 — MC 분산 허용, 크래시/단계 도달 검증) ──
+  { f: 'smoke-test.js', match: [/스크립트 로드\/초기화 성공/, /4구 solve/, /3구 파이브앤하프/] },
+  { f: 'smoke-test2.js', match: [/차단 배치 solve/] },
+  { f: 'g3-test.js', match: [/득점 라인/, /단-장-장/, /물리 경로 제안/] },
+  { f: 'skill-test.js', match: [/4구 \[beg\]/, /4구 \[adv\]/, /혼합 당점 배제 확인: OK/] },
+  { f: 'crule-test.js', match: [/규칙 \[any\]/, /규칙 \[1\]/, /규칙 \[3\]/] },
+  { f: 'sort-test.js', match: [/쿠션수순\(재계산\)/, /추천순/] },
+  // ── UI 마크업 단위 검증 ──
+  { f: 'block-test.js', match: [/경고 포함: OK/] },
+  { f: 'side-check2.js', match: [/좌\/우 라벨 포함 여부: OK/] },
+  { f: 'badge-check.js', match: [/gather 배지 포함: OK/] },
+];
+
+let failed = 0;
+const t0 = Date.now();
+for (const c of CASES) {
+  const started = Date.now();
+  const r = spawnSync(process.execPath, [path.join(__dirname, c.f)], {
+    encoding: 'utf8', timeout: 240000,
+  });
+  const out = (r.stdout || '') + (r.stderr || '');
+  const problems = [];
+  if (r.error) problems.push('실행 오류: ' + r.error.message);
+  if (c.exit0 && r.status !== 0) problems.push('exit ' + r.status);
+  for (const m of c.match) if (!m.test(out)) problems.push('마커 누락: ' + m);
+  const sec = ((Date.now() - started) / 1000).toFixed(1);
+  if (problems.length) {
+    failed++;
+    console.log(`✗ FAIL ${c.f} (${sec}s)`);
+    for (const p of problems) console.log('    - ' + p);
+    console.log(out.split('\n').slice(-12).map(l => '    | ' + l).join('\n'));
+  } else {
+    console.log(`✓ PASS ${c.f} (${sec}s)`);
+  }
+}
+console.log(`\n${CASES.length - failed}/${CASES.length} 통과 · 총 ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+process.exit(failed ? 1 : 0);
