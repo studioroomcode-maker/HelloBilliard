@@ -423,6 +423,28 @@
   /* 버튼 인라인 SVG 아이콘 */
   .bicon { vertical-align: -2px; margin-right: 5px; }
 
+  /* 액션 계층 — 주 버튼 크게 / 보조 줄은 은은하게 / 결과 도구는 미니 */
+  .actions .tool.primary { flex: 1.7; }
+  .actions.sub-actions { margin-top: 8px; }
+  .actions.sub-actions .tool {
+    background: transparent;
+    border-color: #2a231a;
+    color: #9b9484;
+    font-weight: 600;
+    font-size: 12px;
+    min-height: 34px;
+    padding: 6px 8px;
+  }
+  .actions.sub-actions .tool:hover { color: #c9c2b0; border-color: #3a3024; }
+  .routes-tools { margin-left: auto; display: flex; gap: 6px; }
+  .tool.mini {
+    flex: 0 0 auto;
+    min-width: 0;
+    min-height: 34px;
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+
   /* === 모바일 컴팩트 레이아웃 (640px 이하) === */
   @media (max-width: 640px) {
     .wrap {
@@ -460,10 +482,14 @@
     .tune-options:has(> button:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); } /* 2개 → 반반 */
     details.venue summary { padding: 8px 10px; font-size: 12px; }
 
-    /* 액션: 주 버튼 전체 폭 + 나머지 2×2 */
+    /* 액션: 주 버튼 전체 폭 + 나머지 2열 */
     .actions, .mode-panel > .actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
     .actions .tool { min-width: 0; }
     .actions .tool.primary:first-child { grid-column: 1 / -1; }
+    .actions .tool:nth-child(2):last-child { grid-column: 1 / -1; }   /* 2버튼 줄은 둘 다 전체 폭 */
+    .actions.sub-actions { display: flex; }                            /* 보조 줄은 한 줄 유지 */
+    .actions.sub-actions .tool { flex: 1; min-height: 32px; }
+    .routes-tools .tool.mini { min-height: 32px; padding: 5px 10px; }
 
     .seg { gap: 5px; }
     .seg button { padding: 6px 3px; font-size: 11px; }
@@ -586,9 +612,9 @@
 
   <div class="actions">
     <button class="tool primary" id="g4-calc">경로 3개 제안</button>
-    <button class="tool" id="g4-play"><svg class="bicon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg> 재생</button>
-    <button class="tool" id="g4-share">이미지 저장</button>
     <button class="tool" id="g4-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
+  </div>
+  <div class="actions sub-actions">
     <button class="tool" id="g4-reset">초기 배치</button>
     <button class="tool" id="g4-clearRoute">경로 지우기</button>
   </div>
@@ -609,12 +635,16 @@
 
   <div class="routes-head">
     <div class="section-label">제안 경로</div>
-    <div class="seg" id="g4-sortseg">
-      <button data-sort="best" class="on">추천순</button>
-      <button data-sort="cush">쿠션수순</button>
-      <button data-sort="prob">성공률순</button>
-      <button data-sort="gather">공모임순</button>
+    <div class="routes-tools">
+      <button class="tool mini" id="g4-play"><svg class="bicon" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>재생</button>
+      <button class="tool mini" id="g4-share">저장</button>
     </div>
+  </div>
+  <div class="seg" id="g4-sortseg" style="margin-top:8px">
+    <button data-sort="best" class="on">추천순</button>
+    <button data-sort="cush">쿠션수순</button>
+    <button data-sort="prob">성공률순</button>
+    <button data-sort="gather">공모임순</button>
   </div>
 
   <div class="routes" id="g4-routes">
@@ -684,11 +714,12 @@
   <div class="actions">
     <button class="tool primary" id="g3-calc">시스템 계산</button>
     <button class="tool primary" id="g3-phys">물리 경로 제안</button>
-    <button class="tool" id="g3-play"><svg class="bicon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg> 재생</button>
-    <button class="tool" id="g3-share">이미지 저장</button>
     <button class="tool" id="g3-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
+  </div>
+  <div class="actions sub-actions">
     <button class="tool" id="g3-example">예시 배치</button>
     <button class="tool" id="g3-reset">초기화</button>
+    <button class="tool" id="g3-share">이미지 저장</button>
   </div>
 
   <input type="file" id="g3-file" accept="image/*" style="display:none">
@@ -704,6 +735,12 @@
     <p class="hint" id="g3-photoMsg" style="margin-top:8px"></p>
   </div>
 
+  <div class="routes-head" id="g3-routesHead" style="display:none">
+    <div class="section-label">제안 경로</div>
+    <div class="routes-tools">
+      <button class="tool mini" id="g3-play"><svg class="bicon" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>재생</button>
+    </div>
+  </div>
   <div class="routes" id="g3-phyRoutes"></div>
 
   <div class="calc">
@@ -3442,6 +3479,9 @@ function tipSVG3(spin){
 }
 function renderPhyCards(){
   const box=document.getElementById('g3-phyRoutes');
+  const head=document.getElementById('g3-routesHead');
+  if(head) head.style.display=phyRoutes&&phyRoutes.length?'flex':'none';
+  drawP3();   // 사진이 열려 있으면 경로 오버레이도 갱신 (지움 포함)
   if(!phyRoutes){ box.innerHTML=''; return; }
   if(!phyRoutes.length){
     box.innerHTML='<div class="panel"><span class="empty">쓰리쿠션 득점 경로를 찾지 못했습니다 — '+
@@ -3562,6 +3602,7 @@ const p3ctx=p3cv.getContext('2d');
 const p3Panel=document.getElementById('g3-photoPanel');
 const p3Msg=document.getElementById('g3-photoMsg');
 let p3Img=null, p3Corners=null, p3Drag=-1, p3Marks=null, p3Hinv=null, cam3=null;
+let p3H=null;        // 테이블→사진 — 물리 경로를 사진 위에 겹쳐 그릴 때 사용
 let p3Missing=[];
 const NAME3={cue:'수구',obj:'제1적구',target:'제2적구'};
 const MMS=PW/2844;   // px per mm (3구 좌표계)
@@ -3583,7 +3624,7 @@ document.getElementById('g3-file').addEventListener('change',e=>{
     p3ctx.drawImage(im,0,0,p3cv.width,p3cv.height);
     p3Img=p3ctx.getImageData(0,0,p3cv.width,p3cv.height);
     p3Corners=V.insetCorners(V.orderCorners(V.autoCorners(p3Img)));
-    p3Marks=null; p3Hinv=null; cam3=null; p3Missing=[];
+    p3Marks=null; p3Hinv=null; p3H=null; cam3=null; p3Missing=[];
     p3Panel.style.display='block';
     p3Msg.textContent='노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인한 뒤 "공 인식"을 누르세요.';
     drawP3();
@@ -3611,6 +3652,45 @@ function drawP3(){
   if(p3Marks) for(const mk of p3Marks){
     p3ctx.beginPath(); p3ctx.arc(mk.x,mk.y,hr*0.8,0,7);
     p3ctx.lineWidth=3; p3ctx.strokeStyle=mk.color; p3ctx.stroke();
+  }
+  // 물리 경로를 사진 원근에 맞춰 겹쳐 그린다
+  if(p3H&&phyRoutes&&phyRoutes.length){
+    const V=window.__hbVision;
+    const drawOne=(r,color,alpha)=>{
+      if(!r.path||r.path.length<2) return;
+      p3ctx.save(); p3ctx.globalAlpha=alpha;
+      p3ctx.strokeStyle=color; p3ctx.lineWidth=Math.max(2.5,p3cv.width/320);
+      p3ctx.lineJoin='round'; p3ctx.lineCap='round';
+      p3ctx.beginPath();
+      const q0=V.applyH(p3H,r.path[0].x,r.path[0].y);
+      p3ctx.moveTo(q0.x,q0.y);
+      for(let i=1;i<r.path.length;i++){
+        const q=V.applyH(p3H,r.path[i].x,r.path[i].y);
+        p3ctx.lineTo(q.x,q.y);
+      }
+      p3ctx.stroke();
+      // 화살촉
+      const n=r.path.length;
+      const a=V.applyH(p3H,r.path[n-2].x,r.path[n-2].y);
+      const b=V.applyH(p3H,r.path[n-1].x,r.path[n-1].y);
+      const ang=Math.atan2(b.y-a.y,b.x-a.x);
+      const L=Math.max(8,p3cv.width/90);
+      p3ctx.translate(b.x,b.y); p3ctx.rotate(ang);
+      p3ctx.fillStyle=color; p3ctx.beginPath();
+      p3ctx.moveTo(0,0); p3ctx.lineTo(-L,-L*0.45); p3ctx.lineTo(-L,L*0.45);
+      p3ctx.closePath(); p3ctx.fill();
+      p3ctx.setTransform(1,0,0,1,0,0);
+      // 접촉점
+      for(const p of r.hits||[]){
+        const q=V.applyH(p3H,p.x,p.y);
+        p3ctx.beginPath(); p3ctx.arc(q.x,q.y,Math.max(4,p3cv.width/160),0,7);
+        p3ctx.fillStyle=color; p3ctx.fill();
+        p3ctx.strokeStyle='#14110d'; p3ctx.lineWidth=1.5; p3ctx.stroke();
+      }
+      p3ctx.restore();
+    };
+    phyRoutes.forEach((r,i)=>{ if(i!==phySel) drawOne(r,PHY_COLORS[i],0.22); });
+    if(phyRoutes[phySel]) drawOne(phyRoutes[phySel],PHY_COLORS[phySel],0.95);
   }
 }
 function p3pos(e){
@@ -3670,7 +3750,7 @@ p3cv.addEventListener('touchmove',p3Move,{passive:false});
 window.addEventListener('touchend',p3Up);
 document.getElementById('g3-photoCancel').addEventListener('click',()=>{
   p3Panel.style.display='none';
-  p3Img=null; p3Marks=null; p3Hinv=null; cam3=null; p3Missing=[];
+  p3Img=null; p3Marks=null; p3Hinv=null; p3H=null; cam3=null; p3Missing=[];
 });
 document.getElementById('g3-detect').addEventListener('click',()=>{
   if(!p3Img||!p3Corners) return;
@@ -3735,6 +3815,7 @@ document.getElementById('g3-detect').addEventListener('click',()=>{
   const tbl=[{x:play.x0,y:play.y0},{x:play.x1,y:play.y0},
              {x:play.x1,y:play.y1},{x:play.x0,y:play.y1}];
   const Hb=V.homography(tbl,cs2);
+  p3H=Hb;
   p3Hinv=V.homography(cs2,tbl);
   p3Marks=[];
   if(Hb) for(const k in raw){
