@@ -422,19 +422,25 @@
     .stage { padding: 10px; border-radius: 10px; }
     .section-label { margin: 14px 0 6px; }
 
-    /* 공 선택 4버튼 = 2×2 정렬 (한 개가 한 줄 전체 차지하는 것 방지) */
-    .toolbar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 10px 0 8px; }
-    .tool { min-width: 0; padding: 8px 4px; font-size: 12px; }
+    /* 버튼 높이 축소 (모바일은 낮게 — 44px 규칙 오버라이드) */
+    .tool, .tune-options button, .seg button, .tabs button, details.venue summary {
+      min-height: 36px;
+    }
 
-    /* 설정 버튼 축소 + 개수별 균등 그리드 */
-    .tune-controls { gap: 6px; }
-    .tune-row { gap: 4px; }
+    /* 공 선택 4버튼 = 한 줄 */
+    .toolbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 8px 0 6px; }
+    .tool { min-width: 0; padding: 6px 2px; font-size: 11px; }
+    .tool .dot { width: 9px; height: 9px; margin-right: 3px; }
+
+    /* 설정 버튼 축소 + 개수별 균등 그리드 (4개도 한 줄) */
+    .tune-controls { gap: 5px; }
+    .tune-row { gap: 3px; }
     .tune-label { font-size: 11px; }
-    .tune-options { gap: 6px; }
-    .tune-options button { padding: 8px 4px; font-size: 12px; }
-    .tune-options:has(> button:nth-child(4)) { grid-template-columns: repeat(2, 1fr); } /* 4개 → 2×2 */
+    .tune-options { gap: 5px; }
+    .tune-options button { padding: 6px 2px; font-size: 11px; }
+    .tune-options:has(> button:nth-child(4)) { grid-template-columns: repeat(4, 1fr); } /* 4개 → 한 줄 */
     .tune-options:has(> button:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); } /* 2개 → 반반 */
-    details.venue summary { padding: 9px 10px; font-size: 12px; }
+    details.venue summary { padding: 8px 10px; font-size: 12px; }
 
     /* 액션: 주 버튼 전체 폭 + 나머지 2×2 */
     .actions, .mode-panel > .actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
@@ -442,7 +448,8 @@
     .actions .tool.primary:first-child { grid-column: 1 / -1; }
 
     .seg { gap: 5px; }
-    .seg button { padding: 8px 4px; font-size: 11px; }
+    .seg button { padding: 6px 3px; font-size: 11px; }
+    .actions .tool { padding: 8px 4px; font-size: 12px; }
     .routes-head .seg { max-width: none; }
     .rcard { padding: 11px 12px; }
     .rcard .metrics { gap: 6px; }
@@ -502,6 +509,21 @@
         <button data-crule="3">3쿠션↑</button>
       </div>
     </div>
+    <div class="tune-row">
+      <span class="tune-label">내 수구 색</span>
+      <div class="tune-options">
+        <button data-myball="white" class="on">⚪ 흰공</button>
+        <button data-myball="yellow">🟡 노란공</button>
+      </div>
+    </div>
+    <div class="tune-row">
+      <span class="tune-label">내 실력</span>
+      <div class="tune-options">
+        <button data-skill="beg">초급</button>
+        <button data-skill="mid" class="on">중급</button>
+        <button data-skill="adv">상급</button>
+      </div>
+    </div>
     <details class="venue">
       <summary>구장 조건 <span class="venue-sub">천 상태 · 쿠션 · 테이블 보정</span></summary>
       <div class="tune-controls" style="margin:8px 0 0">
@@ -539,21 +561,6 @@
         </div>
       </div>
     </details>
-    <div class="tune-row">
-      <span class="tune-label">내 수구 색</span>
-      <div class="tune-options">
-        <button data-myball="white" class="on">⚪ 흰공</button>
-        <button data-myball="yellow">🟡 노란공</button>
-      </div>
-    </div>
-    <div class="tune-row">
-      <span class="tune-label">내 실력</span>
-      <div class="tune-options">
-        <button data-skill="beg">초급</button>
-        <button data-skill="mid" class="on">중급</button>
-        <button data-skill="adv">상급</button>
-      </div>
-    </div>
   </div>
 
   <div class="actions">
