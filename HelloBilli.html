@@ -359,7 +359,7 @@
   .sport-tabs button {
     flex:1; background:#1b1610; border:2px solid #312819;
     color:#9b9484; font-family:'Bricolage Grotesque',sans-serif;
-    font-weight:800; font-size:15px; padding:15px 10px; border-radius:12px;
+    font-weight:800; font-size:15px; padding:9px 10px; border-radius:12px;
     cursor:pointer; transition:all .15s; letter-spacing:-0.01em;
   }
   .sport-tabs button.on {
@@ -416,9 +416,10 @@
     }
     h1 { font-size: 24px; }
     h1 .sub { font-size: 11px; margin-top: 5px; }
-    .sport-tabs button { padding: 10px 6px; }
-    .sport-tabs button .big { font-size: 15px; }
-    .sport-tabs button .small { font-size: 10px; }
+    .sport-tabs { margin-bottom: 12px; }
+    .sport-tabs button { padding: 6px 6px; min-height: 0; }
+    .sport-tabs button .big { font-size: 14px; margin-bottom: 1px; }
+    .sport-tabs button .small { font-size: 9px; }
     .stage { padding: 10px; border-radius: 10px; }
     .section-label { margin: 14px 0 6px; }
 
@@ -478,20 +479,29 @@
   </div>
 
   <div class="mode-panel show" id="panel-m4">
-<div class="stage">
-    <canvas id="g4-table" width="840" height="460" role="img" aria-label="4구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
-  </div>
-
-  <div class="section-label">공 선택 — 누른 뒤 당구대를 탭하거나 드래그</div>
   <div class="toolbar" id="g4-toolbar">
     <button class="tool active" data-ball="cue"><span class="dot" style="background:#f7f4ea"></span>내 수구</button>
     <button class="tool" data-ball="cue2"><span class="dot" style="background:#f0c542"></span>상대 수구</button>
     <button class="tool" data-ball="r1"><span class="dot" style="background:#d23b2b"></span>적구 1</button>
     <button class="tool" data-ball="r2"><span class="dot" style="background:#d23b2b"></span>적구 2</button>
   </div>
+  <div class="tune-controls" style="margin:0 0 10px">
+    <div class="tune-row">
+      <span class="tune-label">내 수구 색</span>
+      <div class="tune-options">
+        <button data-myball="white" class="on">⚪ 흰공</button>
+        <button data-myball="yellow">🟡 노란공</button>
+      </div>
+    </div>
+  </div>
 
-  <div class="section-label">샷 · 개인 설정</div>
-  <div class="tune-controls" id="g4-tuning">
+<div class="stage">
+    <canvas id="g4-table" width="840" height="460" role="img" aria-label="4구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
+  </div>
+
+  <details class="venue autofold" open style="margin-top:12px">
+  <summary>샷 · 개인 설정 <span class="venue-sub">파워 · 쿠션 수 · 실력 · 구장 조건</span></summary>
+  <div class="tune-controls" id="g4-tuning" style="margin-top:8px">
     <div class="tune-row">
       <span class="tune-label">샷 파워</span>
       <div class="tune-options">
@@ -507,13 +517,6 @@
         <button data-crule="1">1쿠션</button>
         <button data-crule="2">2쿠션</button>
         <button data-crule="3">3쿠션↑</button>
-      </div>
-    </div>
-    <div class="tune-row">
-      <span class="tune-label">내 수구 색</span>
-      <div class="tune-options">
-        <button data-myball="white" class="on">⚪ 흰공</button>
-        <button data-myball="yellow">🟡 노란공</button>
       </div>
     </div>
     <div class="tune-row">
@@ -562,6 +565,7 @@
       </div>
     </details>
   </div>
+  </details>
 
   <div class="actions">
     <button class="tool primary" id="g4-calc">경로 3개 제안</button>
@@ -636,6 +640,8 @@
   </div>
 
   <div class="mode-panel" id="panel-m3">
+  <div class="toolbar" id="g3-toolbar" style="margin-bottom:10px"></div>
+
 <div class="tabs" id="g3-tabs">
     <button data-sys="five" class="on">파이브앤하프</button>
     <button data-sys="plus">플러스</button>
@@ -645,9 +651,6 @@
   <div class="stage">
     <canvas id="g3-table" width="860" height="460" role="img" aria-label="3구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
   </div>
-
-  <div class="section-label">공 선택 — 누른 뒤 당구대를 탭하거나 드래그</div>
-  <div class="toolbar" id="g3-toolbar"></div>
 
   <div class="tune-controls" style="margin:14px 0 0">
     <div class="tune-row">
@@ -3532,6 +3535,14 @@ document.getElementById('g3-reset').addEventListener('click',()=>{
 
 applySystem();
 
+})();
+
+// ===== 모바일에서 '샷 · 개인 설정' 기본 접힘 =====
+(function(){
+  try{
+    if(typeof window!=='undefined'&&window.innerWidth&&window.innerWidth<=640)
+      document.querySelectorAll('details.autofold').forEach(d=>d.removeAttribute('open'));
+  }catch(e){}
 })();
 
 // ===== PWA 서비스워커 등록 (http(s)에서만 — file:// 및 테스트 환경 제외) =====
