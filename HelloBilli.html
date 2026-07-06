@@ -697,6 +697,38 @@
 </div>
 
 <script>
+// ===== 전역 에러 수집 — 실기기 문제 가시화 =====
+// 최근 오류 30건을 localStorage('hb_errlog')에 보관.
+// 사용자 문의 시 콘솔에서 __hbErrors() 로 확인/복사할 수 있다.
+(function(){
+  try{
+    if(typeof window==='undefined') return;
+    var KEY='hb_errlog';
+    function push(entry){
+      try{
+        var log=JSON.parse(localStorage.getItem(KEY)||'[]');
+        log.push(entry);
+        while(log.length>30) log.shift();
+        localStorage.setItem(KEY,JSON.stringify(log));
+      }catch(e){}
+    }
+    window.addEventListener('error',function(e){
+      push({t:new Date().toISOString(), type:'error',
+        msg:String(e.message||''), src:(e.filename||'')+':'+(e.lineno||0),
+        ua:navigator.userAgent.slice(0,80)});
+    });
+    window.addEventListener('unhandledrejection',function(e){
+      push({t:new Date().toISOString(), type:'promise',
+        msg:String(e.reason&&e.reason.message||e.reason||'').slice(0,300),
+        ua:navigator.userAgent.slice(0,80)});
+    });
+    window.__hbErrors=function(){
+      try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }
+      catch(e){ return []; }
+    };
+  }catch(e){}
+})();
+
 // ===== 4구 모드 (스코프 격리) =====
 (function(){
 
