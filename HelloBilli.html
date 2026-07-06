@@ -2779,10 +2779,11 @@ function computeFive(){
             ahead:(td.x*rx+td.y*ry)>0};
   };
   // 3쿠션수 0~45를 훑어 편차 부호가 바뀌는 구간을 이분탐색
-  let prev=null, sol=null;
+  let prev=null, sol=null, near=null;   // near: 실패해도 보여줄 최근접 트랙
   for(let v=0;v<=45.01;v+=3){
     const r=evalC3(v);
     if(!r||r.bad){ prev=null; continue; }
+    if(r.ahead&&(!near||Math.abs(r.e)<Math.abs(near.r.e))) near={v,r};
     if(prev&&prev.r.e*r.e<=0&&(r.ahead||prev.r.ahead)){
       let lo=prev.v, hi=v, eLo=prev.r.e;
       for(let i=0;i<40;i++){
@@ -2796,14 +2797,25 @@ function computeFive(){
     prev={v,r};
   }
   if(!sol){
+    // 해가 없어도 '가장 가까운 트랙'을 점선으로 보여준다 — 왜 안 되는지 시각화
+    if(near){
+      const nr=near.r;
+      return {sys:'five', cueNum:nr.cueNum, c1Num:nr.c1v, c3Num:near.v, tipAdj,
+        c1Pt:nr.p1, c2Pt:nr.p2, c3Pt:nr.p3,
+        path:[{x:cue.x,y:cue.y}, nr.p1, nr.p2, nr.p3, nr.p4],
+        valid:false, ok:false, reason:'notrack', err:Math.abs(nr.e), nearMiss:true};
+    }
     const cn=fiveCueNumFrom({x:fiveC1X(25),y:play.y0},cue);
     return {sys:'five', cueNum:cn==null?0:cn, c1Num:0, c3Num:0, tipAdj,
             path:null, valid:false, ok:false, reason:'notrack'};
   }
   const r=sol.r;
   if(r.c1v<0||r.c1v>55||r.cueNum<18||r.cueNum>100){
+    // 범위 밖이어도 계산된 형태는 점선으로 보여준다
     return {sys:'five', cueNum:r.cueNum, c1Num:r.c1v, c3Num:sol.v, tipAdj,
-            path:null, valid:false, ok:false, reason:'c1range'};
+            c1Pt:r.p1, c2Pt:r.p2, c3Pt:r.p3,
+            path:[{x:cue.x,y:cue.y}, r.p1, r.p2, r.p3, r.p4],
+            valid:false, ok:false, reason:'c1range', err:Math.abs(r.e)};
   }
   // 경로 마지막 구간 = 3쿠션 → 4쿠션 트랙
   const path=[{x:cue.x,y:cue.y}, r.p1, r.p2, r.p3, r.p4];
@@ -2975,15 +2987,19 @@ function verdict(s){
     `<div class="miss">⚠ 제1적구(분홍)가 계산 경로 위에 있습니다 — 실제로는 먼저 맞아 `+
     `진로가 바뀝니다. 배치를 확인하거나 [물리 경로 제안]을 사용하세요.</div>`:'';
   if(!s.valid){
-    if(s.reason==='notrack' && s.sys==='five')
-      return `<div class="miss">⚠ 이 배치에서는 3쿠션 트랙이 제2적구를 지나가게 만들 수 없습니다.<br>`+
-        `파이브앤하프는 수구가 우하 구역(수구수 20~90)에 있고 제2적구가 `+
+    if(s.reason==='notrack' && s.sys==='five'){
+      const cm=s.nearMiss?Math.round(s.err/(PW/2844)/10):null;
+      return `<div class="miss">⚠ 이 배치에서는 3쿠션 트랙이 제2적구를 지나가게 만들 수 없습니다.`+
+        (cm!=null?`<br>당구대의 <b>빨간 점선</b>이 가장 가까운 트랙이며, 제2적구에서 약 <b>${cm}cm</b> 벗어납니다.`:'')+
+        `<br>파이브앤하프는 수구가 <b>노란 하이라이트 구역</b>(수구수 20~90)에 있고 제2적구가 `+
         `3쿠션 이후 트랙(하단→우측 방향) 위에 있어야 합니다. 배치가 다르면 `+
-        `플러스·볼 시스템이 더 적합할 수 있습니다.</div>`;
+        `플러스·볼 시스템 또는 [물리 경로 제안]이 더 적합합니다.</div>`;
+    }
     if(s.reason==='c1range' && s.sys==='five')
       return `<div class="miss">⚠ 제1쿠션수 ${r0(s.c1Num)} 또는 수구수 ${r0(s.cueNum)}이(가) `+
         `유효 범위(1쿠션 0~55 · 수구수 20~90)를 벗어납니다.<br>`+
-        `수구를 우하 구역으로 옮기거나 다른 시스템을 쓰세요.</div>`;
+        `당구대의 <b>빨간 점선</b>은 공식이 계산한 형태(신뢰 불가 구간)입니다 — `+
+        `수구를 <b>노란 하이라이트 구역</b>으로 옮기거나 [물리 경로 제안]을 쓰세요.</div>`;
     if(s.reason==='c1range' && s.sys==='plus')
       return `<div class="miss">⚠ 제1쿠션수 ${r0(s.c1Adj)}이(가) 유효 구간(15~40)을 벗어납니다.<br>`+
         `플러스는 우측 단쿠션의 15~40 구간만 정확합니다 — 이 배치는 `+
@@ -3143,6 +3159,24 @@ function drawBall(b,active){
 }
 
 function drawSolution(s){
+  // 파이브앤하프 무효 배치: 수구 유효 출발 구역을 하이라이트해 이유를 보여준다
+  if(s.sys==='five'&&!s.valid){
+    ctx.save();
+    ctx.strokeStyle='rgba(232,181,62,.55)'; ctx.lineWidth=7; ctx.lineCap='round';
+    ctx.beginPath();   // 하단 장쿠션 50~90 구간
+    ctx.moveTo(play.x1, play.y1-3);
+    ctx.lineTo(play.x1-4*DX, play.y1-3);
+    ctx.stroke();
+    ctx.beginPath();   // 우측 단쿠션 45~20 구간
+    ctx.moveTo(play.x1-3, play.y1);
+    ctx.lineTo(play.x1-3, play.y1-3*DY);
+    ctx.stroke();
+    ctx.fillStyle='rgba(232,181,62,.9)';
+    ctx.font='11px "Bricolage Grotesque"'; ctx.textAlign='right';
+    ctx.fillText('수구 출발 구역', play.x1-8, play.y1-3*DY-8);
+    ctx.textAlign='center';
+    ctx.restore();
+  }
   if(s.sys==='ball'){
     // 볼 시스템: 수구→제1적구→제2적구 보조선만 표시 (경로 계산은 두께 의존)
     ctx.strokeStyle='rgba(244,241,232,.4)';

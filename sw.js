@@ -1,6 +1,6 @@
 // Hello Billiard 서비스워커 — 오프라인 캐시
 // 버전을 올리면 이전 캐시가 정리되고 새 파일이 배포된다.
-const VERSION = 'hb-v8';
+const VERSION = 'hb-v9';
 const SHELL = [
   './HelloBilli.html',
   './manifest.webmanifest',
