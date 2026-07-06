@@ -406,6 +406,49 @@
   }
   .site-footer b { color: #c9c2b0; font-weight: 700; }
 
+  /* === 모바일 컴팩트 레이아웃 (640px 이하) === */
+  @media (max-width: 640px) {
+    .wrap {
+      padding: calc(14px + env(safe-area-inset-top))
+               calc(10px + env(safe-area-inset-right))
+               calc(40px + env(safe-area-inset-bottom))
+               calc(10px + env(safe-area-inset-left));
+    }
+    h1 { font-size: 24px; }
+    h1 .sub { font-size: 11px; margin-top: 5px; }
+    .sport-tabs button { padding: 10px 6px; }
+    .sport-tabs button .big { font-size: 15px; }
+    .sport-tabs button .small { font-size: 10px; }
+    .stage { padding: 10px; border-radius: 10px; }
+    .section-label { margin: 14px 0 6px; }
+
+    /* 공 선택 4버튼 = 2×2 정렬 (한 개가 한 줄 전체 차지하는 것 방지) */
+    .toolbar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 10px 0 8px; }
+    .tool { min-width: 0; padding: 8px 4px; font-size: 12px; }
+
+    /* 설정 버튼 축소 + 개수별 균등 그리드 */
+    .tune-controls { gap: 6px; }
+    .tune-row { gap: 4px; }
+    .tune-label { font-size: 11px; }
+    .tune-options { gap: 6px; }
+    .tune-options button { padding: 8px 4px; font-size: 12px; }
+    .tune-options:has(> button:nth-child(4)) { grid-template-columns: repeat(2, 1fr); } /* 4개 → 2×2 */
+    .tune-options:has(> button:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); } /* 2개 → 반반 */
+    details.venue summary { padding: 9px 10px; font-size: 12px; }
+
+    /* 액션: 주 버튼 전체 폭 + 나머지 2×2 */
+    .actions, .mode-panel > .actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .actions .tool { min-width: 0; }
+    .actions .tool.primary:first-child { grid-column: 1 / -1; }
+
+    .seg { gap: 5px; }
+    .seg button { padding: 8px 4px; font-size: 11px; }
+    .routes-head .seg { max-width: none; }
+    .rcard { padding: 11px 12px; }
+    .rcard .metrics { gap: 6px; }
+    .calc { padding: 13px 12px; }
+  }
+
 </style>
 </head>
 <body>
