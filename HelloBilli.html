@@ -437,23 +437,6 @@
   }
   .actions.sub-actions .tool:hover { color: #c9c2b0; border-color: #3a3024; }
   .routes-tools { margin-left: auto; display: flex; gap: 6px; }
-  /* 연습 모드 · 기록 */
-  .pr-row { margin-top: 9px; text-align: right; }
-  .panel.practice { border-color: var(--accent); }
-  .pr-head { display: flex; align-items: center; gap: 6px; font-size: 13px; flex-wrap: wrap; }
-  .pr-head .pr-score {
-    margin-left: auto;
-    font-family: 'Spline Sans Mono', monospace;
-    font-size: 12px;
-    color: var(--accent);
-  }
-  .stats-sum { font-size: 13px; margin-bottom: 10px; }
-  .stats-sum b { color: var(--accent); }
-  .stats-chart svg { display: block; }
-  .stats-cap { font-size: 10px; color: #9b9484; margin-top: 3px; }
-  .stats-tbl { margin-top: 12px; font-size: 12px; border-collapse: collapse; }
-  .stats-tbl th, .stats-tbl td { padding: 3px 14px 3px 0; text-align: left; color: #c9c2b0; }
-  .stats-tbl th { color: #9b9484; font-size: 10px; letter-spacing: .04em; }
   .tool.mini {
     flex: 0 0 auto;
     min-width: 0;
@@ -664,19 +647,6 @@
     <button data-sort="gather">공모임순</button>
   </div>
 
-  <div class="panel practice" id="g4-practice" style="display:none">
-    <div class="pr-head">
-      <b>연습 모드</b> — <span id="g4-prInfo"></span>
-      <span class="pr-score" id="g4-prScore"></span>
-    </div>
-    <div class="actions" style="margin-top:8px">
-      <button class="tool primary" id="g4-prOk">성공</button>
-      <button class="tool" id="g4-prMiss">실패</button>
-      <button class="tool" id="g4-prEnd">끝내기</button>
-    </div>
-    <p class="hint" style="margin-top:8px">실제 테이블에서 이 경로대로 친 뒤 결과를 기록하세요 — 아래 ‘연습 기록’에 누적됩니다.</p>
-  </div>
-
   <div class="routes" id="g4-routes">
     <div class="panel"><span class="empty">공을 배치하고 ‘경로 3개 제안’을 누르세요.</span></div>
   </div>
@@ -771,18 +741,6 @@
       <button class="tool mini" id="g3-play"><svg class="bicon" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>재생</button>
     </div>
   </div>
-  <div class="panel practice" id="g3-practice" style="display:none">
-    <div class="pr-head">
-      <b>연습 모드</b> — <span id="g3-prInfo"></span>
-      <span class="pr-score" id="g3-prScore"></span>
-    </div>
-    <div class="actions" style="margin-top:8px">
-      <button class="tool primary" id="g3-prOk">성공</button>
-      <button class="tool" id="g3-prMiss">실패</button>
-      <button class="tool" id="g3-prEnd">끝내기</button>
-    </div>
-  </div>
-
   <div class="routes" id="g3-phyRoutes"></div>
 
   <div class="calc">
@@ -802,11 +760,6 @@
     <p class="hint" id="g3-panelText"></p>
   </div>
   </div>
-
-  <details class="venue" id="hb-stats" style="margin-top:24px">
-    <summary>연습 기록 <span class="venue-sub">시도 · 성공률 · 최근 14일 추이</span></summary>
-    <div class="panel" id="hb-stats-body" style="margin-top:8px"></div>
-  </details>
 
   <footer class="site-footer">
     © 2026 <b>Studioroom</b> · Hello Billiard — All rights reserved.
@@ -1722,7 +1675,6 @@ function renderCards(){
           <div class="mval">${POWER_LABEL[pw]}</div>
         </div>
       </div>
-      <div class="pr-row"><button class="tool mini" data-pr="${i}">이 샷 연습</button></div>
     </div>`;
   }).join('');
   box.querySelectorAll('.rcard').forEach(c=>{
@@ -1730,12 +1682,6 @@ function renderCards(){
       stopAnim(false);
       selected=+c.dataset.i; renderCards(); draw();
       drawPhoto();   // 사진이 열려 있으면 선택 경로를 사진에도 반영
-    });
-  });
-  box.querySelectorAll('[data-pr]').forEach(b=>{
-    b.addEventListener('click',e=>{
-      e.stopPropagation();
-      openPractice(+b.dataset.pr);
     });
   });
 }
@@ -1870,38 +1816,6 @@ document.getElementById('g4-clearRoute').addEventListener('click',()=>{
 document.getElementById('g4-play').addEventListener('click',()=>{
   if(!routes.length){ return; }
   playRoute();
-});
-// ===== 연습 모드 — 선택 경로를 실제로 친 결과를 기록 =====
-let prSession=null;
-function openPractice(i){
-  const r=routes[i]; if(!r) return;
-  stopAnim(false);
-  selected=i; renderCards(); draw(); drawPhoto();
-  prSession={ok:0, n:0, spin:r.spin.label,
-    label:(STRAT[r.spin.key]||r.spin.label).split(' — ')[0],
-    prob:Math.round(r.prob*20)*5};
-  document.getElementById('g4-prInfo').textContent=
-    prSession.label+' · 예상 성공률 '+prSession.prob+'%';
-  updPrScore();
-  const p=document.getElementById('g4-practice');
-  p.style.display='block';
-  if(p.scrollIntoView) p.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-function updPrScore(){
-  document.getElementById('g4-prScore').textContent=
-    prSession&&prSession.n?('이번 세션 '+prSession.ok+'/'+prSession.n):'';
-}
-function prLog(ok){
-  if(!prSession) return;
-  prSession.n++; if(ok) prSession.ok++;
-  updPrScore();
-  try{ window.__hbPractice.log({mode:'4구', spin:prSession.spin, ok:ok}); }catch(e){}
-}
-document.getElementById('g4-prOk').addEventListener('click',()=>prLog(true));
-document.getElementById('g4-prMiss').addEventListener('click',()=>prLog(false));
-document.getElementById('g4-prEnd').addEventListener('click',()=>{
-  prSession=null;
-  document.getElementById('g4-practice').style.display='none';
 });
 // 현재 당구대(선택 경로 포함)를 PNG로 공유/저장 — 모바일은 시스템 공유 시트
 function shareCanvas(canvas,name){
@@ -3714,19 +3628,12 @@ function renderPhyCards(){
           <div class="mval">둘째 적구 전</div>
         </div>
       </div>
-      <div class="pr-row"><button class="tool mini" data-pr="${i}">이 샷 연습</button></div>
     </div>`;
   }).join('');
   box.querySelectorAll('.rcard').forEach(c=>{
     c.addEventListener('click',()=>{
       stopAnim3(false);
       phySel=+c.dataset.i; renderPhyCards(); draw();
-    });
-  });
-  box.querySelectorAll('[data-pr]').forEach(b=>{
-    b.addEventListener('click',e=>{
-      e.stopPropagation();
-      openPractice3(+b.dataset.pr);
     });
   });
 }
@@ -3773,37 +3680,6 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
   });
 });
 document.getElementById('g3-play').addEventListener('click',()=>{ playRoute3(); });
-// ===== 연습 모드 (3구) =====
-let prSession3=null;
-function openPractice3(i){
-  const r=phyRoutes&&phyRoutes[i]; if(!r) return;
-  stopAnim3(false);
-  phySel=i; renderPhyCards(); draw();
-  prSession3={ok:0, n:0, spin:r.spin.label,
-    prob:Math.round(r.prob*20)*5};
-  document.getElementById('g3-prInfo').textContent=
-    r.spin.label+' · 예상 성공률 '+prSession3.prob+'%';
-  updPrScore3();
-  const p=document.getElementById('g3-practice');
-  p.style.display='block';
-  if(p.scrollIntoView) p.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-function updPrScore3(){
-  document.getElementById('g3-prScore').textContent=
-    prSession3&&prSession3.n?('이번 세션 '+prSession3.ok+'/'+prSession3.n):'';
-}
-function prLog3(ok){
-  if(!prSession3) return;
-  prSession3.n++; if(ok) prSession3.ok++;
-  updPrScore3();
-  try{ window.__hbPractice.log({mode:'3구', spin:prSession3.spin, ok:ok}); }catch(e){}
-}
-document.getElementById('g3-prOk').addEventListener('click',()=>prLog3(true));
-document.getElementById('g3-prMiss').addEventListener('click',()=>prLog3(false));
-document.getElementById('g3-prEnd').addEventListener('click',()=>{
-  prSession3=null;
-  document.getElementById('g3-practice').style.display='none';
-});
 document.getElementById('g3-share').addEventListener('click',()=>{
   draw();
   try{
@@ -4276,75 +4152,6 @@ document.getElementById('g3-reset').addEventListener('click',()=>{
 
 applySystem();
 
-})();
-
-// ===== 연습 기록 (전역 — 4구·3구 공용, localStorage 'hb_practice') =====
-window.__hbPractice=(function(){
-  const KEY='hb_practice';
-  function load(){
-    try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }
-    catch(e){ return []; }
-  }
-  function save(l){
-    try{ localStorage.setItem(KEY,JSON.stringify(l.slice(-500))); }catch(e){}
-  }
-  function log(entry){
-    const l=load();
-    l.push(Object.assign({t:Date.now()},entry));
-    save(l); render();
-  }
-  function render(){
-    const el=document.getElementById('hb-stats-body');
-    if(!el) return;
-    const l=load();
-    if(!l.length){
-      el.innerHTML='<span class="empty">아직 기록이 없습니다 — 경로 카드의 [연습] 버튼으로 시작하세요.</span>';
-      return;
-    }
-    const n=l.length, ok=l.filter(e=>e.ok).length;
-    // 최근 14일 바 차트 (회색=시도, 초록=성공)
-    const days=[];
-    for(let i=13;i>=0;i--){
-      const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
-      days.push(d.getTime());
-    }
-    const bars=days.map(t0=>{
-      const es=l.filter(e=>e.t>=t0&&e.t<t0+864e5);
-      return {a:es.length, s:es.filter(e=>e.ok).length};
-    });
-    const maxA=Math.max(1,...bars.map(b=>b.a));
-    const BW=15,G=4,CH=44;
-    const svg='<svg width="'+(14*(BW+G))+'" height="'+(CH+4)+'" aria-hidden="true">'+
-      bars.map((b,i)=>{
-        const x=i*(BW+G);
-        const hA=Math.max(b.a?3:1,Math.round(b.a/maxA*CH));
-        const hS=Math.round(b.s/maxA*CH);
-        return '<rect x="'+x+'" y="'+(CH-hA)+'" width="'+BW+'" height="'+hA+'" rx="2" fill="#3a3024"/>'+
-          (b.s?'<rect x="'+x+'" y="'+(CH-hS)+'" width="'+BW+'" height="'+Math.max(3,hS)+'" rx="2" fill="#5fd08a"/>':'');
-      }).join('')+'</svg>';
-    // 당점별 상위 5
-    const bySpin={};
-    l.forEach(e=>{
-      const k=e.spin||'기타';
-      (bySpin[k]=bySpin[k]||{a:0,s:0}).a++;
-      if(e.ok) bySpin[k].s++;
-    });
-    const rows=Object.entries(bySpin).sort((a,b)=>b[1].a-a[1].a).slice(0,5)
-      .map(([k,v])=>'<tr><td>'+k+'</td><td>'+v.s+'/'+v.a+'</td><td>'+
-        Math.round(v.s/v.a*100)+'%</td></tr>').join('');
-    el.innerHTML=
-      '<div class="stats-sum">총 <b>'+n+'</b>회 시도 · 성공 <b>'+ok+'</b>회 · 성공률 <b>'+
-        Math.round(ok/n*100)+'%</b></div>'+
-      '<div class="stats-chart">'+svg+
-        '<div class="stats-cap">최근 14일 (회색 = 시도 · 초록 = 성공)</div></div>'+
-      (rows?'<table class="stats-tbl"><tr><th>당점</th><th>성공/시도</th><th>성공률</th></tr>'+rows+'</table>':'');
-  }
-  try{
-    const d=document.getElementById('hb-stats');
-    if(d) d.addEventListener('toggle',render);
-  }catch(e){}
-  render();
-  return {log,render};
 })();
 
 // ===== 모바일에서 '샷 · 개인 설정' 기본 접힘 =====
