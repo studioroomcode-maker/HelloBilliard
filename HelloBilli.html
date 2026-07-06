@@ -2842,8 +2842,17 @@ function computePlus(){
   const nearBottom = cue.y>play.y1-PH*0.45 && tgt.y>play.y1-PH*0.45;
   const c1Valid = c1Adj>=15 && c1Adj<=40;
   if(!c1Valid){
+    // 무효여도 형태를 점선으로 보여준다 — 1쿠션을 유효 경계로 강제한 참고 경로
+    const cc=clamp(c1Adj,15,40);
+    const q1={x:play.x1, y:play.y1-cc/10*DY};
+    const q3={x:clamp(play.x1-c3Num/10*DX,play.x0,play.x1), y:play.y1};
+    const qm={x:q3.x, y:2*play.y0-q3.y};
+    const qk=(play.y0-q1.y)/((qm.y-q1.y)||1e-9);
+    const q2={x:clamp(q1.x+(qm.x-q1.x)*qk,play.x0,play.x1), y:play.y0};
     return {sys:'plus', startNum, c1Num, c3Num, c1Adj,
-            path:null, valid:false, ok:false, reason:'c1range'};
+            c1Pt:q1, c2Pt:q2, c3Pt:q3,
+            path:[{x:cue.x,y:cue.y}, q1, q2, q3],
+            valid:false, ok:false, reason:'c1range'};
   }
   const p1={x:play.x1, y:play.y1-c1Adj/10*DY};        // 1쿠션 = 우측 단쿠션
   const p3={x:play.x1-c3Num/10*DX, y:play.y1};        // 3쿠션 = 하단 도착
@@ -3002,8 +3011,9 @@ function verdict(s){
         `수구를 <b>노란 하이라이트 구역</b>으로 옮기거나 [물리 경로 제안]을 쓰세요.</div>`;
     if(s.reason==='c1range' && s.sys==='plus')
       return `<div class="miss">⚠ 제1쿠션수 ${r0(s.c1Adj)}이(가) 유효 구간(15~40)을 벗어납니다.<br>`+
-        `플러스는 우측 단쿠션의 15~40 구간만 정확합니다 — 이 배치는 `+
-        `파이브앤하프가 더 적합할 수 있습니다.</div>`;
+        `당구대의 <b>빨간 점선</b>은 유효 경계로 강제한 참고 형태(신뢰 불가)입니다. `+
+        `플러스는 수구와 목표가 <b>노란 하이라이트(하단)</b> 부근에 있을 때 쓰는 시스템입니다 — `+
+        `이 배치는 파이브앤하프 또는 [물리 경로 제안]이 더 적합합니다.</div>`;
     return `<div class="miss">⚠ 계산값이 시스템 적용 범위를 벗어납니다 — `+
       `다른 시스템이 더 적합한 배치입니다.</div>`;
   }
@@ -3159,6 +3169,26 @@ function drawBall(b,active){
 }
 
 function drawSolution(s){
+  // 플러스 무효 배치: 수구·목표가 있어야 할 하단 구역과 1쿠션 유효 구간 표시
+  if(s.sys==='plus'&&!s.valid){
+    ctx.save();
+    ctx.strokeStyle='rgba(232,181,62,.55)'; ctx.lineWidth=7; ctx.lineCap='round';
+    ctx.beginPath();   // 하단 장쿠션 = 출발·도착 구역
+    ctx.moveTo(play.x1, play.y1-3);
+    ctx.lineTo(play.x0+DX, play.y1-3);
+    ctx.stroke();
+    ctx.beginPath();   // 우측 단쿠션 15~40 = 1쿠션 유효 구간
+    ctx.moveTo(play.x1-3, play.y1-1.5*DY);
+    ctx.lineTo(play.x1-3, play.y1-4*DY);
+    ctx.stroke();
+    ctx.fillStyle='rgba(232,181,62,.9)';
+    ctx.font='11px "Bricolage Grotesque"'; ctx.textAlign='center';
+    ctx.fillText('수구·목표 구역(하단)', (play.x0+play.x1)/2, play.y1-12);
+    ctx.textAlign='right';
+    ctx.fillText('1쿠션 15~40', play.x1-8, play.y1-4*DY-8);
+    ctx.textAlign='center';
+    ctx.restore();
+  }
   // 파이브앤하프 무효 배치: 수구 유효 출발 구역을 하이라이트해 이유를 보여준다
   if(s.sys==='five'&&!s.valid){
     ctx.save();
@@ -3178,7 +3208,9 @@ function drawSolution(s){
     ctx.restore();
   }
   if(s.sys==='ball'){
-    // 볼 시스템: 수구→제1적구→제2적구 보조선만 표시 (경로 계산은 두께 의존)
+    // 볼 시스템: 경로 도형이 아니라 '조준 기준선'을 보여주는 시스템 —
+    // 큐선(수구→제1적구)과 제1→제2적구 연결선에 라벨을 달아 오해를 막는다
+    ctx.save();
     ctx.strokeStyle='rgba(244,241,232,.4)';
     ctx.setLineDash([5,5]); ctx.lineWidth=2;
     ctx.beginPath();
@@ -3186,6 +3218,14 @@ function drawSolution(s){
     ctx.lineTo(balls.obj.x,balls.obj.y);
     ctx.lineTo(balls.target.x,balls.target.y);
     ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(244,241,232,.75)';
+    ctx.font='10px "Bricolage Grotesque"'; ctx.textAlign='center';
+    const m1={x:(balls.cue.x+balls.obj.x)/2, y:(balls.cue.y+balls.obj.y)/2};
+    const m2={x:(balls.obj.x+balls.target.x)/2, y:(balls.obj.y+balls.target.y)/2};
+    ctx.fillText('큐선 (기울기 측정)', m1.x, m1.y-8);
+    ctx.fillText('적구 연결선', m2.x, m2.y-8);
+    ctx.fillText('※ 경로 아님 — 두께·팁 산출용 조준 기준선', (play.x0+play.x1)/2, play.y1-12);
+    ctx.restore();
     return;
   }
   if(!s.path) return;
