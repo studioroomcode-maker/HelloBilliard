@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "_comment": "앱은 이제 루트(/)에서 index.html 로 직접 서빙된다. 옛 주소는 308 로 보낸다 — 기존 PWA 설치본의 start_url 과 이미 공유된 링크·검색 색인을 살리기 위함. (rewrite 가 아니라 파일 rename 이라 라우팅 루프 위험이 없다)",
   "redirects": [
     { "source": "/HelloBilli.html", "destination": "/", "permanent": true }
   ],

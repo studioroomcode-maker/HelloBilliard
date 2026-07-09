@@ -75,6 +75,10 @@ node tests/validate-path.js  # 물리 앵커만
 
 `main` push → Vercel 자동 배포. 큰 변경 시 `sw.js`의 `VERSION`(`hb-vN`)을 올려 구 캐시를 정리할 것.
 
+**`vercel.json` 에 주석용 키를 넣지 말 것** — Vercel 이 스키마를 엄격히 검증해서
+`_comment` 같은 임의 최상위 키가 있으면 **배포 자체가 실패한다**(`$schema` 는 예외로 허용).
+설명은 이 README 에 적는다.
+
 ## 디버깅
 
 - 브라우저 콘솔에서 `__hbErrors()` — 기기에 기록된 최근 오류 30건
