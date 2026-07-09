@@ -5,21 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Hello Billiard · 당구 AI 코치 — 사진으로 4구 경로 계산 + 쓰리쿠션 시스템</title>
 <meta name="description" content="당구대 사진 한 장으로 공 배치를 읽고, 물리 시뮬레이션으로 4구 득점 경로를 성공률과 함께 제안합니다. 쓰리쿠션 파이브앤하프·플러스·볼 시스템 계산기 포함. 설치 없이 무료, 사진은 기기 밖으로 나가지 않습니다.">
-<link rel="canonical" href="https://hello-billiard.vercel.app/HelloBilli.html">
+<link rel="canonical" href="https://hellobilliard.studioroomkr.com/HelloBilli.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hello Billiard">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:title" content="Hello Billiard — 당구 AI 코치">
 <meta property="og:description" content="사진으로 공 배치를 읽고 물리 엔진이 득점 경로를 성공률과 함께 제안합니다. 4구 경로 + 쓰리쿠션 시스템 계산기.">
-<meta property="og:url" content="https://hello-billiard.vercel.app/HelloBilli.html">
-<meta property="og:image" content="https://hello-billiard.vercel.app/og-image.png">
+<meta property="og:url" content="https://hellobilliard.studioroomkr.com/HelloBilli.html">
+<meta property="og:image" content="https://hellobilliard.studioroomkr.com/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="당구대 위에 득점 경로 3개가 그려진 Hello Billiard 화면">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Hello Billiard — 당구 AI 코치">
 <meta name="twitter:description" content="사진으로 공 배치를 읽고 물리 엔진이 득점 경로를 성공률과 함께 제안합니다.">
-<meta name="twitter:image" content="https://hello-billiard.vercel.app/og-image.png">
+<meta name="twitter:image" content="https://hellobilliard.studioroomkr.com/og-image.png">
 <meta name="theme-color" content="#14110d">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -421,6 +421,9 @@
     letter-spacing: .02em;
   }
   .site-footer b { color: #c9c2b0; font-weight: 700; }
+  .site-footer a { color: #9b9484; text-decoration: underline; text-underline-offset: 2px; }
+  .site-footer a:hover { color: #e8b53e; }
+  .site-footer .legal { margin-top: 8px; }
 
   /* 카드 기술 상세 접기 */
   .rdetail { margin-top: 6px; }
@@ -523,7 +526,7 @@
   "@type": "WebApplication",
   "name": "Hello Billiard",
   "alternateName": "헬로 빌리아드 — 당구 AI 코치",
-  "url": "https://hello-billiard.vercel.app/HelloBilli.html",
+  "url": "https://hellobilliard.studioroomkr.com/HelloBilli.html",
   "applicationCategory": "SportsApplication",
   "operatingSystem": "Any (PWA)",
   "browserRequirements": "JavaScript 필요",
@@ -531,7 +534,7 @@
   "isAccessibleForFree": true,
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
   "author": { "@type": "Organization", "name": "Studioroom" },
-  "screenshot": "https://hello-billiard.vercel.app/og-image.png",
+  "screenshot": "https://hellobilliard.studioroomkr.com/og-image.png",
   "featureList": [
     "당구대 사진에서 공 배치 자동 인식 (온디바이스)",
     "4구 득점 경로 3개 제안 + 몬테카를로 성공률",
@@ -804,6 +807,14 @@
 
   <footer class="site-footer">
     © 2026 <b>Studioroom</b> · Hello Billiard — All rights reserved.
+    <div class="legal">
+      <a href="./privacy.html">개인정보처리방침</a> ·
+      <a href="./terms.html">이용약관</a> ·
+      <a href="mailto:contact@studioroomkr.com">문의</a>
+    </div>
+    <div class="legal" style="color:#6f6a5e">
+      경로와 성공률은 물리 시뮬레이션에 기반한 참고 정보입니다. 실제 결과는 테이블 상태에 따라 달라집니다.
+    </div>
   </footer>
 </div>
 

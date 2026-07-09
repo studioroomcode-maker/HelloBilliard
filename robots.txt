@@ -3,4 +3,4 @@ Allow: /
 Disallow: /tests/
 Disallow: /.github/
 
-Sitemap: https://hello-billiard.vercel.app/sitemap.xml
+Sitemap: https://hellobilliard.studioroomkr.com/sitemap.xml

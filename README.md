@@ -2,7 +2,7 @@
 
 4구 경로 시뮬레이터 + 3구(쓰리쿠션) 시스템 계산기. 공을 배치하거나 **당구대 사진을 찍으면** 물리 시뮬레이션으로 득점 경로를 성공률과 함께 제안합니다.
 
-**라이브(PWA)**: https://hello-billiard.vercel.app — 폰 브라우저에서 열고 "홈 화면에 추가"하면 오프라인 동작하는 설치형 앱이 됩니다.
+**라이브(PWA)**: https://hellobilliard.studioroomkr.com — 폰 브라우저에서 열고 "홈 화면에 추가"하면 오프라인 동작하는 설치형 앱이 됩니다.
 
 © 2026 Studioroom
 
@@ -32,6 +32,8 @@
 ```
 HelloBilli.html      앱 전체 (단일 파일: 스타일 + 4구/3구 엔진 + 비전 + UI)
 index.html           루트 → 앱 리다이렉트 (+ 공유용 OG 태그 사본)
+privacy.html         개인정보처리방침 (수집 없음 / 사진 온디바이스)
+terms.html           이용약관 (시뮬레이션 결과 면책)
 manifest.webmanifest PWA 매니페스트
 sw.js                서비스워커 (오프라인 캐시) — 배포 시 VERSION 올리기
 vercel.json          보안 헤더(CSP 등) + 정적 캐시 정책

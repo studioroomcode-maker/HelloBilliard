@@ -115,9 +115,9 @@ for label in ["4구 경로", "쓰리쿠션 시스템", "온디바이스"]:
 
 # 하단 서명 + 액센트 바
 d.rectangle(R(X, 508, X + 46, 512), fill=ACCENT)
-d.text((X * SS, 528 * SS), "hello-billiard.vercel.app", font=f_body, fill=(0x8a, 0x84, 0x76))
+d.text((X * SS, 528 * SS), "hellobilliard.studioroomkr.com", font=f_body, fill=(0x8a, 0x84, 0x76))
 
 img = img.resize((W, H), Image.LANCZOS)
-out = os.path.join(os.path.dirname(__file__), "og-image.png")
+out = os.path.join(os.path.dirname(__file__), os.pardir, "og-image.png")
 img.save(out, "PNG", optimize=True)
 print("saved", out, os.path.getsize(out), "bytes")
