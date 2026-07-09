@@ -40,6 +40,7 @@ vercel.json          보안 헤더(CSP 등) + 정적 캐시 정책
 robots.txt           크롤러 정책 + sitemap 위치
 sitemap.xml          색인 대상 URL (HelloBilli.html)
 og-image.png         공유 미리보기 1200×630 — 재생성: python tools/gen-og.py
+fonts/               자체 호스팅 폰트 (woff2 가변, latin 서브셋) — 외부 요청 제거
 icons/               앱 아이콘 (tests 아님 — 재생성: 세션 스크립트 gen-icons.js)
 tools/               개발용 스크립트 (배포 제외)
 tests/               검증 스위트 14종 + 실환경 사진 픽스처(gzip)
@@ -50,8 +51,13 @@ tests/               검증 스위트 14종 + 실환경 사진 픽스처(gzip)
 **메타 태그를 고칠 땐 `HelloBilli.html` 과 `index.html` 을 함께 고칠 것** — 공유되는 URL 은
 루트(`/`)이고 스크래퍼가 meta refresh 를 따라가지 않을 수 있어 OG 태그를 양쪽에 둔다.
 
-**CSP 주의** — `sw.js` 는 자기 응답 헤더의 CSP 를 상속한다. 구글 폰트 런타임 캐시가
-`fetch()` 를 쓰므로 `connect-src` 에 `fonts.googleapis.com`·`fonts.gstatic.com` 이 필요하다.
+**외부 요청 0건** — 폰트를 자체 호스팅(`fonts/`)하므로 앱은 어떤 외부 도메인도 부르지 않는다.
+CSP 가 `default-src 'self'` 로 잠겨 있으니, 외부 스크립트·글꼴·이미지를 추가하려면
+`vercel.json` 의 CSP 를 함께 열어야 한다. (`sw.js` 는 자기 응답 헤더의 CSP 를 상속한다)
+
+**폰트** — 둘 다 가변 폰트라 파일 하나가 모든 굵기를 담당한다. `unicode-range` 는 latin 서브셋이라
+한글은 시스템 폰트로 폴백된다(두 폰트에 한글 글리프가 없어 기존과 동일). 갱신하려면
+Google Fonts CSS 를 받아 latin `woff2` URL 을 뽑아 `fonts/` 에 덮어쓰고 `sw.js` VERSION 을 올린다.
 
 ## 테스트
 

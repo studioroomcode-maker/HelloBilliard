@@ -1,11 +1,13 @@
 // Hello Billiard 서비스워커 — 오프라인 캐시
 // 버전을 올리면 이전 캐시가 정리되고 새 파일이 배포된다.
-const VERSION = 'hb-v15';
+const VERSION = 'hb-v16';
 const SHELL = [
   './HelloBilli.html',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './fonts/bricolage-grotesque-latin.woff2',
+  './fonts/spline-sans-mono-latin.woff2',
 ];
 
 self.addEventListener('install', e => {
@@ -25,21 +27,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // 구글 폰트: 런타임 캐시 (stale-while-revalidate)
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    e.respondWith(
-      caches.open(VERSION + '-fonts').then(async c => {
-        const hit = await c.match(e.request);
-        const net = fetch(e.request).then(res => {
-          if (res.ok) c.put(e.request, res.clone());
-          return res;
-        }).catch(() => hit);
-        return hit || net;
-      })
-    );
-    return;
-  }
-
+  // 폰트는 자체 호스팅으로 바뀌어 아래 동일 오리진 경로가 처리한다.
+  // (구글 폰트 런타임 캐시 분기는 제거됨 — 외부 요청이 더는 없다)
   if (url.origin !== location.origin) return;
 
   // 앱 셸: 네트워크 우선(항상 최신), 실패 시 캐시 (오프라인 동작)
