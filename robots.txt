@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /tests/
+Disallow: /.github/
+
+Sitemap: https://hello-billiard.vercel.app/sitemap.xml

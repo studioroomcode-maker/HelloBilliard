@@ -31,13 +31,25 @@
 
 ```
 HelloBilli.html      앱 전체 (단일 파일: 스타일 + 4구/3구 엔진 + 비전 + UI)
-index.html           루트 → 앱 리다이렉트
+index.html           루트 → 앱 리다이렉트 (+ 공유용 OG 태그 사본)
 manifest.webmanifest PWA 매니페스트
 sw.js                서비스워커 (오프라인 캐시) — 배포 시 VERSION 올리기
+vercel.json          보안 헤더(CSP 등) + 정적 캐시 정책
+robots.txt           크롤러 정책 + sitemap 위치
+sitemap.xml          색인 대상 URL (HelloBilli.html)
+og-image.png         공유 미리보기 1200×630 — 재생성: python tools/gen-og.py
 icons/               앱 아이콘 (tests 아님 — 재생성: 세션 스크립트 gen-icons.js)
-tests/               검증 스위트 13종 + 실환경 사진 픽스처(gzip)
+tools/               개발용 스크립트 (배포 제외)
+tests/               검증 스위트 14종 + 실환경 사진 픽스처(gzip)
 .github/workflows/   CI — push/PR마다 tests/run-all.js
+.vercelignore        tests/ tools/ .github/ README 를 배포에서 제외
 ```
+
+**메타 태그를 고칠 땐 `HelloBilli.html` 과 `index.html` 을 함께 고칠 것** — 공유되는 URL 은
+루트(`/`)이고 스크래퍼가 meta refresh 를 따라가지 않을 수 있어 OG 태그를 양쪽에 둔다.
+
+**CSP 주의** — `sw.js` 는 자기 응답 헤더의 CSP 를 상속한다. 구글 폰트 런타임 캐시가
+`fetch()` 를 쓰므로 `connect-src` 에 `fonts.googleapis.com`·`fonts.gstatic.com` 이 필요하다.
 
 ## 테스트
 
