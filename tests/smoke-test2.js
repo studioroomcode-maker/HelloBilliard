@@ -1,6 +1,6 @@
 // 시나리오 테스트: 상대 수구가 수구→적구1 직선 길목을 막는 배치
 const fs = require('fs');
-const html = fs.readFileSync(require('path').join(__dirname,'..','HelloBilli.html'), 'utf8');
+const html = fs.readFileSync(require('path').join(__dirname,'..','index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
 
 const handlers = {}, els = {};

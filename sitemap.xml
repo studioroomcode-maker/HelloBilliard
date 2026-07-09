@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  루트(/)는 index.html 의 meta refresh 로 HelloBilli.html 로 넘어가는 소프트 리다이렉트다.
-  검색엔진이 실제로 색인하는 URL 은 HelloBilli.html 이므로 그쪽만 등록한다.
-  (루트를 앱 본체로 바꾸면 이 파일과 canonical/og:url 도 함께 바꿔야 한다)
+  앱은 루트(/)에서 index.html 로 직접 서빙된다.
+  옛 주소 /HelloBilli.html 은 308 로 루트에 합쳐진다 (vercel.json 의 redirects).
+  리다이렉트되는 URL 은 sitemap 에 넣지 않는다.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://hellobilliard.studioroomkr.com/HelloBilli.html</loc>
+    <loc>https://hellobilliard.studioroomkr.com/</loc>
     <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>

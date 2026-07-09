@@ -1,6 +1,6 @@
 // 두께 좌/우 표기 확인 — 수구를 적구1 왼쪽/오른쪽에 두고 각각 계산
 const fs = require('fs');
-const html = fs.readFileSync(require('path').join(__dirname,'..','HelloBilli.html'), 'utf8');
+const html = fs.readFileSync(require('path').join(__dirname,'..','index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
 const handlers = {}, els = {};
 const CANVAS_SIZE = { 'g4-table': [840, 460], 'g3-table': [860, 460] };

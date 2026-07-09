@@ -1,6 +1,6 @@
 // 세로 사진 진단 — 블롭·분류 상세 덤프
 const fs=require('fs');
-const html=fs.readFileSync(require('path').join(__dirname,'..','HelloBilli.html'),'utf8');
+const html=fs.readFileSync(require('path').join(__dirname,'..','index.html'),'utf8');
 const core=html.slice(html.indexOf('function rgb2hsv'),html.indexOf('// ---- 사진 인식 UI ----'));
 const BALL_R=8.84, MM=768/2844;
 const play={x0:36,y0:36,x1:36+768,y1:36+388};

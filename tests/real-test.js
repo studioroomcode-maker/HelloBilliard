@@ -4,7 +4,7 @@ const fs=require('fs');
 const zlib=require('zlib');
 
 // ── HTML에서 인식 코어 추출 ──
-const html=fs.readFileSync(require('path').join(__dirname,'..','HelloBilli.html'),'utf8');
+const html=fs.readFileSync(require('path').join(__dirname,'..','index.html'),'utf8');
 const start=html.indexOf('function rgb2hsv');
 const end=html.indexOf('// ---- 사진 인식 UI ----');
 const core=html.slice(start,end);

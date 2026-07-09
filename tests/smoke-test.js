@@ -1,6 +1,6 @@
-// HelloBilli.html 의 <script>를 DOM 스텁으로 헤드리스 실행 — 실제 solve() 동작 검증
+// index.html 의 <script>를 DOM 스텁으로 헤드리스 실행 — 실제 solve() 동작 검증
 const fs = require('fs');
-const html = fs.readFileSync(require('path').join(__dirname,'..','HelloBilli.html'), 'utf8');
+const html = fs.readFileSync(require('path').join(__dirname,'..','index.html'), 'utf8');
 const m = html.match(/<script>([\s\S]*)<\/script>/);
 if (!m) { console.error('script not found'); process.exit(1); }
 const code = m[1];

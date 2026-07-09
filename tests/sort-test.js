@@ -1,6 +1,6 @@
 // 정렬 필터 테스트 — 각 모드에서 카드 순서 기준 검증
 const fs = require('fs');
-const html = fs.readFileSync(require('path').join(__dirname,'..','HelloBilli.html'), 'utf8');
+const html = fs.readFileSync(require('path').join(__dirname,'..','index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
 
 const handlers = {}, els = {};

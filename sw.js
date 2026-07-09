@@ -1,8 +1,8 @@
 // Hello Billiard 서비스워커 — 오프라인 캐시
 // 버전을 올리면 이전 캐시가 정리되고 새 파일이 배포된다.
-const VERSION = 'hb-v16';
+const VERSION = 'hb-v17';
 const SHELL = [
-  './HelloBilli.html',
+  './',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -40,8 +40,10 @@ self.addEventListener('fetch', e => {
       }
       return res;
     }).catch(() =>
+      // 오프라인: 캐시에 없고 페이지 이동이면 앱 셸(루트)로 폴백.
+      // 옛 주소(/HelloBilli.html)로 시작하는 기존 설치 앱도 여기서 구제된다.
       caches.match(e.request).then(hit =>
-        hit || (e.request.mode === 'navigate' ? caches.match('./HelloBilli.html') : undefined))
+        hit || (e.request.mode === 'navigate' ? caches.match('./') : undefined))
     )
   );
 });

@@ -30,15 +30,14 @@
 ## 프로젝트 구조
 
 ```
-HelloBilli.html      앱 전체 (단일 파일: 스타일 + 4구/3구 엔진 + 비전 + UI)
-index.html           루트 → 앱 리다이렉트 (+ 공유용 OG 태그 사본)
+index.html           앱 전체 (단일 파일: 스타일 + 4구/3구 엔진 + 비전 + UI) — 루트에서 직접 서빙
 privacy.html         개인정보처리방침 (수집 없음 / 사진 온디바이스)
 terms.html           이용약관 (시뮬레이션 결과 면책)
-manifest.webmanifest PWA 매니페스트
+manifest.webmanifest PWA 매니페스트 (start_url "./")
 sw.js                서비스워커 (오프라인 캐시) — 배포 시 VERSION 올리기
-vercel.json          보안 헤더(CSP 등) + 정적 캐시 정책
+vercel.json          보안 헤더(CSP 등) + 정적 캐시 + 옛 주소 308 리다이렉트
 robots.txt           크롤러 정책 + sitemap 위치
-sitemap.xml          색인 대상 URL (HelloBilli.html)
+sitemap.xml          색인 대상 URL (루트)
 og-image.png         공유 미리보기 1200×630 — 재생성: python tools/gen-og.py
 fonts/               자체 호스팅 폰트 (woff2 가변, latin 서브셋) — 외부 요청 제거
 icons/               앱 아이콘 (tests 아님 — 재생성: 세션 스크립트 gen-icons.js)
@@ -48,8 +47,10 @@ tests/               검증 스위트 14종 + 실환경 사진 픽스처(gzip)
 .vercelignore        tests/ tools/ .github/ README 를 배포에서 제외
 ```
 
-**메타 태그를 고칠 땐 `HelloBilli.html` 과 `index.html` 을 함께 고칠 것** — 공유되는 URL 은
-루트(`/`)이고 스크래퍼가 meta refresh 를 따라가지 않을 수 있어 OG 태그를 양쪽에 둔다.
+**앱은 루트(`/`)에서 서빙된다** — 예전에는 `index.html` 이 `HelloBilli.html` 로 리다이렉트하는
+껍데기였고 OG 태그를 양쪽에 중복 유지해야 했다. 지금은 앱 자체가 `index.html` 이라 페이지가 하나뿐이다.
+옛 주소 `/HelloBilli.html` 은 `vercel.json` 의 `redirects` 로 308 처리된다 —
+**이미 설치된 PWA 의 `start_url` 과 공유된 링크가 여기에 의존하므로 지우지 말 것.**
 
 **외부 요청 0건** — 폰트를 자체 호스팅(`fonts/`)하므로 앱은 어떤 외부 도메인도 부르지 않는다.
 CSP 가 `default-src 'self'` 로 잠겨 있으니, 외부 스크립트·글꼴·이미지를 추가하려면

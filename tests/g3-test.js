@@ -1,6 +1,6 @@
 // 3구 시스템 재정비 검증 — 탭 전환 + 예시 배치 + 계산 흐름
 const fs = require('fs');
-const html = fs.readFileSync(require('path').join(__dirname,'..','HelloBilli.html'), 'utf8');
+const html = fs.readFileSync(require('path').join(__dirname,'..','index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
 
 const handlers = {}, els = {};

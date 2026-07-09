@@ -1,7 +1,7 @@
 // 경로 정확도 재검증 — HTML에 실제 들어있는 물리 코드를 추출해
 // ① 알시아토레 실측 앵커 ② 파이브앤하프 시스템과의 교차 검증을 수행.
 const fs=require('fs');
-const html=fs.readFileSync(require('path').join(__dirname,'..','HelloBilli.html'),'utf8');
+const html=fs.readFileSync(require('path').join(__dirname,'..','index.html'),'utf8');
 
 let pass=true;
 const check=(name,val,lo,hi,unit)=>{

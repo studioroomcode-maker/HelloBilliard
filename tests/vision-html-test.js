@@ -1,6 +1,6 @@
 // HTML 안에 심어진 인식 코어를 추출해 3가지 조명 시나리오로 검증
 const fs=require('fs');
-const html=fs.readFileSync(require('path').join(__dirname,'..','HelloBilli.html'),'utf8');
+const html=fs.readFileSync(require('path').join(__dirname,'..','index.html'),'utf8');
 const start=html.indexOf('function rgb2hsv');
 const end=html.indexOf('// ---- 사진 인식 UI ----');
 if(start<0||end<0||end<=start){ console.error('추출 실패'); process.exit(1); }

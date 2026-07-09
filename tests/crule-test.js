@@ -1,6 +1,6 @@
 // 쿠션 수 규칙 테스트 — 추천/1/2/3↑ 별로 경로의 쿠션 수가 조건에 맞는지
 const fs = require('fs');
-const html = fs.readFileSync(require('path').join(__dirname,'..','HelloBilli.html'), 'utf8');
+const html = fs.readFileSync(require('path').join(__dirname,'..','index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
 
 const handlers = {}, els = {};

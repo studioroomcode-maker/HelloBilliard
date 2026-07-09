@@ -2,7 +2,7 @@
 // 실사진(세로)에서 수구 2개+빨강이 검출·매핑되는지 확인
 const fs = require('fs');
 const path = require('path');
-const html = fs.readFileSync(path.join(__dirname, '..', 'HelloBilli.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
 
 const handlers = {}, els = {};
