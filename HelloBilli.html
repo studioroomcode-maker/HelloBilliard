@@ -3,7 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Hello Billiard · 당구 AI 코치</title>
+<title>Hello Billiard · 당구 AI 코치 — 사진으로 4구 경로 계산 + 쓰리쿠션 시스템</title>
+<meta name="description" content="당구대 사진 한 장으로 공 배치를 읽고, 물리 시뮬레이션으로 4구 득점 경로를 성공률과 함께 제안합니다. 쓰리쿠션 파이브앤하프·플러스·볼 시스템 계산기 포함. 설치 없이 무료, 사진은 기기 밖으로 나가지 않습니다.">
+<link rel="canonical" href="https://hello-billiard.vercel.app/HelloBilli.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hello Billiard">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:title" content="Hello Billiard — 당구 AI 코치">
+<meta property="og:description" content="사진으로 공 배치를 읽고 물리 엔진이 득점 경로를 성공률과 함께 제안합니다. 4구 경로 + 쓰리쿠션 시스템 계산기.">
+<meta property="og:url" content="https://hello-billiard.vercel.app/HelloBilli.html">
+<meta property="og:image" content="https://hello-billiard.vercel.app/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="당구대 위에 득점 경로 3개가 그려진 Hello Billiard 화면">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Hello Billiard — 당구 AI 코치">
+<meta name="twitter:description" content="사진으로 공 배치를 읽고 물리 엔진이 득점 경로를 성공률과 함께 제안합니다.">
+<meta name="twitter:image" content="https://hello-billiard.vercel.app/og-image.png">
 <meta name="theme-color" content="#14110d">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -501,6 +517,31 @@
   }
 
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Hello Billiard",
+  "alternateName": "헬로 빌리아드 — 당구 AI 코치",
+  "url": "https://hello-billiard.vercel.app/HelloBilli.html",
+  "applicationCategory": "SportsApplication",
+  "operatingSystem": "Any (PWA)",
+  "browserRequirements": "JavaScript 필요",
+  "inLanguage": "ko",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
+  "author": { "@type": "Organization", "name": "Studioroom" },
+  "screenshot": "https://hello-billiard.vercel.app/og-image.png",
+  "featureList": [
+    "당구대 사진에서 공 배치 자동 인식 (온디바이스)",
+    "4구 득점 경로 3개 제안 + 몬테카를로 성공률",
+    "빈쿠션·뱅크샷 경로 탐색 및 쿠션 수 규칙 선택",
+    "쓰리쿠션 파이브앤하프·플러스·볼 시스템 계산기",
+    "테이블 캘리브레이션 및 실력 3단계"
+  ],
+  "description": "당구대 사진으로 공 배치를 인식하고 물리 시뮬레이션으로 4구 득점 경로와 쓰리쿠션 시스템 해를 제안하는 웹 앱. 사진은 기기에서만 처리되며 서버로 전송되지 않습니다."
+}
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -792,6 +833,13 @@
         msg:String(e.reason&&e.reason.message||e.reason||'').slice(0,300),
         ua:navigator.userAgent.slice(0,80)});
     });
+    // try/catch 로 잡아낸 오류도 같은 로그에 남긴다.
+    // (catch 해버리면 window 'error' 이벤트가 안 뜨므로 수동 기록이 필요하다)
+    window.__hbReport=function(where,err){
+      push({t:new Date().toISOString(), type:'caught',
+        msg:String(where||'')+': '+String(err&&err.message||err||'').slice(0,300),
+        ua:navigator.userAgent.slice(0,80)});
+    };
     window.__hbErrors=function(){
       try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }
       catch(e){ return []; }
@@ -1773,7 +1821,14 @@ calcBtn.addEventListener('click',()=>{
     if(myGen!==solveGen) return;        // 계산 중 배치가 바뀜 — 폐기
     routes=rs; selected=0; renderCards(); draw();
     drawPhoto();               // 사진이 열려 있으면 경로를 사진에도 표시
-  }).catch(()=>{}).finally(()=>{
+  }).catch(err=>{
+    if(myGen!==solveGen) return;
+    // 조용히 삼키면 사용자는 "눌렀는데 아무것도 안 나옴"만 겪고, 로그도 남지 않는다.
+    routes=[]; selected=0;
+    const box=document.getElementById('g4-routes');
+    if(box) box.innerHTML='<div class="panel"><span class="empty">계산 중 오류가 발생했습니다. 공 배치를 바꿔 다시 시도해 주세요.</span></div>';
+    try{ window.__hbReport&&window.__hbReport('solve/g4',err); }catch(_){}
+  }).finally(()=>{
     calcBtn.textContent='경로 3개 제안'; calcBtn.disabled=false;
   });
 });
@@ -2386,20 +2441,33 @@ document.getElementById('g4-file').addEventListener('change',e=>{
   const im=new Image();
   im.onload=()=>{
     URL.revokeObjectURL(url);
-    const sc=Math.min(1,1100/Math.max(im.width,im.height));
-    pcv.width=Math.round(im.width*sc);
-    pcv.height=Math.round(im.height*sc);
-    pctx.drawImage(im,0,0,pcv.width,pcv.height);
-    photoImgData=pctx.getImageData(0,0,pcv.width,pcv.height);
-    // 천 전체 경계 자동 감지 → 레일 폭만큼 안쪽(쿠션 안 경기면)으로 투영 보정
-    photoCorners=insetCorners(orderCorners(autoCorners(photoImgData)));
-    photoMarks=null; photoH=null; photoHinv=null; photoMissing=[]; camW=null;
+    try{
+      const sc=Math.min(1,1100/Math.max(im.width,im.height));
+      pcv.width=Math.round(im.width*sc);
+      pcv.height=Math.round(im.height*sc);
+      pctx.drawImage(im,0,0,pcv.width,pcv.height);
+      photoImgData=pctx.getImageData(0,0,pcv.width,pcv.height);
+      // 천 전체 경계 자동 감지 → 레일 폭만큼 안쪽(쿠션 안 경기면)으로 투영 보정
+      photoCorners=insetCorners(orderCorners(autoCorners(photoImgData)));
+      photoMarks=null; photoH=null; photoHinv=null; photoMissing=[]; camW=null;
+      photoPanel.style.display='block';
+      photoMsg.textContent='모서리를 쿠션 안쪽 경계 근처로 자동 보정했습니다. 노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인·조정한 뒤 "공 인식"을 누르세요. 벽 높이·공 높이 시차는 자동 보정됩니다.';
+      drawPhoto();
+      if(photoPanel.scrollIntoView) photoPanel.scrollIntoView({behavior:'smooth'});
+    }catch(err){
+      photoImgData=null; photoCorners=null;
+      photoPanel.style.display='block';
+      photoMsg.textContent='사진을 처리하는 중 오류가 발생했습니다. 사진이 너무 크면 실패할 수 있습니다 — 다른 사진으로 다시 시도해 주세요.';
+      try{ window.__hbReport&&window.__hbReport('photo/g4 onload',err); }catch(_){}
+    }
+  };
+  // 디코드 실패(안드로이드 크롬의 HEIC 등)를 조용히 넘기면 사용자는 "아무 반응 없음"만 겪는다.
+  im.onerror=()=>{
+    URL.revokeObjectURL(url);
     photoPanel.style.display='block';
-    photoMsg.textContent='모서리를 쿠션 안쪽 경계 근처로 자동 보정했습니다. 노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인·조정한 뒤 "공 인식"을 누르세요. 벽 높이·공 높이 시차는 자동 보정됩니다.';
-    drawPhoto();
+    photoMsg.textContent='이 사진을 읽을 수 없습니다. 아이폰 HEIC 형식일 수 있습니다 — 설정 → 카메라 → 포맷에서 "높은 호환성"으로 바꿔 다시 찍거나, 스크린샷으로 저장해 올려 주세요.';
     if(photoPanel.scrollIntoView) photoPanel.scrollIntoView({behavior:'smooth'});
   };
-  im.onerror=()=>{ URL.revokeObjectURL(url); };
   im.src=url;
   e.target.value='';
 });
@@ -3675,7 +3743,13 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
     solution=null;
     phyRoutes=rs; phySel=0;
     renderPhyCards(); draw();
-  }).catch(()=>{}).finally(()=>{
+  }).catch(err=>{
+    if(myGen!==solveGen3) return;
+    phyRoutes=null; phySel=0;
+    const box=document.getElementById('g3-phyRoutes');
+    if(box) box.innerHTML='<div class="panel"><span class="empty">계산 중 오류가 발생했습니다. 공 배치를 바꿔 다시 시도해 주세요.</span></div>';
+    try{ window.__hbReport&&window.__hbReport('solve/g3',err); }catch(_){}
+  }).finally(()=>{
     btn.textContent='물리 경로 제안'; btn.disabled=false;
   });
 });
@@ -3724,19 +3798,32 @@ document.getElementById('g3-file').addEventListener('change',e=>{
   const im=new Image();
   im.onload=()=>{
     URL.revokeObjectURL(url);
-    const sc=Math.min(1,1100/Math.max(im.width,im.height));
-    p3cv.width=Math.round(im.width*sc);
-    p3cv.height=Math.round(im.height*sc);
-    p3ctx.drawImage(im,0,0,p3cv.width,p3cv.height);
-    p3Img=p3ctx.getImageData(0,0,p3cv.width,p3cv.height);
-    p3Corners=V.insetCorners(V.orderCorners(V.autoCorners(p3Img)));
-    p3Marks=null; p3Hinv=null; p3H=null; cam3=null; p3Missing=[];
+    try{
+      const sc=Math.min(1,1100/Math.max(im.width,im.height));
+      p3cv.width=Math.round(im.width*sc);
+      p3cv.height=Math.round(im.height*sc);
+      p3ctx.drawImage(im,0,0,p3cv.width,p3cv.height);
+      p3Img=p3ctx.getImageData(0,0,p3cv.width,p3cv.height);
+      p3Corners=V.insetCorners(V.orderCorners(V.autoCorners(p3Img)));
+      p3Marks=null; p3Hinv=null; p3H=null; cam3=null; p3Missing=[];
+      p3Panel.style.display='block';
+      p3Msg.textContent='노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인한 뒤 "공 인식"을 누르세요.';
+      drawP3();
+      if(p3Panel.scrollIntoView) p3Panel.scrollIntoView({behavior:'smooth'});
+    }catch(err){
+      p3Img=null; p3Corners=null;
+      p3Panel.style.display='block';
+      p3Msg.textContent='사진을 처리하는 중 오류가 발생했습니다. 사진이 너무 크면 실패할 수 있습니다 — 다른 사진으로 다시 시도해 주세요.';
+      try{ window.__hbReport&&window.__hbReport('photo/g3 onload',err); }catch(_){}
+    }
+  };
+  // 디코드 실패(안드로이드 크롬의 HEIC 등)를 조용히 넘기면 사용자는 "아무 반응 없음"만 겪는다.
+  im.onerror=()=>{
+    URL.revokeObjectURL(url);
     p3Panel.style.display='block';
-    p3Msg.textContent='노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인한 뒤 "공 인식"을 누르세요.';
-    drawP3();
+    p3Msg.textContent='이 사진을 읽을 수 없습니다. 아이폰 HEIC 형식일 수 있습니다 — 설정 → 카메라 → 포맷에서 "높은 호환성"으로 바꿔 다시 찍거나, 스크린샷으로 저장해 올려 주세요.';
     if(p3Panel.scrollIntoView) p3Panel.scrollIntoView({behavior:'smooth'});
   };
-  im.onerror=()=>{ URL.revokeObjectURL(url); };
   im.src=url;
   e.target.value='';
 });
