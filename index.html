@@ -672,34 +672,7 @@
 
   <div class="mode-panel show" id="panel-m4">
   <div class="col-board">
-  <div class="toolbar" id="g4-toolbar">
-    <button class="tool active" data-ball="cue"><span class="dot" style="background:#f7f4ea"></span>내 수구</button>
-    <button class="tool" data-ball="cue2"><span class="dot" style="background:#f0c542"></span>상대 수구</button>
-    <button class="tool" data-ball="r1"><span class="dot" style="background:#d23b2b"></span>적구 1</button>
-    <button class="tool" data-ball="r2"><span class="dot" style="background:#d23b2b"></span>적구 2</button>
-  </div>
-  <div class="tune-controls" style="margin:0 0 10px">
-    <div class="tune-row">
-      <span class="tune-label">내 수구 색</span>
-      <div class="tune-options">
-        <button data-myball="white" class="on"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f7f4ea" stroke="#8b8574"/></svg> 흰공</button>
-        <button data-myball="yellow"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f0c542" stroke="#b89220"/></svg> 노란공</button>
-      </div>
-    </div>
-  </div>
-
-<div class="board">
-  <div class="stage">
-    <canvas id="g4-table" width="840" height="460" role="img" aria-label="4구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
-  </div>
-  <div class="stage-bar" id="g4-stageBar" hidden>
-    <div class="route-picks" id="g4-routePicks"></div>
-    <button class="tool mini play" id="g4-play" aria-label="경로 재생" title="경로 재생"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg></button>
-    <button class="tool mini" id="g4-share">경로 저장</button>
-  </div>
-  </div>
-
-  <details class="venue autofold" open style="margin-top:12px">
+  <details class="venue autofold" open style="margin:0 0 12px">
   <summary>샷 · 개인 설정 <span class="venue-sub">파워 · 쿠션 수 · 실력 · 구장 조건</span></summary>
   <div class="tune-controls" id="g4-tuning" style="margin-top:8px">
     <div class="tune-row">
@@ -766,6 +739,33 @@
     </details>
   </div>
   </details>
+
+  <div class="toolbar" id="g4-toolbar">
+    <button class="tool active" data-ball="cue"><span class="dot" style="background:#f7f4ea"></span>내 수구</button>
+    <button class="tool" data-ball="cue2"><span class="dot" style="background:#f0c542"></span>상대 수구</button>
+    <button class="tool" data-ball="r1"><span class="dot" style="background:#d23b2b"></span>적구 1</button>
+    <button class="tool" data-ball="r2"><span class="dot" style="background:#d23b2b"></span>적구 2</button>
+  </div>
+  <div class="tune-controls" style="margin:0 0 10px">
+    <div class="tune-row">
+      <span class="tune-label">내 수구 색</span>
+      <div class="tune-options">
+        <button data-myball="white" class="on"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f7f4ea" stroke="#8b8574"/></svg> 흰공</button>
+        <button data-myball="yellow"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f0c542" stroke="#b89220"/></svg> 노란공</button>
+      </div>
+    </div>
+  </div>
+
+<div class="board">
+  <div class="stage">
+    <canvas id="g4-table" width="840" height="460" role="img" aria-label="4구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
+  </div>
+  <div class="stage-bar" id="g4-stageBar" hidden>
+    <div class="route-picks" id="g4-routePicks"></div>
+    <button class="tool mini play" id="g4-play" aria-label="경로 재생" title="경로 재생"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg></button>
+    <button class="tool mini" id="g4-share">경로 저장</button>
+  </div>
+  </div>
 
   <div class="actions">
     <button class="tool primary" id="g4-calc">경로 3개 제안</button>
