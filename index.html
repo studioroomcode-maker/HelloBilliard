@@ -319,9 +319,11 @@
   }
   .tabs button.on { background:var(--rail); color:var(--paper); border-color:var(--rail-light); }
   .stage {
-    background:var(--rail); border-radius:0 14px 14px 14px; padding:30px;
+    background:var(--rail); border-radius:14px; padding:30px;
     box-shadow:0 18px 40px rgba(0,0,0,.5), inset 0 2px 0 var(--rail-light);
   }
+  /* 시스템 탭이 붙어 있을 때만 왼쪽 위 모서리를 탭과 연결 */
+  .tabs + .stage { border-radius:0 14px 14px 14px; }
   canvas { width:100%; height:auto; display:block; border-radius:6px; touch-action:none; cursor:crosshair; }
   .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 10px; }
   .tool {
@@ -484,6 +486,63 @@
     font-size: 12px;
   }
 
+  /* === 스테이지 바 — 재생·저장을 당구대에 부착 ===
+     재생 애니메이션은 캔버스에서 일어나므로, 버튼도 캔버스 곁에 있어야
+     누른 뒤 스크롤로 화면을 쫓아가는 일이 없다. */
+  .stage-bar {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+  .stage-bar[hidden] { display: none; }
+  .stage-bar .tool.mini {
+    background: rgba(20,17,13,.5);
+    border-color: rgba(244,241,232,.22);
+    min-height: 38px;
+    padding: 8px 18px;
+  }
+  .stage-bar .tool.mini:hover { border-color: rgba(244,241,232,.45); }
+  .stage-bar .tool.mini.play {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--ink);
+    font-weight: 800;
+  }
+  .stage-bar .tool.mini.play:hover { background: #f2c355; }
+
+  /* === 좁은 화면: 당구대를 화면 상단에 고정 ===
+     경로 카드를 눌러도, 재생을 눌러도 보드가 항상 보인다. */
+  @media (max-width: 999px) {
+    .stage {
+      position: sticky;
+      top: calc(6px + env(safe-area-inset-top));
+      z-index: 30;
+    }
+    /* 사진 모서리를 맞추는 동안은 고정 해제 — 작업 공간 확보 */
+    body.photo-open .stage { position: static; }
+  }
+
+  /* === 넓은 화면: 보드(왼쪽) 고정 + 결과(오른쪽) 스크롤 === */
+  @media (min-width: 1000px) {
+    .wrap { max-width: 1280px; }
+    .mode-panel.show {
+      display: grid;
+      grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
+      gap: 24px;
+      align-items: start;
+    }
+    .col-board {
+      position: sticky;
+      top: 18px;
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
+      padding-bottom: 24px;   /* stage 그림자가 잘리지 않도록 */
+    }
+    .col-side { min-width: 0; }
+    .col-side .routes-head { margin-top: 0; }
+  }
+
   /* === 모바일 컴팩트 레이아웃 (640px 이하) === */
   @media (max-width: 640px) {
     .wrap {
@@ -528,7 +587,8 @@
     .actions .tool:nth-child(2):last-child { grid-column: 1 / -1; }   /* 2버튼 줄은 둘 다 전체 폭 */
     .actions.sub-actions { display: flex; }                            /* 보조 줄은 한 줄 유지 */
     .actions.sub-actions .tool { flex: 1; min-height: 32px; }
-    .routes-tools .tool.mini { min-height: 32px; padding: 5px 10px; }
+    .stage-bar { margin-top: 8px; }
+    .stage-bar .tool.mini { min-height: 34px; padding: 6px 14px; }
 
     .seg { gap: 5px; }
     .seg button { padding: 6px 3px; font-size: 11px; }
@@ -593,6 +653,7 @@
   </div>
 
   <div class="mode-panel show" id="panel-m4">
+  <div class="col-board">
   <div class="toolbar" id="g4-toolbar">
     <button class="tool active" data-ball="cue"><span class="dot" style="background:#f7f4ea"></span>내 수구</button>
     <button class="tool" data-ball="cue2"><span class="dot" style="background:#f0c542"></span>상대 수구</button>
@@ -611,6 +672,10 @@
 
 <div class="stage">
     <canvas id="g4-table" width="840" height="460" role="img" aria-label="4구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
+    <div class="stage-bar" id="g4-stageBar" hidden>
+      <button class="tool mini play" id="g4-play"><svg class="bicon" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>경로 재생</button>
+      <button class="tool mini" id="g4-share">저장</button>
+    </div>
   </div>
 
   <details class="venue autofold" open style="margin-top:12px">
@@ -703,26 +768,26 @@
     </div>
     <p class="hint" id="g4-photoMsg" style="margin-top:8px"></p>
   </div>
+  </div><!-- /col-board -->
 
+  <div class="col-side">
   <div class="routes-head">
     <div class="section-label">제안 경로</div>
-    <div class="routes-tools">
-      <button class="tool mini" id="g4-play"><svg class="bicon" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>재생</button>
-      <button class="tool mini" id="g4-share">저장</button>
+    <div class="seg" id="g4-sortseg">
+      <button data-sort="best" class="on">추천순</button>
+      <button data-sort="cush">쿠션수순</button>
+      <button data-sort="prob">성공률순</button>
+      <button data-sort="gather">공모임순</button>
     </div>
-  </div>
-  <div class="seg" id="g4-sortseg" style="margin-top:8px">
-    <button data-sort="best" class="on">추천순</button>
-    <button data-sort="cush">쿠션수순</button>
-    <button data-sort="prob">성공률순</button>
-    <button data-sort="gather">공모임순</button>
   </div>
 
   <div class="routes" id="g4-routes">
     <div class="panel"><span class="empty">공을 배치하고 ‘경로 3개 제안’을 누르세요.</span></div>
   </div>
 
-  <div class="panel">
+  <details class="venue guide" style="margin-top:14px">
+  <summary>사용법 · 물리 엔진 설명 <span class="venue-sub">성공률 · 사진 인식 · 테이블 보정</span></summary>
+  <div class="panel" style="margin-top:8px">
     <p class="hint">엔진은 무회전·끌어치기·밀어치기·좌우 시네루를 조합해 득점 경로를 탐색하고,
     전략이 서로 다른 경로 3개를 추려 제안합니다. 카드를 누르면 해당 경로가 당구대에 표시됩니다.<br><br>
     <b>v4 물리 엔진</b> · 실측 비율(공 65.5mm / 대대 2844mm)로 스케일을 맞춘
@@ -756,9 +821,12 @@
     표시</b>됩니다. 경로 카드를 누르면 사진의 경로도 함께 바뀝니다.
     사진은 기기 밖으로 전송되지 않습니다.</p>
   </div>
+  </details>
+  </div><!-- /col-side -->
   </div>
 
   <div class="mode-panel" id="panel-m3">
+  <div class="col-board">
   <div class="toolbar" id="g3-toolbar" style="margin-bottom:10px"></div>
 
 <div class="tabs" id="g3-tabs">
@@ -769,6 +837,9 @@
 
   <div class="stage">
     <canvas id="g3-table" width="860" height="460" role="img" aria-label="3구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
+    <div class="stage-bar" id="g3-stageBar" hidden>
+      <button class="tool mini play" id="g3-play"><svg class="bicon" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>경로 재생</button>
+    </div>
   </div>
 
   <div class="tune-controls" style="margin:14px 0 0">
@@ -805,12 +876,11 @@
     </div>
     <p class="hint" id="g3-photoMsg" style="margin-top:8px"></p>
   </div>
+  </div><!-- /col-board -->
 
+  <div class="col-side">
   <div class="routes-head" id="g3-routesHead" style="display:none">
     <div class="section-label">제안 경로</div>
-    <div class="routes-tools">
-      <button class="tool mini" id="g3-play"><svg class="bicon" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>재생</button>
-    </div>
   </div>
   <div class="routes" id="g3-phyRoutes"></div>
 
@@ -826,10 +896,14 @@
     <div class="result" id="g3-result">공을 배치하고 ‘시스템 계산’을 누르세요.</div>
   </div>
 
-  <div class="panel">
+  <details class="venue guide" style="margin-top:14px">
+  <summary>시스템 설명 <span class="venue-sub">계산 원리 · 이용 팁</span></summary>
+  <div class="panel" style="margin-top:8px">
     <h3 id="g3-panelTitle">시스템 설명</h3>
     <p class="hint" id="g3-panelText"></p>
   </div>
+  </details>
+  </div><!-- /col-side -->
   </div>
 
   <footer class="site-footer">
@@ -1706,9 +1780,16 @@ function powerSVG(level){
 }
 const POWER_LABEL={1:'아주 약하게',2:'약하게',3:'보통',4:'강하게',5:'아주 강하게'};
 
+let calcTried=false;   // 계산을 한 번이라도 눌렀는지 — 첫 안내와 "경로 없음"을 구분
 function renderCards(){
   const box=document.getElementById('g4-routes');
+  const bar=document.getElementById('g4-stageBar');
+  if(bar) bar.hidden=!routes.length;   // 재생·저장은 경로가 있을 때만 당구대 밑에 노출
   if(!routes.length){
+    if(!calcTried){
+      box.innerHTML='<div class="panel"><span class="empty">공을 배치하고 ‘경로 3개 제안’을 누르세요.</span></div>';
+      return;
+    }
     const ruleTxt=cushRule==='any'?'':
       ` (쿠션 수 ${cushRule===3?'3회 이상':cushRule+'회'} 조건 적용 중 — 조건을 '추천'으로 바꾸면 더 찾을 수 있습니다)`;
     box.innerHTML='<div class="panel"><span class="empty">계산된 경로가 없습니다. '+
@@ -1852,6 +1933,7 @@ const calcBtn=document.getElementById('g4-calc');
 let solveGen=0;   // 계산 중 공이 움직이면 낡은 결과를 버리기 위한 세대 토큰
 calcBtn.addEventListener('click',()=>{
   if(calcBtn.disabled) return;
+  calcTried=true;
   calcBtn.disabled=true;
   calcBtn.textContent='계산 중…';
   const myGen=++solveGen;
@@ -1900,11 +1982,11 @@ syncSkill();
 document.getElementById('g4-reset').addEventListener('click',()=>{
   stopAnim(false);
   for(const k in defaults){balls[k].x=defaults[k].x;balls[k].y=defaults[k].y;}
-  routes=[];renderCards();draw();drawPhoto();
+  routes=[];calcTried=false;renderCards();draw();drawPhoto();
 });
 document.getElementById('g4-clearRoute').addEventListener('click',()=>{
   stopAnim(false);
-  routes=[];renderCards();draw();drawPhoto();
+  routes=[];calcTried=false;renderCards();draw();drawPhoto();
 });
 document.getElementById('g4-play').addEventListener('click',()=>{
   if(!routes.length){ return; }
@@ -2489,12 +2571,14 @@ document.getElementById('g4-file').addEventListener('change',e=>{
       photoCorners=insetCorners(orderCorners(autoCorners(photoImgData)));
       photoMarks=null; photoH=null; photoHinv=null; photoMissing=[]; camW=null;
       photoPanel.style.display='block';
+      document.body.classList.add('photo-open');   // 사진 작업 중엔 보드 고정 해제
       photoMsg.textContent='모서리를 쿠션 안쪽 경계 근처로 자동 보정했습니다. 노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인·조정한 뒤 "공 인식"을 누르세요. 벽 높이·공 높이 시차는 자동 보정됩니다.';
       drawPhoto();
       if(photoPanel.scrollIntoView) photoPanel.scrollIntoView({behavior:'smooth'});
     }catch(err){
       photoImgData=null; photoCorners=null;
       photoPanel.style.display='block';
+      document.body.classList.add('photo-open');
       photoMsg.textContent='사진을 처리하는 중 오류가 발생했습니다. 사진이 너무 크면 실패할 수 있습니다 — 다른 사진으로 다시 시도해 주세요.';
       try{ window.__hbReport&&window.__hbReport('photo/g4 onload',err); }catch(_){}
     }
@@ -2503,6 +2587,7 @@ document.getElementById('g4-file').addEventListener('change',e=>{
   im.onerror=()=>{
     URL.revokeObjectURL(url);
     photoPanel.style.display='block';
+    document.body.classList.add('photo-open');
     photoMsg.textContent='이 사진을 읽을 수 없습니다. 아이폰 HEIC 형식일 수 있습니다 — 설정 → 카메라 → 포맷에서 "높은 호환성"으로 바꿔 다시 찍거나, 스크린샷으로 저장해 올려 주세요.';
     if(photoPanel.scrollIntoView) photoPanel.scrollIntoView({behavior:'smooth'});
   };
@@ -2631,6 +2716,7 @@ window.addEventListener('touchend',pUp);
 
 document.getElementById('g4-photoCancel').addEventListener('click',()=>{
   photoPanel.style.display='none';
+  document.body.classList.remove('photo-open');
   photoImgData=null; photoMarks=null; photoH=null;
   photoHinv=null; photoMissing=[]; camW=null;
 });
@@ -3692,6 +3778,8 @@ function renderPhyCards(){
   const box=document.getElementById('g3-phyRoutes');
   const head=document.getElementById('g3-routesHead');
   if(head) head.style.display=phyRoutes&&phyRoutes.length?'flex':'none';
+  const bar=document.getElementById('g3-stageBar');
+  if(bar) bar.hidden=!(phyRoutes&&phyRoutes.length);   // 재생 버튼은 경로가 있을 때만
   drawP3();   // 사진이 열려 있으면 경로 오버레이도 갱신 (지움 포함)
   if(!phyRoutes){ box.innerHTML=''; return; }
   if(!phyRoutes.length){
@@ -3845,12 +3933,14 @@ document.getElementById('g3-file').addEventListener('change',e=>{
       p3Corners=V.insetCorners(V.orderCorners(V.autoCorners(p3Img)));
       p3Marks=null; p3Hinv=null; p3H=null; cam3=null; p3Missing=[];
       p3Panel.style.display='block';
+      document.body.classList.add('photo-open');   // 사진 작업 중엔 보드 고정 해제
       p3Msg.textContent='노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인한 뒤 "공 인식"을 누르세요.';
       drawP3();
       if(p3Panel.scrollIntoView) p3Panel.scrollIntoView({behavior:'smooth'});
     }catch(err){
       p3Img=null; p3Corners=null;
       p3Panel.style.display='block';
+      document.body.classList.add('photo-open');
       p3Msg.textContent='사진을 처리하는 중 오류가 발생했습니다. 사진이 너무 크면 실패할 수 있습니다 — 다른 사진으로 다시 시도해 주세요.';
       try{ window.__hbReport&&window.__hbReport('photo/g3 onload',err); }catch(_){}
     }
@@ -3859,6 +3949,7 @@ document.getElementById('g3-file').addEventListener('change',e=>{
   im.onerror=()=>{
     URL.revokeObjectURL(url);
     p3Panel.style.display='block';
+    document.body.classList.add('photo-open');
     p3Msg.textContent='이 사진을 읽을 수 없습니다. 아이폰 HEIC 형식일 수 있습니다 — 설정 → 카메라 → 포맷에서 "높은 호환성"으로 바꿔 다시 찍거나, 스크린샷으로 저장해 올려 주세요.';
     if(p3Panel.scrollIntoView) p3Panel.scrollIntoView({behavior:'smooth'});
   };
@@ -4012,6 +4103,7 @@ p3cv.addEventListener('touchmove',p3Move,{passive:false});
 window.addEventListener('touchend',p3Up);
 document.getElementById('g3-photoCancel').addEventListener('click',()=>{
   p3Panel.style.display='none';
+  document.body.classList.remove('photo-open');
   p3Img=null; p3Marks=null; p3Hinv=null; p3H=null; cam3=null; p3Missing=[];
 });
 document.getElementById('g3-detect').addEventListener('click',()=>{
@@ -4308,6 +4400,9 @@ applySystem();
       b.classList.add('on');
       document.getElementById('panel-m4').classList.toggle('show', b.dataset.mode==='m4');
       document.getElementById('panel-m3').classList.toggle('show', b.dataset.mode==='m3');
+      // 보드 고정(sticky) 여부는 지금 보이는 탭의 사진 패널 기준으로 갱신
+      var pp=document.getElementById(b.dataset.mode==='m4'?'g4-photoPanel':'g3-photoPanel');
+      document.body.classList.toggle('photo-open', !!(pp&&pp.style.display==='block'));
     });
   });
 })();
