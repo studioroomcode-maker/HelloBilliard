@@ -823,8 +823,10 @@
     당점으로만 계산하며(극단 상/하단 당점 제외), 얇은 두께 경로를 빼고 실행 오차를
     크게 잡아 성공률이 현실적으로 표시됩니다. 상급은 혼합 당점·얇은 두께까지 모든
     기술을 사용하고 정밀 오차로 계산합니다. 카드의
-    <b>공 모임도(%)</b>는 득점 후 공들이 멈춘 위치가 다음 모아치기에 얼마나
-    유리한지를 나타냅니다 (설정은 3구 탭과 공유).<br><br>
+    <b>공 모임도(%)</b>는 득점 후 배치에서 <b>적구 2개의 간격에 50%</b>,
+    다음 샷의 출발점인 내 수구→각 적구 접근 거리에 25%씩 비중을 둔 가중 평균으로
+    계산하며, 다음 모아치기에 얼마나 유리한지를 나타냅니다
+    (설정은 3구 탭과 공유).<br><br>
     <b>테이블 보정</b> · 실제 공이 예측 경로보다 <b>짧게 반사</b>되면 쿠션 보정 「− 짧게」,
     <b>길게 반사</b>되면 「+ 길게」를 눌러 모델을 내 테이블에 맞추세요. 공이 예측보다
     덜/더 굴러가면 구름 보정을 조절합니다. 보정값은 이 기기에 영구 저장됩니다.<br><br>
@@ -1321,14 +1323,18 @@ function recPt(arr,b,minD){
 function bandWidth(cushions,P){
   return clamp((10+cushions*7)*P.spread,10,44);
 }
-// 공 모임도 — 득점 후 최종 배치에서 내 수구·적구 2개의 평균 간격을
-// 퍼센트로 환산 (가까울수록 다음 모아치기가 쉽다)
+// 공 모임도 — 득점 후 최종 배치의 가중 평균 간격을 퍼센트로 환산
+// (가까울수록 다음 모아치기가 쉽다)
+// 적구 2개가 뭉쳐 있는 것이 모아치기의 핵심이라 적구끼리 간격에 50%,
+// 다음 샷 출발점인 내 수구→각 적구 접근 거리에 25%씩 비중을 둔다.
 function gatherScore(fin){
   if(!fin||!fin.cue||!fin.r1||!fin.r2) return null;
   const diag=Math.hypot(play.x1-play.x0,play.y1-play.y0);
-  const d=(len(sub(fin.cue,fin.r1))+len(sub(fin.cue,fin.r2))+len(sub(fin.r1,fin.r2)))/3;
+  const d=len(sub(fin.r1,fin.r2))*0.5
+         +len(sub(fin.cue,fin.r1))*0.25
+         +len(sub(fin.cue,fin.r2))*0.25;
   const t=clamp((d-BALL_R*8)/(diag*0.45-BALL_R*8),0,1);
-  return Math.round(5+(1-t)*90);
+  return {score:Math.round(5+(1-t)*90), avg:d};
 }
 
 // ===== ④ 몬테카를로 성공률 =====
@@ -1527,7 +1533,8 @@ async function solve(onProgress){
       if(dAng>180) dAng=360-dAng;
       cueDeflect=dAng;
     }
-    const gather=gatherScore(r.final);
+    const g=gatherScore(r.final);
+    const gather=g?g.score:null;
     // 조준 측(두께 방향) — 접촉 직전 진행방향 기준으로 적구 중심이
     // 왼쪽에 있으면 수구가 적구의 오른쪽을 지나감 = '오른쪽 두께'... 의
     // 반대. 부호 정의: cross>0 = 적구 중심이 진행방향의 오른쪽 = 왼쪽 두께.
@@ -1546,7 +1553,7 @@ async function solve(onProgress){
       cueDeflect, cuePath, pathLen,
       r1Path:r.paths.first||[],
       hits:[r.firstInfo,r.secondInfo].filter(Boolean),
-      prob, kiss:r.kiss, gather,
+      prob, kiss:r.kiss, gather, gatherAvg:g?g.avg:null,
       inputPowerLevel:P.level,
       tuningText:P.labels,
       uncertainty:bandWidth(c.cush+(c.cushBefore||0),P),
@@ -1858,7 +1865,9 @@ function renderCards(){
         → ${r.cushions>0?`쿠션 ${r.cushions}회 → `:''}${s} 도착${r.kiss?' · <span style="color:#d9582b">⚠ 키스 경유</span>':''}
         <details class="rdetail"><summary>기술 상세</summary><div>
         보정 <b>${r.tuningText}</b> · 오차 밴드 <b>±${Math.round((r.uncertainty||18)/2)}px</b>
-        · 성공률은 실전 오차 몬테카를로 90회 실측 (5% 단위 표시)</div></details></div>
+        · 성공률은 실전 오차 몬테카를로 90회 실측 (5% 단위 표시)${
+        r.gather!=null&&r.gatherAvg?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b>
+        + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${Math.round(r.gatherAvg/MM/10)}cm</b> 기준`:''}</div></details></div>
       <div class="metrics">
         <div class="metric">
           <div class="mlabel">권장 당점</div>
@@ -3763,16 +3772,18 @@ async function solve3(onProgress){
     if(ok<1) continue;
     const r=simulate3(c.dir,P.speed,c.spin,P,true);
     if(!r.success||!r.firstInfo) continue;
-    // 모임도 — 최종 배치에서 세 공 평균 간격을 %로
-    let gather=null;
+    // 모임도 — 적구끼리 간격 50% + 수구→각 적구 25%씩 가중 평균을 %로
+    let gather=null, gatherAvg=null;
     if(r.final){
       const diag=Math.hypot(PW,PH);
-      const d=(len(sub(r.final.cue,r.final.obj))+len(sub(r.final.cue,r.final.target))+
-               len(sub(r.final.obj,r.final.target)))/3;
+      const d=len(sub(r.final.obj,r.final.target))*0.5
+             +len(sub(r.final.cue,r.final.obj))*0.25
+             +len(sub(r.final.cue,r.final.target))*0.25;
       const tt=clamp((d-BALL_R*8)/(diag*0.45-BALL_R*8),0,1);
       gather=Math.round(5+(1-tt)*90);
+      gatherAvg=d;
     }
-    out.push({...c, prob, thickness:r.firstInfo.thickness, gather,
+    out.push({...c, prob, thickness:r.firstInfo.thickness, gather, gatherAvg,
       path:r.paths.cue, hits:[r.firstInfo,r.secondInfo].filter(Boolean),
       anim:r.frames,
       score:prob*100+c.tol+(gather||0)*0.05});
@@ -3850,7 +3861,9 @@ function renderPhyCards(){
         → 쿠션 <b>${r.cush}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점 ·
         추천 파워 <b>강(4레일)</b>
         <details class="rdetail"><summary>기술 상세</summary><div>
-        성공률은 실전 오차 몬테카를로 48회 실측 (5% 단위 표시)</div></details></div>
+        성공률은 실전 오차 몬테카를로 48회 실측 (5% 단위 표시)${
+        r.gather!=null&&r.gatherAvg?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b>
+        + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${Math.round(r.gatherAvg/MMS/10)}cm</b> 기준`:''}</div></details></div>
       <div class="metrics">
         <div class="metric">
           <div class="mlabel">권장 당점</div>
