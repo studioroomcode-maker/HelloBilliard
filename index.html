@@ -527,6 +527,49 @@
   }
   .stage-bar .route-picks .tool.mini.on .dot { border-color: rgba(0,0,0,.45); }
 
+  /* === 내 수구 색 — 공 선택 버튼 바로 위 === */
+  .myball-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+  }
+  .myball-row .myball-lbl {
+    font-size: 12px;
+    font-weight: 800;
+    color: #c9c2b0;
+    flex: 0 0 auto;
+    margin-right: 2px;
+  }
+  .myball-row button {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: #211c14;
+    border: 1.5px solid #3a3024;
+    color: var(--paper);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 9px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    min-height: 40px;
+    transition: background .15s, border-color .15s;
+  }
+  .myball-row button.on { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+
+  /* === undo/redo — 공 선택 줄 앞의 아이콘 버튼 === */
+  .toolbar .histbtn {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 6px 10px;
+    font-size: 16px;
+    line-height: 1;
+    background: #2c2419;
+  }
+  .toolbar .histbtn:disabled { opacity: .4; cursor: default; }
+  .toolbar .tool[data-ball] { flex: 1 1 0; }
+
   /* === 샷 요약 — 선택한 경로의 당점·두께·파워를 당구대 위에 한 줄로 === */
   .shot-brief {
     display: flex;
@@ -606,10 +649,14 @@
       min-height: 36px;
     }
 
-    /* 공 선택 4버튼 = 한 줄 */
-    .toolbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 8px 0 6px; }
+    /* undo/redo + 공 선택 4버튼 = 한 줄 (flex — 아이콘 버튼은 좁게, 공 버튼은 균등) */
+    .toolbar { display: flex; flex-wrap: nowrap; gap: 4px; margin: 8px 0 6px; }
     .tool { min-width: 0; padding: 6px 2px; font-size: 11px; }
     .tool .dot { width: 9px; height: 9px; margin-right: 3px; }
+    .toolbar .histbtn { padding: 6px 7px; font-size: 15px; }
+    .myball-row { gap: 6px; margin-bottom: 6px; }
+    .myball-row .myball-lbl { font-size: 11px; }
+    .myball-row button { font-size: 11px; padding: 7px 4px; min-height: 36px; }
 
     /* 설정 버튼 축소 + 개수별 균등 그리드 (4개도 한 줄) */
     .tune-controls { gap: 5px; }
@@ -723,13 +770,6 @@
         <button data-skill="adv">상급</button>
       </div>
     </div>
-    <div class="tune-row">
-      <span class="tune-label">내 수구 색</span>
-      <div class="tune-options">
-        <button data-myball="white" class="on"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f7f4ea" stroke="#8b8574"/></svg> 흰공</button>
-        <button data-myball="yellow"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f0c542" stroke="#b89220"/></svg> 노란공</button>
-      </div>
-    </div>
     <details class="venue">
       <summary>구장 조건 <span class="venue-sub">천 상태 · 쿠션 · 테이블 보정</span></summary>
       <div class="tune-controls" style="margin:8px 0 0">
@@ -770,7 +810,14 @@
   </div>
   </details>
 
+  <div class="myball-row">
+    <span class="myball-lbl">내 수구 색</span>
+    <button data-myball="white" class="on"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f7f4ea" stroke="#8b8574"/></svg> 흰공</button>
+    <button data-myball="yellow"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f0c542" stroke="#b89220"/></svg> 노란공</button>
+  </div>
   <div class="toolbar" id="g4-toolbar">
+    <button class="tool histbtn" id="g4-undo" aria-label="공 이동 되돌리기" title="되돌리기" disabled>↩️</button>
+    <button class="tool histbtn" id="g4-redo" aria-label="공 이동 다시하기" title="다시하기" disabled>↪️</button>
     <button class="tool active" data-ball="cue"><span class="dot" style="background:#f7f4ea"></span>내 수구</button>
     <button class="tool" data-ball="cue2"><span class="dot" style="background:#f0c542"></span>상대 수구</button>
     <button class="tool" data-ball="r1"><span class="dot" style="background:#d23b2b"></span>적구 1</button>
@@ -1954,9 +2001,9 @@ function onDown(e){
   stopAnim(false);
   solveGen++;                 // 진행 중인 계산 결과 무효화
   const p=cpos(e), k=hitB(p);
-  if(k){dragging=k;activeBall=k;syncTb();}
+  if(k){dragging=k;activeBall=k;dragStart={x:balls[k].x,y:balls[k].y};syncTb();}
   else{const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
-    routes=[];renderCards();}
+    routes=[];renderCards();pushHist();}   // 탭 배치 — 히스토리 기록
   draw();
 }
 function onMove(e){
@@ -1966,7 +2013,14 @@ function onMove(e){
   balls[dragging].x=c.x;balls[dragging].y=c.y;
   routes=[];draw();
 }
-function onUp(){dragging=null;}
+function onUp(){
+  // 드래그로 위치가 실제로 바뀌었을 때만 히스토리에 기록
+  if(dragging&&dragStart&&
+     (balls[dragging].x!==dragStart.x||balls[dragging].y!==dragStart.y)){
+    renderCards(); pushHist();
+  }
+  dragStart=null; dragging=null;
+}
 cv.addEventListener('mousedown',onDown);
 cv.addEventListener('mousemove',onMove);
 window.addEventListener('mouseup',onUp);
@@ -1974,15 +2028,52 @@ cv.addEventListener('touchstart',onDown,{passive:false});
 cv.addEventListener('touchmove',onMove,{passive:false});
 window.addEventListener('touchend',onUp);
 
+// ===== 공 이동 undo/redo — 위치·내 수구 색 스냅샷 스택 =====
+let dragStart=null;
+let hist=[], histIdx=-1;
+function snapState(){
+  return {my:myBall, b:{
+    cue:{x:balls.cue.x,y:balls.cue.y}, cue2:{x:balls.cue2.x,y:balls.cue2.y},
+    r1:{x:balls.r1.x,y:balls.r1.y}, r2:{x:balls.r2.x,y:balls.r2.y}}};
+}
+function sameState(a,b){
+  if(a.my!==b.my) return false;
+  for(const k of ['cue','cue2','r1','r2'])
+    if(a.b[k].x!==b.b[k].x||a.b[k].y!==b.b[k].y) return false;
+  return true;
+}
+function pushHist(){
+  const s=snapState();
+  if(histIdx>=0&&sameState(hist[histIdx],s)) return;   // 변화 없음 — 기록 생략
+  hist=hist.slice(0,histIdx+1);   // redo 분기 폐기
+  hist.push(s); histIdx=hist.length-1;
+  syncUndoRedo();
+}
+function applyState(s){
+  for(const k of ['cue','cue2','r1','r2']){ balls[k].x=s.b[k].x; balls[k].y=s.b[k].y; }
+  myBall=s.my; try{ localStorage.setItem('hb4_myball',myBall); }catch(e){}
+  applyMyBallColor();
+  routes=[]; selected=0; calcTried=false; renderCards(); draw(); drawPhoto();
+}
+function syncUndoRedo(){
+  const u=document.getElementById('g4-undo'), r=document.getElementById('g4-redo');
+  if(u) u.disabled=histIdx<=0;
+  if(r) r.disabled=histIdx>=hist.length-1;
+}
+function doUndo(){ if(histIdx>0){ stopAnim(false); histIdx--; applyState(hist[histIdx]); syncUndoRedo(); } }
+function doRedo(){ if(histIdx<hist.length-1){ stopAnim(false); histIdx++; applyState(hist[histIdx]); syncUndoRedo(); } }
+document.getElementById('g4-undo').addEventListener('click',doUndo);
+document.getElementById('g4-redo').addEventListener('click',doRedo);
+
 function syncTb(){
-  document.querySelectorAll('#g4-toolbar .tool').forEach(b=>
+  document.querySelectorAll('#g4-toolbar .tool[data-ball]').forEach(b=>
     b.classList.toggle('active',b.dataset.ball===activeBall));
 }
 function syncTuning(){
   document.querySelectorAll('#g4-tuning button[data-tune]').forEach(b=>
     b.classList.toggle('on',tuneState[b.dataset.tune]===b.dataset.value));
 }
-document.querySelectorAll('#g4-toolbar .tool').forEach(b=>
+document.querySelectorAll('#g4-toolbar .tool[data-ball]').forEach(b=>
   b.addEventListener('click',()=>{activeBall=b.dataset.ball;syncTb();}));
 document.querySelectorAll('#g4-tuning button[data-tune]').forEach(b=>
   b.addEventListener('click',()=>{
@@ -2069,6 +2160,7 @@ document.getElementById('g4-reset').addEventListener('click',()=>{
   stopAnim(false);
   for(const k in defaults){balls[k].x=defaults[k].x;balls[k].y=defaults[k].y;}
   routes=[];calcTried=false;renderCards();draw();drawPhoto();
+  pushHist();   // 초기 배치도 히스토리 기록
 });
 document.getElementById('g4-clearRoute').addEventListener('click',()=>{
   stopAnim(false);
@@ -2646,10 +2738,12 @@ document.querySelectorAll('[data-myball]').forEach(b=>
     applyMyBallColor();
     routes=[]; selected=0; calcTried=false; renderCards();
     draw(); drawPhoto();
+    pushHist();   // 수구 교체도 배치 변경 — 히스토리 기록
     // 이미 경로를 보고 있었다면 새 수구(선택한 색) 기준 경로를 바로 다시 보여준다
     if(wasShowing) calcBtn.click();
   }));
 applyMyBallColor();
+pushHist();   // 초기 배치를 히스토리 기준점으로 기록
 
 document.getElementById('g4-photo').addEventListener('click',()=>{
   document.getElementById('g4-file').click();
@@ -2832,6 +2926,7 @@ document.getElementById('g4-swapCue').addEventListener('click',()=>{
     });
   }
   routes=[]; selected=0; draw(); renderCards(); drawPhoto();
+  pushHist();   // 수구⇄상대 교환도 히스토리 기록
   calcBtn.click();
 });
 document.getElementById('g4-detect').addEventListener('click',()=>{
@@ -2925,6 +3020,7 @@ document.getElementById('g4-detect').addEventListener('click',()=>{
     ' — 계산된 경로가 사진 위에 겹쳐 표시됩니다. 경로 카드를 누르면 사진의 경로도 바뀝니다.'+
     (res.ambiguous?' ⚠ 두 수구가 모두 흰색에 가까워 임의로 배정했습니다 — 바뀌었으면 [수구 ⇄ 상대]를 누르세요.':'');
   routes=[]; selected=0; draw(); renderCards();
+  pushHist();               // 사진 인식 배치도 히스토리 기록
   calcBtn.click();          // 최적 경로 자동 계산
 });
 
