@@ -894,6 +894,7 @@
   </div>
 
   <div class="board">
+  <div class="shot-brief" id="g3-shotBrief" hidden></div>
   <div class="stage">
     <canvas id="g3-table" width="860" height="460" role="img" aria-label="3구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
   </div>
@@ -3867,6 +3868,21 @@ function renderPhyCards(){
   if(head) head.style.display=phyRoutes&&phyRoutes.length?'flex':'none';
   const bar=document.getElementById('g3-stageBar');
   if(bar) bar.hidden=!(phyRoutes&&phyRoutes.length);   // 재생 버튼은 경로가 있을 때만
+  // 샷 요약 — 선택한 경로의 당점·두께·경유 쿠션을 당구대 위에 한 줄로
+  const brief=document.getElementById('g3-shotBrief');
+  if(brief){
+    brief.hidden=!(phyRoutes&&phyRoutes.length);
+    if(phyRoutes&&phyRoutes.length){
+      const r=phyRoutes[phySel];
+      const eighths=Math.max(1,Math.min(8,Math.round(r.thickness*8)));
+      const thickLabel=eighths>=8?'정면 8/8':`${eighths}/8`;
+      brief.innerHTML=
+        `<span class="swatch" style="background:${PHY_COLORS[phySel]}"></span>`+
+        `<span class="sbi" title="권장 당점">${tipSVG3(r.spin)}${r.spin.label}</span>`+
+        `<span class="sbi" title="맞히는 두께"><b>${thickLabel}</b> 두께</span>`+
+        `<span class="sbi" title="경유 쿠션"><b>쿠션 ${r.cush}회</b></span>`;
+    }
+  }
   // 경로 1·2·3 선택 버튼 — 카드 선택과 동일하게 동작
   const picks=document.getElementById('g3-routePicks');
   if(picks){
