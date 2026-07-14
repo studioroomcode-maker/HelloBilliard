@@ -2632,19 +2632,22 @@ function applyMyBallColor(){
 document.querySelectorAll('[data-myball]').forEach(b=>
   b.addEventListener('click',()=>{
     if(b.dataset.myball===myBall) return;   // 같은 색 재클릭 — 변화 없음
-    // 색이 실제로 바뀜 — 선택한 색의 공이 진짜 수구가 되도록
-    // 내 수구(cue)와 상대 수구(cue2)의 위치를 맞바꾼다.
-    // (recolor는 아래 applyMyBallColor가 처리하므로 좌표만 교환)
+    // 색을 바꾸는 목적은 "같은 배치에서 다른 공을 수구로 보는 것"이다.
+    // (두 사람이 한 폰으로 내 노란공 경로 / 상대 흰공 경로를 번갈아 보는 용도)
+    // 공은 그 자리 그대로 두고, 내 수구(cue)와 상대 수구(cue2)의 역할만 맞바꾼다.
+    // 좌표를 교환한 뒤 recolor 하면 두 공은 화면상 제자리에 있고 수구만 바뀐다.
     stopAnim(false);
+    const wasShowing=calcTried;   // 경로를 보고 있었으면 토글 즉시 새 수구 경로로 갱신
     const tx=balls.cue.x, ty=balls.cue.y;
     balls.cue.x=balls.cue2.x; balls.cue.y=balls.cue2.y;
     balls.cue2.x=tx; balls.cue2.y=ty;
     myBall=b.dataset.myball;
     try{ localStorage.setItem('hb4_myball',myBall); }catch(e){}
     applyMyBallColor();
-    // 수구 위치가 바뀌었으니 기존 경로는 무효 — 지우고 다시 그린다
     routes=[]; selected=0; calcTried=false; renderCards();
     draw(); drawPhoto();
+    // 이미 경로를 보고 있었다면 새 수구(선택한 색) 기준 경로를 바로 다시 보여준다
+    if(wasShowing) calcBtn.click();
   }));
 applyMyBallColor();
 
