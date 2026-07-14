@@ -2631,9 +2631,20 @@ function applyMyBallColor(){
 }
 document.querySelectorAll('[data-myball]').forEach(b=>
   b.addEventListener('click',()=>{
+    if(b.dataset.myball===myBall) return;   // 같은 색 재클릭 — 변화 없음
+    // 색이 실제로 바뀜 — 선택한 색의 공이 진짜 수구가 되도록
+    // 내 수구(cue)와 상대 수구(cue2)의 위치를 맞바꾼다.
+    // (recolor는 아래 applyMyBallColor가 처리하므로 좌표만 교환)
+    stopAnim(false);
+    const tx=balls.cue.x, ty=balls.cue.y;
+    balls.cue.x=balls.cue2.x; balls.cue.y=balls.cue2.y;
+    balls.cue2.x=tx; balls.cue2.y=ty;
     myBall=b.dataset.myball;
     try{ localStorage.setItem('hb4_myball',myBall); }catch(e){}
-    applyMyBallColor(); draw(); drawPhoto();
+    applyMyBallColor();
+    // 수구 위치가 바뀌었으니 기존 경로는 무효 — 지우고 다시 그린다
+    routes=[]; selected=0; calcTried=false; renderCards();
+    draw(); drawPhoto();
   }));
 applyMyBallColor();
 
