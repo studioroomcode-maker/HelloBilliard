@@ -24,6 +24,7 @@ const CASES = [
   { f: 'crule-test.js', match: [/규칙 \[any\]/, /규칙 \[1\]/, /규칙 \[3\]/] },
   { f: 'sort-test.js', match: [/쿠션수순\(재계산\)/, /추천순/] },
   // ── UI 마크업 단위 검증 ──
+  { f: 'overlap-test.js', exit0: true, match: [/겹침 검증 회귀: OK/] },
   { f: 'block-test.js', match: [/경고 포함: OK/] },
   { f: 'side-check2.js', match: [/좌\/우 라벨 포함 여부: OK/] },
   { f: 'badge-check.js', match: [/gather 배지 포함: OK/] },

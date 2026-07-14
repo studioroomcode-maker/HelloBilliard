@@ -885,8 +885,9 @@
     스턴 ≈90° 탄젠트라인), 4개 공 전부를 추적해 키스와 파울(상대 수구 접촉) 경로는
     자동으로 걸러집니다. 직접 샷 외에 <b>뱅크샷</b>(쿠션을 1~2회 먼저 맞고 적구로
     가는 경로)도 첫 쿠션 접점을 훑어 탐색합니다. 카드의 <b>성공률(%)</b>은
-    조준각·파워·당점에 실전 오차를 준 몬테카를로 시뮬레이션 30회의 실제 득점
-    비율이며, 우연히 뱅크로 이어져 득점하는 경우도 규칙대로 인정합니다.<br><br>
+    실제 사용자 통계가 아니라, 조준각·파워·당점에 실력별 실전 오차를 준
+    몬테카를로 <b>시뮬레이션 90회</b>의 예상 득점 비율입니다. 우연히 뱅크로 이어져
+    득점하는 경우도 규칙대로 인정합니다.<br><br>
     <b>내 실력</b> · 초급은 무회전·끌기·밀기만, 그것도 <b>중심에서 반 팁 이내</b>의
     당점으로만 계산하며(극단 상/하단 당점 제외), 얇은 두께 경로를 빼고 실행 오차를
     크게 잡아 성공률이 현실적으로 표시됩니다. 상급은 혼합 당점·얇은 두께까지 모든
@@ -1411,7 +1412,7 @@ function gatherScore(fin){
 
 // ===== ④ 몬테카를로 성공률 =====
 // 조준각·파워·당점에 실전 오차(가우시안)를 준 시뮬레이션 N회로
-// "이 경로를 실제로 쳤을 때 득점할 확률"을 실측한다.
+// "이 경로를 실제로 쳤을 때 득점할 확률"을 시뮬레이션으로 추정한다.
 // 4구 득점은 순서 무관 — 두 적구를 모두 맞히고 상대 수구를 안 건드리면 성공.
 function gauss(){
   let u=0,v=0;
@@ -1954,7 +1955,7 @@ function renderCards(){
         → ${r.cushions>0?`쿠션 ${r.cushions}회 → `:''}${s} 도착${r.kiss?' · <span style="color:#d9582b">⚠ 키스 경유</span>':''}
         <details class="rdetail"><summary>기술 상세</summary><div>
         보정 <b>${r.tuningText}</b> · 오차 밴드 <b>±${Math.round((r.uncertainty||18)/2)}px</b>
-        · 성공률은 실전 오차 몬테카를로 90회 실측 (5% 단위 표시)${
+        · 성공률은 실전 오차 몬테카를로 90회 시뮬레이션 예상치 (5% 단위 표시)${
         r.gather!=null&&r.gatherAvg?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b>
         + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${Math.round(r.gatherAvg/MM/10)}cm</b> 기준`:''}</div></details></div>
       <div class="metrics">
@@ -2100,7 +2101,7 @@ document.querySelectorAll('#g4-sortseg button').forEach(b=>
       x.classList.toggle('on',x===b));
     if(!routes.length) return;
     if((sortMode==='cush')!==(prev==='cush')){
-      calcBtn.click();          // 탐색 조건이 달라짐 — 재계산
+      requestRecalc();          // 탐색 조건이 달라짐 — 재계산 (계산 중이면 끝난 뒤)
     } else if(allRoutes.length){
       routes=sortedRoutes(); selected=0;
       renderCards(); draw(); drawPhoto();
@@ -2108,8 +2109,34 @@ document.querySelectorAll('#g4-sortseg button').forEach(b=>
   }));
 const calcBtn=document.getElementById('g4-calc');
 let solveGen=0;   // 계산 중 공이 움직이면 낡은 결과를 버리기 위한 세대 토큰
+let pendingRecalc=false;   // 계산 중 설정이 바뀌면 종료 후 재계산 예약
+// 계산 중이면 끝난 뒤로 재계산을 미룬다 (버튼이 disabled라 즉시 click은 무시되므로)
+function requestRecalc(){
+  if(calcBtn.disabled) pendingRecalc=true; else calcBtn.click();
+}
+// 공 겹침 검사 — 두 공 중심 거리가 지름 미만이면 물리적으로 불가능한 배치
+function overlappingBalls(bs,r){
+  const ks=['cue','cue2','r1','r2'];
+  for(let i=0;i<ks.length;i++) for(let j=i+1;j<ks.length;j++){
+    const a=bs[ks[i]], b=bs[ks[j]];
+    if(a&&b&&Math.hypot(a.x-b.x,a.y-b.y) < 2*r-0.5) return [ks[i],ks[j]];
+  }
+  return null;
+}
+if(typeof window!=='undefined') window.__hbOverlap=overlappingBalls;  // 테스트용 노출
 calcBtn.addEventListener('click',()=>{
   if(calcBtn.disabled) return;
+  // 공 겹침 방어 — 물리적으로 불가능한 배치는 계산을 막고 안내
+  const ov=overlappingBalls(balls,BALL_R);
+  if(ov){
+    calcTried=true; routes=[]; selected=0; renderCards();
+    const box=document.getElementById('g4-routes');
+    if(box) box.innerHTML='<div class="panel"><span class="empty">⚠ '+
+      BALL_NAMES[ov[0]]+'와(과) '+BALL_NAMES[ov[1]]+'가 겹쳐 있습니다 — '+
+      '공을 서로 떨어뜨려 배치한 뒤 다시 계산해 주세요.</span></div>';
+    draw();
+    return;
+  }
   calcTried=true;
   calcBtn.disabled=true;
   calcBtn.textContent='계산 중…';
@@ -2127,6 +2154,8 @@ calcBtn.addEventListener('click',()=>{
     try{ window.__hbReport&&window.__hbReport('solve/g4',err); }catch(_){}
   }).finally(()=>{
     calcBtn.textContent='경로 3개 제안'; calcBtn.disabled=false;
+    // 계산 중 설정(수구 색 등)이 바뀌어 재계산이 예약됐으면 지금 실행
+    if(pendingRecalc){ pendingRecalc=false; calcBtn.click(); }
   });
 });
 // ⑥ 캘리브레이션 버튼
@@ -2736,11 +2765,12 @@ document.querySelectorAll('[data-myball]').forEach(b=>
     myBall=b.dataset.myball;
     try{ localStorage.setItem('hb4_myball',myBall); }catch(e){}
     applyMyBallColor();
+    solveGen++;   // 진행 중 계산 무효화 — 교체 전 배치로 계산된 결과가 표시되지 않도록
     routes=[]; selected=0; calcTried=false; renderCards();
     draw(); drawPhoto();
     pushHist();   // 수구 교체도 배치 변경 — 히스토리 기록
-    // 이미 경로를 보고 있었다면 새 수구(선택한 색) 기준 경로를 바로 다시 보여준다
-    if(wasShowing) calcBtn.click();
+    // 이미 경로를 보고 있었다면 새 수구 기준으로 재계산 (계산 중이면 끝난 뒤 실행)
+    if(wasShowing) requestRecalc();
   }));
 applyMyBallColor();
 pushHist();   // 초기 배치를 히스토리 기준점으로 기록
@@ -2888,7 +2918,7 @@ function pDown(e){
           `${BALL_NAMES[photoMissing[0]]} 위치를 탭하세요.`;
       } else {
         photoMsg.textContent='모든 공 지정 완료 — 최적 경로를 계산합니다.';
-        calcBtn.click();
+        solveGen++; requestRecalc();
       }
     }
   }
@@ -2925,9 +2955,9 @@ document.getElementById('g4-swapCue').addEventListener('click',()=>{
       return {x:pp.x,y:pp.y,color:markColor(k)};
     });
   }
-  routes=[]; selected=0; draw(); renderCards(); drawPhoto();
+  routes=[]; selected=0; solveGen++; draw(); renderCards(); drawPhoto();
   pushHist();   // 수구⇄상대 교환도 히스토리 기록
-  calcBtn.click();
+  requestRecalc();
 });
 document.getElementById('g4-detect').addEventListener('click',()=>{
   if(!photoImgData||!photoCorners) return;
@@ -3019,9 +3049,9 @@ document.getElementById('g4-detect').addEventListener('click',()=>{
   photoMsg.textContent=`인식 완료: ${got.join(' · ')}`+
     ' — 계산된 경로가 사진 위에 겹쳐 표시됩니다. 경로 카드를 누르면 사진의 경로도 바뀝니다.'+
     (res.ambiguous?' ⚠ 두 수구가 모두 흰색에 가까워 임의로 배정했습니다 — 바뀌었으면 [수구 ⇄ 상대]를 누르세요.':'');
-  routes=[]; selected=0; draw(); renderCards();
+  routes=[]; selected=0; solveGen++; draw(); renderCards();
   pushHist();               // 사진 인식 배치도 히스토리 기록
-  calcBtn.click();          // 최적 경로 자동 계산
+  requestRecalc();          // 최적 경로 자동 계산 (계산 중이면 끝난 뒤)
 });
 
 // 비전 코어를 3구 탭에서 재사용할 수 있게 노출
@@ -4028,7 +4058,7 @@ function renderPhyCards(){
         → 쿠션 <b>${r.cush}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점 ·
         추천 파워 <b>강(4레일)</b>
         <details class="rdetail"><summary>기술 상세</summary><div>
-        성공률은 실전 오차 몬테카를로 48회 실측 (5% 단위 표시)${
+        성공률은 실전 오차 몬테카를로 48회 시뮬레이션 예상치 (5% 단위 표시)${
         r.gather!=null&&r.gatherAvg?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b>
         + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${Math.round(r.gatherAvg/MMS/10)}cm</b> 기준`:''}</div></details></div>
       <div class="metrics">
@@ -4084,9 +4114,27 @@ function drawPhyRoute(r,color,alpha){
   ctx.restore();
 }
 let solveGen3=0;
+// 공 겹침 검사 (3구) — 중심 거리가 지름 미만이면 물리적으로 불가능
+function overlapping3(){
+  const ks=['cue','obj','target'];
+  for(let i=0;i<ks.length;i++) for(let j=i+1;j<ks.length;j++){
+    const a=balls[ks[i]], b=balls[ks[j]];
+    if(Math.hypot(a.x-b.x,a.y-b.y) < 2*BALL_R-0.5) return [ks[i],ks[j]];
+  }
+  return null;
+}
 document.getElementById('g3-phys').addEventListener('click',()=>{
   const btn=document.getElementById('g3-phys');
   if(btn.disabled) return;
+  const ov=overlapping3();
+  if(ov){
+    phyRoutes=[]; phySel=0; renderPhyCards();
+    const box=document.getElementById('g3-phyRoutes');
+    if(box) box.innerHTML='<div class="panel"><span class="empty">⚠ '+
+      balls[ov[0]].name+'와(과) '+balls[ov[1]].name+'가 겹쳐 있습니다 — '+
+      '공을 서로 떨어뜨려 배치한 뒤 다시 계산해 주세요.</span></div>';
+    return;
+  }
   btn.textContent='계산 중…'; btn.disabled=true;
   stopAnim3(false);
   const myGen=++solveGen3;
