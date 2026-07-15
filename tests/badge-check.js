@@ -30,7 +30,9 @@ eval(code);
 handlers['g4-calc:click'][0]();
 setTimeout(() => {
   const out = els['g4-routes'].innerHTML;
-  const m = out.match(/<span class="badges">[\s\S]*?<\/span>\s*<\/span>/);
-  console.log('배지 블록:', m ? m[0].replace(/\s+/g, ' ') : '(없음)');
-  console.log('gather 배지 포함:', /badge gather/.test(out) ? 'OK' : 'FAIL');
+  // 재구성된 카드: 히어로 성공률(.rc-pct + '성공률') + 공 모임(.rc-sub)
+  const hasHero = /class="rc-pct"/.test(out) && /성공률/.test(out);
+  const hasGather = /공 모임/.test(out);
+  console.log('히어로 성공률 포함:', hasHero ? 'OK' : 'FAIL');
+  console.log('gather 배지 포함:', hasGather ? 'OK' : 'FAIL');
 }, 100);
