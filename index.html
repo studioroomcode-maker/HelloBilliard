@@ -849,6 +849,28 @@
   .calc{ background:var(--surface); border:1px solid var(--line-soft);
     border-radius:20px; box-shadow:var(--sh-1); }
   .formula{ background:var(--surface-2); color:var(--tx-2); }
+
+  /* AI 시스템 추천 카드 */
+  .coach-card{ background:var(--surface); border:1px solid var(--line-soft);
+    border-radius:20px; box-shadow:var(--sh-1); padding:15px 16px; margin-bottom:12px; }
+  .coach-card[hidden]{ display:none; }
+  .coach-card .cc-title{ font-size:11px; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--accent); font-weight:800; margin-bottom:10px; }
+  .coach-card .cc-row{ display:flex; align-items:center; gap:10px; padding:7px 6px;
+    margin:0 -6px; border-radius:10px; }
+  .coach-card .cc-row.best{ background:var(--accent-soft); }
+  .coach-card .cc-sys{ font-weight:800; font-size:13.5px; color:var(--tx-2); flex:0 0 96px; }
+  .coach-card .cc-row.best .cc-sys{ color:var(--tx-1); }
+  .coach-card .cc-stars{ font-size:13px; letter-spacing:1.5px; color:var(--accent); }
+  .coach-card .cc-err{ margin-left:auto; font-family:'Spline Sans Mono',monospace;
+    font-size:12px; color:var(--tx-3); font-variant-numeric:tabular-nums; }
+  .coach-card .cc-reco{ margin-top:11px; padding-top:11px;
+    border-top:1px solid var(--line-soft); font-size:13px; line-height:1.6; color:var(--tx-2); }
+  .coach-card .cc-reco b{ color:var(--accent); }
+  .coach-card .cc-switch{ margin-top:10px; }
+  .coach-card .cc-switch button{ background:var(--accent); color:var(--on-accent);
+    border:0; border-radius:10px; font-family:inherit; font-weight:800; font-size:12.5px;
+    padding:9px 14px; cursor:pointer; box-shadow:0 6px 16px -6px var(--accent-glow); }
   .numbox{ background:var(--surface-2); border-radius:14px; }
   .numbox .lbl{ color:var(--tx-3); }
   .result{ color:var(--tx-2); }
@@ -1178,6 +1200,9 @@
     <div class="section-label">제안 경로</div>
   </div>
   <div class="routes" id="g3-phyRoutes"></div>
+
+  <!-- AI 시스템 추천 카드 (자동 갱신) -->
+  <div class="coach-card" id="g3-coach" hidden></div>
 
   <div class="calc">
     <h2 id="g3-calcTitle">파이브앤하프 계산</h2>
@@ -4210,6 +4235,9 @@ function renderPhyCards(){
   const box=document.getElementById('g3-phyRoutes');
   const head=document.getElementById('g3-routesHead');
   if(head) head.style.display=phyRoutes&&phyRoutes.length?'flex':'none';
+  // 물리 경로가 표시되면 AI 시스템 추천 카드는 숨긴다 (물리 결과 우선)
+  const coach=document.getElementById('g3-coach');
+  if(coach && phyRoutes && phyRoutes.length) coach.hidden=true;
   const bar=document.getElementById('g3-stageBar');
   if(bar) bar.hidden=!(phyRoutes&&phyRoutes.length);   // 재생 버튼은 경로가 있을 때만
   // 샷 요약 — 선택한 경로의 당점·두께·경유 쿠션을 당구대 위에 한 줄로
@@ -4830,9 +4858,75 @@ document.querySelectorAll('#g3-tipseg button').forEach(b=>
     b.classList.add('on');
     autoSystem(true);   // 회전 변경 → 즉시 재계산
   }));
+// ===== AI 시스템 추천 — 세 시스템의 적합도를 실제 계산으로 평가 =====
+// 각 시스템 compute()의 실제 반환값(유효성·기하 오차)으로 별점을 매긴다.
+// (무거운 물리 성공률은 [물리 경로 제안]에서 별도 제공 — 여기선 가벼운 기하 평가)
+const SYS_NAME={five:'파이브앤하프', plus:'플러스', ball:'볼 시스템'};
+// 시스템별 '설계 적합도' 평가 — 각 시스템은 유효하면 조준을 정확히 맞추므로
+// 기하 잔차는 변별력이 없다. 대신 '이 배치가 그 시스템이 설계한 형태인가'를 본다.
+// (실제 물리 성공률은 다음 단계에서 시뮬레이션으로 추가)
+function evalOneSystem(sys){
+  const save=system; system=sys;
+  let s=null; try{ s=compute(); }catch(e){}
+  system=save;
+  if(!s) return {sys, valid:false, stars:1, status:'계산 불가'};
+  const valid=!!s.valid;
+  let stars, status;
+  if(sys==='five'){
+    if(valid){
+      const sweet = s.cueNum>=25 && s.cueNum<=78 && s.c1Num>=5 && s.c1Num<=50;
+      stars=sweet?5:4; status=sweet?'적용 가능':'범위 경계';
+    } else {
+      const cm=s.err!=null?Math.round(s.err/MMS/10):null;
+      stars=(cm!=null&&cm<35)?2:1;
+      status=s.reason==='c1range'?'유효 범위 밖':(cm!=null?`트랙 ${cm}cm 벗어남`:'적용 어려움');
+    }
+  } else if(sys==='plus'){
+    if(valid){ stars=s.nearBottom?5:3; status=s.nearBottom?'적용 가능':'하단 배치용'; }
+    else { stars=1; status='유효 범위 밖'; }
+  } else { // ball
+    if(valid){ stars=s.objNearRail?3:4; status=s.objNearRail?'키스 주의':'적용 가능'; }
+    else { stars=2; status='볼값 범위 밖'; }
+  }
+  return {sys, valid, stars, status};
+}
+function evalSystems(){ return ['five','plus','ball'].map(evalOneSystem); }
+function renderCoach(){
+  const el=document.getElementById('g3-coach');
+  if(!el) return;
+  if(phyRoutes&&phyRoutes.length){ el.hidden=true; return; }   // 물리 경로 우선
+  const ev=evalSystems();
+  const sorted=ev.slice().sort((a,b)=> b.stars-a.stars);
+  const best=sorted[0];
+  el.hidden=false;
+  const rows=sorted.map(e=>{
+    const isBest=e.sys===best.sys;
+    return `<div class="cc-row ${isBest?'best':''}">`+
+      `<span class="cc-sys">${SYS_NAME[e.sys]}</span>`+
+      `<span class="cc-stars">${'★'.repeat(e.stars)}${'☆'.repeat(5-e.stars)}</span>`+
+      `<span class="cc-err">${e.status}</span></div>`;
+  }).join('');
+  let reco, showSwitch=false;
+  if(best.stars<=2){
+    reco=`이 배치는 세 시스템 모두 적용이 애매합니다. <b>[물리 경로 제안]</b>으로 실제 득점 경로를 찾아보세요.`;
+  } else if(best.sys===system){
+    reco=`지금 배치에는 <b>${SYS_NAME[system]}</b>가 가장 적합합니다. 위 계산대로 조준해 보세요.`;
+  } else {
+    reco=`이 배치는 <b>${SYS_NAME[best.sys]}</b>가 더 적합합니다 (${best.status}). 아래 버튼으로 바꿔 계산할 수 있어요.`;
+    showSwitch=true;
+  }
+  const sw=showSwitch?`<div class="cc-switch"><button type="button" data-switch="${best.sys}">${SYS_NAME[best.sys]}로 전환</button></div>`:'';
+  el.innerHTML=`<div class="cc-title">🎯 AI 시스템 추천 — 배치 적합도</div>${rows}<div class="cc-reco">${reco}</div>${sw}`;
+  const btn=el.querySelector&&el.querySelector('[data-switch]');
+  if(btn) btn.addEventListener('click',()=>{
+    const t=btn.dataset.switch;
+    const tab=document.querySelector&&document.querySelector('#g3-tabs button[data-sys="'+t+'"]');
+    if(tab) tab.click();
+  });
+}
 // 시스템 자동 계산 — 공 이동·회전·시스템 변경 시 debounce 후 갱신 (버튼 없이 동작)
 function runSystemCalc(){
-  solution=compute(); showResult(solution); draw(); drawP3();
+  solution=compute(); showResult(solution); renderCoach(); draw(); drawP3();
 }
 let autoTimer=null;
 function autoSystem(immediate){
