@@ -3435,6 +3435,22 @@ function pathBlockedByObj(path){
     if(distToSeg(balls.obj,path[i-1],path[i])<BALL_R*2) return true;
   return false;
 }
+// 제2적구가 '쿠션 전(도착 구간 제외)' 경로를 막는가 —
+// 빈쿠션 시스템(파이브앤하프·플러스)은 쿠션을 돌아 제2적구에 도착해야 하는데,
+// 출발/중간 구간에 제2적구가 있으면 쿠션 전에 먼저 맞아 성립하지 않는다.
+function targetBlocksPath(path){
+  if(!path||path.length<3) return false;
+  let minR=Infinity;
+  for(let j=0;j<=path.length-3;j++){     // 마지막(도착) 구간은 제외
+    const d=sub(path[j+1],path[j]), L2=d.x*d.x+d.y*d.y;
+    if(L2<1e-9) continue;
+    const t=dot2(sub(balls.target,path[j]),d)/L2;
+    if(t<=0.05||t>=1) continue;          // 시작점 뒤·끝점은 제외
+    const q={x:path[j].x+d.x*t, y:path[j].y+d.y*t};
+    minR=Math.min(minR, len(sub(balls.target,q))/BALL_R);   // 반지름 단위 거리
+  }
+  return minR < 1.5;   // 중심이 1.5R 이내로 지나면 실질적 충돌 (가장자리 스침 제외)
+}
 
 // ===== 좌표 매핑 — 표준 파이브앤하프/플러스 배치 =====
 // 가로 테이블: 상·하 변 = 장쿠션(다이아 8칸), 좌·우 변 = 단쿠션(다이아 4칸).
@@ -3569,7 +3585,7 @@ function computeFive(){
   const err=Math.abs(r.e);
   return {sys:'five', cueNum:r.cueNum, c1Num:r.c1v, c3Num:sol.v, tipAdj,
     c1Pt:r.p1, c2Pt:r.p2, c3Pt:r.p3, path, valid:true, ok:err<30, err,
-    blocked:pathBlockedByObj(path)};
+    blocked:pathBlockedByObj(path), blockedT:targetBlocksPath(path)};
 }
 
 // --- 플러스 시스템 ---
@@ -3611,7 +3627,7 @@ function computePlus(){
   const path=[{x:cue.x,y:cue.y}, p1, p2, p3];
   return {sys:'plus', startNum, c1Num, c3Num, c1Adj,
           c1Pt:p1, c2Pt:p2, c3Pt:p3, path, valid:true, ok:true, nearBottom,
-          blocked:pathBlockedByObj(path)};
+          blocked:pathBlockedByObj(path), blockedT:targetBlocksPath(path)};
 }
 
 // --- 볼 시스템 (모델 A: 코너 기점 0) ---
@@ -3742,6 +3758,13 @@ function verdict(s){
   const blockWarn=s.blocked?
     `<div class="miss">⚠ 제1적구(분홍)가 계산 경로 위에 있습니다 — 실제로는 먼저 맞아 `+
     `진로가 바뀝니다. 배치를 확인하거나 [물리 경로 제안]을 사용하세요.</div>`:'';
+  // 제2적구가 쿠션 전 출발 경로를 막으면 경고 — 쿠션을 돌기 전에 먼저 맞는다
+  const targetWarn=s.blockedT?
+    `<div class="miss">⚠ 제2적구(빨강)가 쿠션 전 <b>출발 경로</b> 위에 있습니다 — 실제로는 `+
+    `쿠션을 돌기 전에 제2적구를 먼저 맞습니다. 이 배치는 ${s.sys==='plus'?'플러스':'파이브앤하프'}로 `+
+    `칠 수 없습니다. <b>[물리 경로 제안]</b>을 사용하세요.</div>`:'';
+  // 출발이 막히면 그게 결론 — 초록 '득점 라인'을 숨긴다
+  if(s.valid&&s.blockedT) return blockWarn+targetWarn;
   if(!s.valid){
     if(s.reason==='notrack' && s.sys==='five'){
       const cm=s.nearMiss?Math.round(s.err/(PW/2844)/10):null;
@@ -4986,6 +5009,9 @@ function evalOneSystem(sys){
   let s=null; try{ s=compute(); }catch(e){}
   system=save;
   if(!s) return {sys, valid:false, stars:1, status:'계산 불가'};
+  // 제2적구가 출발 경로를 막으면 그 시스템으론 칠 수 없음 (쿠션 전에 먼저 맞음)
+  if(s.blockedT) return {sys, valid:false, stars:1, status:'제2적구 막힘'};
+  if(s.blocked)  return {sys, valid:false, stars:1, status:'제1적구 막힘'};
   const valid=!!s.valid;
   let stars, status;
   if(sys==='five'){
