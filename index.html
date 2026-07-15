@@ -20,7 +20,7 @@
 <meta name="twitter:title" content="Hello Billiard — 당구 AI 코치">
 <meta name="twitter:description" content="사진으로 공 배치를 읽고 물리 엔진이 득점 경로를 성공률과 함께 제안합니다.">
 <meta name="twitter:image" content="https://hellobilliard.studioroomkr.com/og-image.png">
-<meta name="theme-color" content="#14110d">
+<meta name="theme-color" content="#100e0a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -693,51 +693,51 @@
      기능 불변. 되돌리기: 이 블록 + 헤더 토글 + 테마 스크립트 제거.
      ============================================================ */
   :root{
-    /* 다크(기본) — 쿨 슬레이트 프레임에 시안 시그니처 */
-    --bg:#0c0f13;
-    --surface:#161b21;
-    --surface-2:#1f262e;
-    --line:#2c353f;
-    --line-soft:#242c34;
-    --accent:#22c8e6;
-    --accent-2:#5bdcf5;
-    --on-accent:#04252c;
-    --accent-soft:rgba(34,200,230,.14);
-    --accent-line:rgba(34,200,230,.5);
-    --accent-glow:rgba(34,200,230,.38);
-    --felt-glow:rgba(34,200,230,.28);
-    --tx-1:#eef3f7;
-    --tx-2:rgba(238,243,247,.72);
-    --tx-3:rgba(238,243,247,.46);
+    /* 다크(기본) — 웜 차콜 프레임에 골드 시그니처 */
+    --bg:#100e0a;
+    --surface:#1a1712;
+    --surface-2:#231f18;
+    --line:#342f24;
+    --line-soft:#2a251d;
+    --accent:#f2bb42;
+    --accent-2:#ffd061;
+    --on-accent:#2a1c00;
+    --accent-soft:rgba(242,187,66,.13);
+    --accent-line:rgba(242,187,66,.5);
+    --accent-glow:rgba(242,187,66,.32);
+    --felt-glow:rgba(33,150,96,.26);
+    --tx-1:#f6f2e9;
+    --tx-2:rgba(246,242,233,.72);
+    --tx-3:rgba(246,242,233,.46);
     --ok:#5fd08a;
     --sh-1:0 2px 8px rgba(0,0,0,.4);
     --sh-2:0 12px 32px rgba(0,0,0,.5);
     --sh-3:0 24px 60px rgba(0,0,0,.55);
-    --amb-1:rgba(34,200,230,.10);
-    --amb-2:rgba(34,200,230,.06);
+    --amb-1:rgba(242,187,66,.09);
+    --amb-2:rgba(33,150,96,.06);
   }
   :root[data-theme="light"]{
-    --bg:#eef1f5;
+    --bg:#f4f2ee;
     --surface:#ffffff;
-    --surface-2:#eef2f6;
-    --line:#dde3ea;
-    --line-soft:#e6ebf1;
-    --accent:#0aa6c6;
-    --accent-2:#22c8e6;
+    --surface-2:#f0ede7;
+    --line:#e2ddd3;
+    --line-soft:#eae6de;
+    --accent:#c0851a;
+    --accent-2:#e0a52a;
     --on-accent:#ffffff;
-    --accent-soft:rgba(10,166,198,.10);
-    --accent-line:rgba(10,166,198,.4);
-    --accent-glow:rgba(10,166,198,.28);
-    --felt-glow:rgba(10,166,198,.18);
-    --tx-1:#141a20;
-    --tx-2:rgba(20,26,32,.66);
-    --tx-3:rgba(20,26,32,.42);
+    --accent-soft:rgba(192,133,26,.12);
+    --accent-line:rgba(192,133,26,.42);
+    --accent-glow:rgba(192,133,26,.28);
+    --felt-glow:rgba(33,150,96,.15);
+    --tx-1:#191510;
+    --tx-2:rgba(25,21,16,.66);
+    --tx-3:rgba(25,21,16,.42);
     --ok:#12945a;
-    --sh-1:0 1px 3px rgba(24,34,45,.1);
-    --sh-2:0 10px 28px rgba(24,34,45,.14);
-    --sh-3:0 20px 44px rgba(24,34,45,.16);
-    --amb-1:rgba(10,166,198,.07);
-    --amb-2:rgba(10,166,198,.04);
+    --sh-1:0 1px 3px rgba(30,24,14,.1);
+    --sh-2:0 10px 28px rgba(30,24,14,.14);
+    --sh-3:0 20px 44px rgba(30,24,14,.16);
+    --amb-1:rgba(192,133,26,.07);
+    --amb-2:rgba(33,150,96,.05);
   }
   html, body{ background:var(--bg); color:var(--tx-1); transition:background .25s, color .25s; }
   body::before{
@@ -777,12 +777,6 @@
     box-shadow:0 22px 50px rgba(0,0,0,.45), 0 0 70px -26px var(--felt-glow),
       inset 0 2px 0 var(--rail-light); }
   .tabs + .board .stage{ border-radius:0 18px 18px 18px; }
-  /* 득점 경로 등장 시 반짝임 — 라이트 스윕 */
-  .stage.flash::after{ content:''; position:absolute; inset:0; border-radius:inherit;
-    pointer-events:none; background:linear-gradient(115deg, transparent 34%,
-      rgba(140,235,255,.28) 50%, transparent 66%);
-    transform:translateX(-130%); animation:shine .75s ease-out; }
-  @keyframes shine{ to{ transform:translateX(130%); } }
 
   /* 공통 버튼/세그/탭 — 테마 변수로 라이트 대응 */
   .tool, .tune-options button, .seg button, .tabs button{
@@ -869,7 +863,7 @@
 
   @media (prefers-reduced-motion: reduce){
     .rcard:hover{ transform:none; }
-    .routes.just .rcard, .routes.just .rcard .rc-pct, .stage.flash::after{ animation:none; }
+    .routes.just .rcard, .routes.just .rcard .rc-pct{ animation:none; }
     html,body{ transition:none; }
   }
 
@@ -909,7 +903,7 @@
     t = t==='light'?'light':'dark';
     document.documentElement.setAttribute('data-theme', t);
     var mt=document.querySelector('meta[name="theme-color"]');
-    if(mt) mt.setAttribute('content', t==='light'?'#eef1f5':'#0c0f13');
+    if(mt) mt.setAttribute('content', t==='light'?'#f4f2ee':'#100e0a');
   }catch(e){ document.documentElement.setAttribute('data-theme','dark'); }
 })();
 </script>
@@ -2087,16 +2081,6 @@ const POWER_LABEL={1:'아주 약하게',2:'약하게',3:'보통',4:'강하게',5
 
 let calcTried=false;   // 계산을 한 번이라도 눌렀는지 — 첫 안내와 "경로 없음"을 구분
 let justSolved=false;  // 방금 새 계산 결과인지 — 등장 애니메이션 트리거용
-// 득점 경로 등장 시 당구대 반짝임(라이트 스윕) — 새 결과에만
-function flashStage(canvas){
-  try{
-    const s=canvas&&canvas.closest&&canvas.closest('.stage');
-    if(!s) return;
-    s.classList.remove('flash'); void s.offsetWidth;   // 리플로우로 재생 리셋
-    s.classList.add('flash');
-    setTimeout(function(){ s.classList.remove('flash'); }, 800);
-  }catch(e){}
-}
 function renderCards(){
   const box=document.getElementById('g4-routes');
   const bar=document.getElementById('g4-stageBar');
@@ -2362,7 +2346,6 @@ calcBtn.addEventListener('click',()=>{
     routes=rs; selected=0;
     justSolved=true; renderCards(); justSolved=false;   // 등장 애니메이션
     draw();
-    if(rs&&rs.length) flashStage(cv);   // 득점 경로 나올 때 반짝임
     drawPhoto();               // 사진이 열려 있으면 경로를 사진에도 표시
   }).catch(err=>{
     if(myGen!==solveGen) return;
@@ -4212,16 +4195,6 @@ async function solve3(onProgress){
 // ---- 물리 경로 UI ----
 let phyRoutes=null, phySel=0;
 let justSolved3=false;   // 방금 새 계산 결과인지 — 등장 애니메이션 트리거용
-// 득점 경로 등장 시 당구대 반짝임 (3구 스코프용 — 4구와 동일 동작)
-function flashStage(canvas){
-  try{
-    const s=canvas&&canvas.closest&&canvas.closest('.stage');
-    if(!s) return;
-    s.classList.remove('flash'); void s.offsetWidth;
-    s.classList.add('flash');
-    setTimeout(function(){ s.classList.remove('flash'); }, 800);
-  }catch(e){}
-}
 const PHY_COLORS=['#f4f1e8','#5fb8e8','#c98ce0'];
 function tipSVG3(spin){
   let cx=15,cy=15;
@@ -4378,7 +4351,6 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
     phyRoutes=rs; phySel=0;
     justSolved3=true; renderPhyCards(); justSolved3=false;   // 등장 애니메이션
     draw();
-    if(rs&&rs.length) flashStage(cv);   // 득점 경로 나올 때 반짝임
   }).catch(err=>{
     if(myGen!==solveGen3) return;
     phyRoutes=null; phySel=0;
@@ -4929,7 +4901,7 @@ applySystem();
     document.documentElement.setAttribute('data-theme', next);
     try{ localStorage.setItem('hb_theme', next); }catch(e){}
     var mt=document.querySelector('meta[name="theme-color"]');
-    if(mt) mt.setAttribute('content', next==='light'?'#eef1f5':'#0c0f13');
+    if(mt) mt.setAttribute('content', next==='light'?'#f4f2ee':'#100e0a');
     syncIcon();
     // 캔버스는 스스로 다시 그려야 반영되지는 않지만(펠트=고정색), 테마 전환 후
     // 혹시 열려 있는 경로/사진 오버레이 갱신을 위해 리사이즈 이벤트를 흘려준다.
