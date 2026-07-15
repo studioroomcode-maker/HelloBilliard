@@ -1149,7 +1149,7 @@
   </div>
 
   <div class="actions">
-    <button class="tool primary" id="g3-calc">시스템 계산</button>
+    <button class="tool primary" id="g3-calc" style="display:none">시스템 계산</button>
     <button class="tool primary" id="g3-phys">물리 경로 제안</button>
     <button class="tool" id="g3-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
   </div>
@@ -1182,9 +1182,9 @@
   <div class="calc">
     <h2 id="g3-calcTitle">파이브앤하프 계산</h2>
     <div class="seg" id="g3-tipseg">
-      <button data-tip="1">2팁 (약한 회전)</button>
-      <button data-tip="2" class="on">3팁 (표준)</button>
-      <button data-tip="3">맥시멈 (최대 회전)</button>
+      <button data-tip="1">약회전 <span style="opacity:.6">(2팁)</span></button>
+      <button data-tip="2" class="on">표준 <span style="opacity:.6">(3팁)</span></button>
+      <button data-tip="3">강회전 <span style="opacity:.6">(맥시멈)</span></button>
     </div>
     <div class="formula" id="g3-formula"></div>
     <div class="nums" id="g3-nums"></div>
@@ -3570,7 +3570,7 @@ function computeBall(){
 function showResult(s){
   const numsEl=document.getElementById('g3-nums');
   const resEl=document.getElementById('g3-result');
-  const tipLabel={1:'2팁',2:'3팁(표준)',3:'맥시멈'}[tip];
+  const tipLabel={1:'약회전(2팁)',2:'표준(3팁)',3:'강회전(맥시멈)'}[tip];
 
   if(s.sys==='five'){
     numsEl.innerHTML=numBox('수구수',s.cueNum,'cue')+
@@ -4708,7 +4708,7 @@ function onDown(e){
   const p=cpos(e), k=hitB(p);
   if(k){dragging=k;activeBall=k;syncTb();}
   else{const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
-    solution=null;phyRoutes=null;renderPhyCards();}
+    solution=null;phyRoutes=null;renderPhyCards();autoSystem();}   // 탭 배치 → 자동 계산
   draw();
 }
 function onMove(e){
@@ -4717,8 +4717,9 @@ function onMove(e){
   const c=clampB(cpos(e));
   balls[dragging].x=c.x;balls[dragging].y=c.y;
   solution=null; phyRoutes=null; renderPhyCards(); draw();
+  autoSystem();   // 드래그 중 debounce 자동 계산
 }
-function onUp(){dragging=null;}
+function onUp(){ dragging=null; autoSystem(); }
 cv.addEventListener('mousedown',onDown);
 cv.addEventListener('mousemove',onMove);
 window.addEventListener('mouseup',onUp);
@@ -4813,9 +4814,7 @@ function applySystem(){
   solution=null;
   stopAnim3(false);
   phyRoutes=null; renderPhyCards();
-  document.getElementById('g3-result').textContent='공을 배치하고 ‘시스템 계산’을 누르세요.';
-  document.getElementById('g3-nums').innerHTML='';
-  draw();
+  autoSystem(true);   // 시스템 전환·초기화 → 즉시 자동 계산
 }
 document.querySelectorAll('#g3-tabs button').forEach(b=>
   b.addEventListener('click',()=>{
@@ -4829,11 +4828,23 @@ document.querySelectorAll('#g3-tipseg button').forEach(b=>
     tip=+b.dataset.tip;
     document.querySelectorAll('#g3-tipseg button').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
-    if(solution){solution=compute();showResult(solution);draw();drawP3();}
+    autoSystem(true);   // 회전 변경 → 즉시 재계산
   }));
+// 시스템 자동 계산 — 공 이동·회전·시스템 변경 시 debounce 후 갱신 (버튼 없이 동작)
+function runSystemCalc(){
+  solution=compute(); showResult(solution); draw(); drawP3();
+}
+let autoTimer=null;
+function autoSystem(immediate){
+  if(phyRoutes&&phyRoutes.length) return;   // 물리 경로 표시 중엔 시스템 자동계산 보류
+  if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+  if(immediate) runSystemCalc();
+  else autoTimer=setTimeout(function(){ autoTimer=null; runSystemCalc(); }, 160);
+}
+// (기존 버튼은 숨김 — 테스트·프로그램 호출용으로 핸들러 유지)
 document.getElementById('g3-calc').addEventListener('click',()=>{
   phyRoutes=null; renderPhyCards();
-  solution=compute(); showResult(solution); draw(); drawP3();
+  runSystemCalc();
 });
 document.getElementById('g3-example').addEventListener('click',()=>{
   // 현재 시스템이 잘 동작하는 예시 배치 불러오기
@@ -4845,9 +4856,8 @@ document.getElementById('g3-reset').addEventListener('click',()=>{
   stopAnim3(false);
   // 정식 초구 배치로 복원
   for(const k in defaults){ balls[k].x=defaults[k].x; balls[k].y=defaults[k].y; }
-  solution=null; phyRoutes=null; renderPhyCards(); draw();
-  document.getElementById('g3-result').textContent='공을 배치하고 ‘시스템 계산’을 누르세요.';
-  document.getElementById('g3-nums').innerHTML='';
+  phyRoutes=null; renderPhyCards();
+  autoSystem(true);   // 초기 배치 기준 자동 계산
 });
 
 applySystem();
