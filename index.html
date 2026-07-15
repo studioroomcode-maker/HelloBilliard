@@ -1279,6 +1279,55 @@
   }catch(e){}
 })();
 
+// ===== 충돌 사운드 — Web Audio 합성 (음원 파일 없음 · 외부 요청 0건) =====
+// 공-공 '딱', 쿠션 '툭'을 실시간 합성한다. 재생(▶) 클릭이 사용자 제스처라
+// 그 시점에 AudioContext를 열 수 있어 모바일 자동재생 정책도 통과한다.
+window.hbSfx=(function(){
+  var ctx=null, muted=false;
+  function ac(){
+    if(ctx) return ctx;
+    try{ var AC=window.AudioContext||window.webkitAudioContext; ctx=AC?new AC():null; }
+    catch(e){ ctx=null; }
+    return ctx;
+  }
+  function ready(){ var c=ac(); if(!c) return null; if(c.state==='suspended'){ try{c.resume();}catch(e){} } return c; }
+  // 공끼리 부딪는 '딱' — 짧은 고음 클릭 + 하이패스 노이즈 틱
+  function clack(intensity){
+    if(muted) return; var c=ready(); if(!c) return;
+    var now=c.currentTime, vol=Math.max(0.06,Math.min(1,intensity||0.6));
+    var o=c.createOscillator(), g=c.createGain();
+    o.type='triangle';
+    o.frequency.setValueAtTime(2700,now);
+    o.frequency.exponentialRampToValueAtTime(1300,now+0.03);
+    g.gain.setValueAtTime(0.0001,now);
+    g.gain.exponentialRampToValueAtTime(0.5*vol,now+0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+0.07);
+    o.connect(g); g.connect(c.destination); o.start(now); o.stop(now+0.08);
+    try{
+      var len=Math.floor(c.sampleRate*0.02), buf=c.createBuffer(1,len,c.sampleRate), d=buf.getChannelData(0);
+      for(var i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);
+      var src=c.createBufferSource(), ng=c.createGain(), hp=c.createBiquadFilter();
+      src.buffer=buf; hp.type='highpass'; hp.frequency.value=1600;
+      ng.gain.setValueAtTime(0.28*vol,now); ng.gain.exponentialRampToValueAtTime(0.0001,now+0.03);
+      src.connect(hp); hp.connect(ng); ng.connect(c.destination); src.start(now); src.stop(now+0.03);
+    }catch(e){}
+  }
+  // 쿠션 충돌 '툭' — 낮고 둔한 소리
+  function cushion(intensity){
+    if(muted) return; var c=ready(); if(!c) return;
+    var now=c.currentTime, vol=Math.max(0.04,Math.min(0.8,intensity||0.3));
+    var o=c.createOscillator(), g=c.createGain();
+    o.type='sine';
+    o.frequency.setValueAtTime(330,now);
+    o.frequency.exponentialRampToValueAtTime(150,now+0.06);
+    g.gain.setValueAtTime(0.0001,now);
+    g.gain.exponentialRampToValueAtTime(0.4*vol,now+0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+0.13);
+    o.connect(g); g.connect(c.destination); o.start(now); o.stop(now+0.14);
+  }
+  return { clack:clack, cushion:cushion, setMuted:function(m){muted=!!m;}, isMuted:function(){return muted;} };
+})();
+
 // ===== 4구 모드 (스코프 격리) =====
 (function(){
 
@@ -1965,6 +2014,40 @@ function stopAnim(redraw){
   anim=null;
   if(redraw!==false) draw();
 }
+// 재생 중 충돌 감지 → 사운드. anim.cur=[cue,r1,r2,cue2].
+// 20ms 프레임에선 접촉 순간이 건너뛰어질 수 있어, 두 공 거리의 '로컬 최소(최근접)'를
+// 감지해 그 최소가 지름 근처면 '딱'을 낸다.
+function sfxTick(anim){ sfxDetect(anim, 4); }
+function sfxDetect(anim, n){
+  const cur=anim.cur; if(!cur) return;
+  const R=BALL_R, sfx=window.hbSfx;
+  const dist=(i,j)=>Math.hypot(cur[i*2]-cur[j*2], cur[i*2+1]-cur[j*2+1]);
+  const nearRail=(i)=>{ const x=cur[i*2],y=cur[i*2+1];
+    return x<=play.x0+R+3||x>=play.x1-R-3||y<=play.y0+R+3||y>=play.y1-R-3; };
+  if(!anim._sfx){   // 첫 프레임은 상태만 초기화
+    const s={pd:{},dec:{},rc:[]};
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const k=i+'-'+j;s.pd[k]=dist(i,j);s.dec[k]=false;}
+    for(let i=0;i<n;i++) s.rc[i]=nearRail(i);
+    anim._sfx=s; return;
+  }
+  const s=anim._sfx;
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+    const k=i+'-'+j, dd=dist(i,j), dec=dd<s.pd[k]-0.01;
+    if(s.dec[k]&&!dec){                 // 최근접(로컬 최소) 통과
+      const mind=s.pd[k];
+      if(mind<2*R*1.32){
+        const inten=Math.max(0.3,Math.min(1,0.4+(2*R*1.32-mind)/(2*R)*0.7));
+        sfx&&sfx.clack(inten);
+      }
+    }
+    s.dec[k]=dec; s.pd[k]=dd;
+  }
+  for(let i=0;i<n;i++){
+    const nr=nearRail(i);
+    if(nr&&!s.rc[i]){ sfx&&sfx.cushion(0.35); s.rc[i]=true; }
+    else if(!nr&&s.rc[i]){ s.rc[i]=false; }
+  }
+}
 function playRoute(){
   const r=routes[selected];
   if(!r||!r.anim||r.anim.length<2) return;
@@ -1987,6 +2070,7 @@ function playRoute(){
     const a=fr[i], b=fr[Math.min(i+1,fr.length-1)];
     const u=b.t>a.t?(t-a.t)/(b.t-a.t):0;
     anim.cur=a.p.map((v,j)=>v+(b.p[j]-v)*u);
+    sfxTick(anim);   // 충돌음
     (anim.trail=anim.trail||[]).push({x:anim.cur[0],y:anim.cur[1]});
     if(anim.trail.length>16) anim.trail.shift();
     draw();
@@ -3735,6 +3819,37 @@ function stopAnim3(redraw){
   anim3=null;
   if(redraw!==false) draw();
 }
+// 재생 중 충돌 감지 → 사운드 (3구: anim3.cur=[cue,obj,target]) — 로컬 최소 방식
+function sfxTick3(anim){
+  const cur=anim.cur; if(!cur) return;
+  const n=3, R=BALL_R, sfx=window.hbSfx;
+  const dist=(i,j)=>Math.hypot(cur[i*2]-cur[j*2], cur[i*2+1]-cur[j*2+1]);
+  const nearRail=(i)=>{ const x=cur[i*2],y=cur[i*2+1];
+    return x<=play.x0+R+3||x>=play.x1-R-3||y<=play.y0+R+3||y>=play.y1-R-3; };
+  if(!anim._sfx){
+    const s={pd:{},dec:{},rc:[]};
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const k=i+'-'+j;s.pd[k]=dist(i,j);s.dec[k]=false;}
+    for(let i=0;i<n;i++) s.rc[i]=nearRail(i);
+    anim._sfx=s; return;
+  }
+  const s=anim._sfx;
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+    const k=i+'-'+j, dd=dist(i,j), dec=dd<s.pd[k]-0.01;
+    if(s.dec[k]&&!dec){
+      const mind=s.pd[k];
+      if(mind<2*R*1.32){
+        const inten=Math.max(0.3,Math.min(1,0.4+(2*R*1.32-mind)/(2*R)*0.7));
+        sfx&&sfx.clack(inten);
+      }
+    }
+    s.dec[k]=dec; s.pd[k]=dd;
+  }
+  for(let i=0;i<n;i++){
+    const nr=nearRail(i);
+    if(nr&&!s.rc[i]){ sfx&&sfx.cushion(0.35); s.rc[i]=true; }
+    else if(!nr&&s.rc[i]){ s.rc[i]=false; }
+  }
+}
 function playRoute3(){
   const r=phyRoutes&&phyRoutes[phySel];
   if(!r||!r.anim||r.anim.length<2) return;
@@ -3755,6 +3870,7 @@ function playRoute3(){
     const a=fr[i], b=fr[Math.min(i+1,fr.length-1)];
     const u=b.t>a.t?(t-a.t)/(b.t-a.t):0;
     anim3.cur=a.p.map((v,j)=>v+(b.p[j]-v)*u);
+    sfxTick3(anim3);   // 충돌음
     (anim3.trail=anim3.trail||[]).push({x:anim3.cur[0],y:anim3.cur[1]});
     if(anim3.trail.length>16) anim3.trail.shift();
     draw();
