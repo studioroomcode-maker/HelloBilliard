@@ -687,6 +687,99 @@
     .calc { padding: 13px 12px; }
   }
 
+  /* ============================================================
+     UI 개편 레이어 — mobile-app-ui-design 스킬 (60/30/10 · 8pt · 위계)
+     기능·마크업 불변, 시각 토큰·컴포넌트 정비만.
+     되돌리기: 이 블록만 삭제하면 원복.
+     ============================================================ */
+  :root{
+    --bg:#141009;
+    --surface:#1c1712;
+    --surface-2:#241d15;
+    --line:#33291d;
+    --line-soft:#2a2318;
+    --accent:#e8b53e;
+    --accent-soft:rgba(232,181,62,.12);
+    --accent-line:rgba(232,181,62,.38);
+    --tx-1:#f5f1e7;                    /* 제목 100% */
+    --tx-2:rgba(245,241,231,.74);      /* 본문 */
+    --tx-3:rgba(245,241,231,.5);       /* 보조 */
+    --ok:#63d18c;
+    --sh-1:0 1px 3px rgba(0,0,0,.3);
+    --sh-2:0 6px 20px rgba(0,0,0,.32);
+    --sh-3:0 16px 40px rgba(0,0,0,.42);
+  }
+  html, body{ background:var(--bg); color:var(--tx-1); }
+
+  /* 숫자·데이터는 표 정렬(tabular) — 값이 흔들리지 않게 */
+  .rcard .badge, .rcard .desc, .rcard .metric .mval,
+  .shot-brief, .formula, .nums .val, .result,
+  .route-picks .tool.mini{ font-variant-numeric:tabular-nums; }
+
+  /* 헤더 — 타이트한 트래킹, 서브는 차분하게 */
+  h1{ letter-spacing:-.035em; }
+  h1 .sub{ color:var(--accent); opacity:.9; font-weight:600; }
+
+  /* 종목 탭 — 비활성은 차분, 활성만 존재감 */
+  .sport-tabs button{ background:var(--surface); border-color:var(--line); color:var(--tx-3); border-radius:16px; }
+  .sport-tabs button.on{ box-shadow:0 8px 20px rgba(31,107,74,.32); }
+
+  /* 경로 카드 — 소프트 그림자·일관 라운드.
+     선택은 풀 골드 테두리 대신 은은한 틴트 + 좌측 강조 바 (강조 남용 방지) */
+  .rcard{ background:var(--surface); border:1px solid var(--line-soft);
+    border-radius:16px; box-shadow:var(--sh-1); padding:15px 16px;
+    position:relative; overflow:hidden; }
+  .rcard:hover{ background:var(--surface-2); }
+  .rcard.sel{ background:var(--accent-soft); border-color:var(--accent-line); }
+  .rcard.sel::before{ content:''; position:absolute; left:0; top:0; bottom:0;
+    width:3px; background:var(--accent); }
+  .rcard .rtitle{ color:var(--tx-1); }
+  .rcard .desc{ color:var(--tx-2); }
+  .rcard .desc b{ color:var(--tx-1); }
+
+  /* 배지 위계 — 성공률만 골드 강조, 공 모임은 차분한 중립/녹색 */
+  .rcard .badge{ background:var(--surface-2); color:var(--tx-2);
+    border:1px solid var(--line-soft); font-weight:700; }
+  .rcard .badges .badge:first-child{ color:var(--accent);
+    background:var(--accent-soft); border-color:var(--accent-line); }
+  .rcard .badge.gather{ color:var(--ok); background:rgba(99,209,140,.10);
+    border-color:rgba(99,209,140,.28); }
+
+  /* 지표 타일 — 라벨은 약하게, 값은 또렷하게 */
+  .rcard .metrics{ border-top:1px solid var(--line-soft); }
+  .rcard .metric{ background:var(--surface-2); border-radius:12px; }
+  .rcard .metric .mlabel{ color:var(--tx-3); }
+  .rcard .metric .mval{ color:var(--tx-1); }
+
+  /* 패널·힌트 */
+  .panel{ background:var(--surface); border:1px solid var(--line-soft);
+    border-radius:16px; box-shadow:var(--sh-1); }
+  .hint{ color:var(--tx-2); }
+  .empty{ color:var(--tx-3); }
+
+  /* 샷 요약 줄 */
+  .shot-brief{ background:var(--surface); border:1px solid var(--line-soft);
+    border-radius:14px; box-shadow:var(--sh-1); color:var(--tx-2); }
+  .shot-brief .sbi b{ color:var(--tx-1); }
+
+  /* 버튼 — 일관 라운드, 주요 버튼만 소프트 그림자 */
+  .tool{ border-radius:12px; }
+  .actions .tool.primary{ box-shadow:0 6px 16px rgba(31,107,74,.28); }
+  .stage-bar .tool.mini{ border-radius:11px; }
+
+  /* 접이식 요약 */
+  details.venue summary{ background:var(--surface); border-color:var(--line);
+    border-radius:12px; color:var(--tx-2); }
+  .section-label{ color:var(--tx-3); }
+
+  /* 3구 계산기 카드 */
+  .calc{ background:var(--surface); border:1px solid var(--line-soft);
+    border-radius:16px; box-shadow:var(--sh-1); }
+  .numbox{ background:var(--surface-2); border-radius:12px; }
+
+  /* 푸터 */
+  .site-footer{ border-top:1px solid var(--line-soft); color:var(--tx-3); }
+
 </style>
 <script type="application/ld+json">
 {
