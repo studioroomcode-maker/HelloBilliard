@@ -406,12 +406,26 @@
   }
   .panel h3 { font-size:12px; color:var(--accent); margin-bottom:6px; letter-spacing:0.05em; }
   .hint { font-size:12px; color:#9b9484; line-height:1.65; }
+  /* 두께·당점 조합 칩 — 색은 테마 변수로(하드코딩하면 라이트에서 뒤집힌다) */
+  .combos { display:flex; flex-wrap:wrap; gap:7px; margin-top:4px; }
   .combo {
-    display:inline-block; background:#241d12; border:1px solid #3a3024;
-    border-radius:7px; padding:5px 9px; margin:3px 4px 0 0;
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface-2, #241d12); border:1px solid var(--line, #3a3024);
+    border-radius:9px; padding:6px 10px;
     font-family:'Spline Sans Mono',monospace; font-size:12px;
+    color:var(--tx-1, #f6f2e9);
   }
-  .combo.best { border-color:var(--accent); color:var(--accent); }
+  .combo svg { flex:0 0 auto; display:block; }
+  .combo .ctxt { line-height:1.4; }
+  .combo .ctxt span {
+    display:block; font-size:10px; font-family:inherit;
+    color:var(--tx-3, #9b9484); margin-top:1px;
+  }
+  .combo.best { border-color:var(--accent); }
+  .combo.best .ctxt b { color:var(--accent); }
+  .cnote {
+    margin-top:7px; font-size:11px; line-height:1.5; color:var(--tx-3, #9b9484);
+  }
 
 
   /* === 통합 셸 === */
@@ -3762,6 +3776,9 @@ function runningSide(path){
 }
 // 팁수 → 당점의 좌우 거리 (0=중앙, 1=가장자리). 맥시멈이 가장 바깥.
 const TIP_H={1:0.5, 2:0.75, 3:1.0};
+// 두께를 말로 — '4/8'보다 '절반'이 먼저 읽힌다
+const THICK_WORD={1:'8분의 1', 2:'4분의 1', 3:'8분의 3', 4:'절반',
+                  5:'8분의 5', 6:'4분의 3', 7:'8분의 7', 8:'전부(정면)'};
 // 당점 카드 — '3팁 순방향 회전'을 글자 대신 수구 정면도로 보여준다.
 // 상하(밀어/끌어)는 빈쿠션 시스템이 규정하지 않는 값이라 중단(v=0)에 찍고,
 // 지어내는 대신 그렇다고 적는다.
@@ -3817,11 +3834,16 @@ function showResult(s){
       `${s.verticalAdj>0?` + 세로보정 <b>${r1(s.verticalAdj)}</b>`:''}`+
       ` = 총 볼값 <b>${r1(s.total)}</b></div>`;
     if(s.combos.length){
-      h+=`<div style="margin-top:6px">두께·당점 조합 (총합 일정):</div><div>`;
+      h+=`<div style="margin-top:6px">두께·당점 조합 (총합 일정):</div>`+
+        `<div class="combos">`;
       s.combos.forEach((c,i)=>{
-        h+=`<span class="combo ${i===0?'best':''}">${c.thick}/8 두께 + ${c.tip}팁</span>`;
+        h+=`<span class="combo ${i===0?'best':''}">${thickAmountSVG(c.thick)}`+
+          `<span class="ctxt"><b>${c.thick}/8</b> 두께 + <b>${c.tip}팁</b>`+
+          `<span>적구의 ${THICK_WORD[c.thick]||`${c.thick}/8`}을 덮음</span></span></span>`;
       });
-      h+=`</div>`;
+      h+=`</div><div class="cnote">그림은 덮는 <b>양</b>만 나타냅니다 — `+
+        `볼 시스템은 두께·팁의 크기만 내고 좌우는 규정하지 않습니다. `+
+        `어느 쪽을 덮을지는 당구대의 <b>큐선</b>을 보세요.</div>`;
       if(s.objNearRail){
         h+=`<div class="miss" style="margin-top:6px">⚠ 제1적구가 쿠션에 근접 — `+
           `키스 위험. 1/2보다 얇은 두께(2/8·3/8)에 팁수를 늘려 회전으로 보정하세요.</div>`;
@@ -4135,6 +4157,7 @@ function drawSolution(s){
     ctx.fillText('적구 연결선', m2.x, m2.y-8);
     ctx.fillText('※ 경로 아님 — 두께·팁 산출용 조준 기준선', (play.x0+play.x1)/2, play.y1-12);
     ctx.restore();
+    drawTilt(s);
     return;
   }
   if(!s.path) return;
@@ -4154,6 +4177,35 @@ function drawSolution(s){
     ctx.fillText(i+1,p.x,p.y);
   });
   if(s.valid) drawNumTags(s);
+}
+
+// 기울기 시각화 — '기울기 5칸'은 큐선이 세로(단축과 평행)에서 가로로 얼마나
+// 벗어났는지를 칸으로 센 값이다(computeBall: tiltCells = |dx|/DY). 숫자만 보면
+// 무엇에서 벗어난 건지 알 수 없으므로, 기준이 되는 세로선과 가로 편차를
+// 칸 눈금과 함께 그린다.
+function drawTilt(s){
+  if(!s||s.cells==null) return;
+  const cue=balls.cue, obj=balls.obj;
+  if(Math.abs(obj.x-cue.x)<1) return;            // 세로 배치 = 기울기 0, 그릴 것 없음
+  const yb=obj.y;                                 // 편차를 재는 가로 기준선
+  ctx.save();
+  // ① 기울기 0 기준선 — 수구에서 세로로
+  ctx.strokeStyle='rgba(95,184,232,.5)'; ctx.setLineDash([4,4]); ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(cue.x,cue.y); ctx.lineTo(cue.x,yb); ctx.stroke();
+  // ② 가로 편차 — 기준선 끝에서 제1적구까지
+  ctx.setLineDash([]); ctx.strokeStyle='rgba(232,181,62,.85)'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(cue.x,yb); ctx.lineTo(obj.x,yb); ctx.stroke();
+  // ③ 칸 눈금 — 한 칸 = DY (계산식과 같은 기준)
+  const dir=obj.x>cue.x?1:-1;
+  const n=Math.floor(Math.abs(obj.x-cue.x)/DY);
+  ctx.strokeStyle='rgba(232,181,62,.85)'; ctx.lineWidth=1.5;
+  for(let i=0;i<=n;i++){
+    const x=cue.x+dir*i*DY;
+    ctx.beginPath(); ctx.moveTo(x,yb-5); ctx.lineTo(x,yb+5); ctx.stroke();
+  }
+  ctx.restore();
+  numTag({x:(cue.x+obj.x)/2, y:yb}, `기울기 ${r1(s.cells)}칸 · ${s.isObtuse?'엇각':'빗각'}`,
+    '#e8b53e', obj.y>cue.y?'d':'u', 10);
 }
 
 // 시스템의 숫자는 추상값이 아니라 레일 위의 '그 지점'이다. 결과 카드의 숫자와
@@ -4550,6 +4602,30 @@ async function solve3(onProgress){
 let phyRoutes=null, phySel=0;
 let justSolved3=false;   // 방금 새 계산 결과인지 — 등장 애니메이션 트리거용
 const PHY_COLORS=['#f4f1e8','#5fb8e8','#c98ce0'];
+// 두께 '양'만 보여주는 그림 — 볼 시스템 전용.
+// 볼 시스템은 두께와 팁수의 '크기'만 낼 뿐 어느 쪽인지는 계산하지 않는다.
+// 그래서 겹침 그림(thicknessSVG3)처럼 한쪽을 고르면 없는 정보를 지어내는 셈이
+// 된다. 적구를 8등분해 n/8 만큼만 칠해, 방향 없이 '얼마나 덮는가'만 말한다.
+// (어느 쪽을 덮을지는 당구대에 그려진 큐선에 이미 보인다)
+function thickAmountSVG(eighths){
+  const R=13, cx=17, cy=17, D=2*R;
+  const w=D*eighths/8;
+  let ticks='';
+  for(let i=1;i<8;i++){
+    const x=cx-R+D*i/8;
+    ticks+=`<line x1="${x}" y1="${cy-Math.sqrt(Math.max(0,R*R-(x-cx)*(x-cx)))}"
+      x2="${x}" y2="${cy+Math.sqrt(Math.max(0,R*R-(x-cx)*(x-cx)))}"
+      stroke="rgba(0,0,0,.3)" stroke-width="0.7"/>`;
+  }
+  return `<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+    <defs><clipPath id="tc${eighths}"><circle cx="${cx}" cy="${cy}" r="${R}"/></clipPath></defs>
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="#d23b2b" stroke="#9c281c" stroke-width="1.5"/>
+    <rect x="${cx-R}" y="${cy-R}" width="${w}" height="${D}"
+      fill="#f7f4ea" fill-opacity="0.88" clip-path="url(#tc${eighths})"/>
+    <g clip-path="url(#tc${eighths})">${ticks}</g>
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#9c281c" stroke-width="1.5"/>
+  </svg>`;
+}
 // 두께 시각화 — 적구 위에 수구를 실제 비율로 겹쳐 그린다. 4구의 thicknessSVG와
 // 같은 규칙: eighths 1~8 · side 'L'=왼쪽 두께(수구가 적구의 왼쪽을 지나감).
 function thicknessSVG3(eighths,side){
