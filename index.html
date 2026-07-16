@@ -370,6 +370,13 @@
   .result b { color:var(--accent); }
   .result .hit { color:#5fd08a; }
   .result .miss { color:var(--warn); }
+  /* 시스템이 안 맞는 배치 — 설명을 늘어놓는 대신 바로 누를 행동을 준다 */
+  .result .sysfix {
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    margin-top:10px; padding-top:10px; border-top:1px solid #312819;
+  }
+  .result .sysfix button { flex:0 0 auto; min-width:0; padding:9px 14px; font-size:12px; }
+  .result .sysfix .why { flex:1 1 140px; font-size:11px; color:#9b9484; line-height:1.5; }
   .seg { display:flex; gap:6px; margin-bottom:12px; }
   .seg button {
     flex:1; background:#211c14; border:1.5px solid #3a3024;
@@ -3617,17 +3624,11 @@ function computePlus(){
   const nearBottom = cue.y>play.y1-PH*0.45 && tgt.y>play.y1-PH*0.45;
   const c1Valid = c1Adj>=15 && c1Adj<=40;
   if(!c1Valid){
-    // 무효여도 형태를 점선으로 보여준다 — 1쿠션을 유효 경계로 강제한 참고 경로
-    const cc=clamp(c1Adj,15,40);
-    const q1={x:play.x1, y:play.y1-cc/10*DY};
-    const q3={x:clamp(play.x1-c3Num/10*DX,play.x0,play.x1), y:play.y1};
-    const qm={x:q3.x, y:2*play.y0-q3.y};
-    const qk=(play.y0-q1.y)/((qm.y-q1.y)||1e-9);
-    const q2={x:clamp(q1.x+(qm.x-q1.x)*qk,play.x0,play.x1), y:play.y0};
+    // 경로를 그리지 않는다. 예전엔 1쿠션수를 15~40으로 clamp해 형태를 그렸지만,
+    // 그건 공식이 낸 답이 아니라 지어낸 그림이었다 — 틀린 경로는 없느니만 못하다.
+    // 대신 유효 구역 하이라이트(drawSolution)로 '왜 안 되는지'만 보여준다.
     return {sys:'plus', startNum, c1Num, c3Num, c1Adj,
-            c1Pt:q1, c2Pt:q2, c3Pt:q3,
-            path:[{x:cue.x,y:cue.y}, q1, q2, q3],
-            valid:false, ok:false, reason:'c1range'};
+            path:null, valid:false, ok:false, reason:'c1range'};
   }
   const p1={x:play.x1, y:play.y1-c1Adj/10*DY};        // 1쿠션 = 우측 단쿠션
   const p3={x:play.x1-c3Num/10*DX, y:play.y1};        // 3쿠션 = 하단 도착
@@ -3715,8 +3716,11 @@ function showResult(s){
     let h=`<div>수구수 <b>${r0(s.cueNum)}</b> − 제3쿠션수 <b>${r0(s.c3Num)}</b>`+
       `${s.tipAdj?` (당점 보정 ${s.tipAdj>0?'+':''}${s.tipAdj})`:''}`+
       ` = 제1쿠션수 <b>${r0(s.c1Num)}</b></div>`;
-    h+=`<div>상단 장쿠션 <b>${r0(s.c1Num)} 지점</b>(좌상 코너=50) 겨냥 · `+
-      `당점 <b>${tipLabel}</b> 순방향 회전</div>`;
+    // 무효 배치에서는 겨냥 지시를 내지 않는다 — 유효 범위 밖 숫자는 레일에
+    // 존재하지 않는 지점이라, 겨냥하라고 하면 없는 곳을 가리키는 셈이 된다.
+    if(s.valid)
+      h+=`<div>상단 장쿠션 <b>${r0(s.c1Num)} 지점</b>(좌상 코너=50) 겨냥 · `+
+        `당점 <b>${tipLabel}</b> 순방향 회전</div>`;
     h+=verdict(s);
     resEl.innerHTML=h;
   } else if(s.sys==='plus'){
@@ -3724,8 +3728,9 @@ function showResult(s){
       numBox('제1쿠션수',s.c1Adj,'')+numBox('도착수',s.c3Num,'target');
     let h=`<div>도착수 <b>${r0(s.c3Num)}</b> − 출발수 <b>${r0(s.startNum)}</b>`+
       `${tip!==2?' (당점 보정 포함)':''} = 제1쿠션수 <b>${r0(s.c1Adj)}</b></div>`;
-    h+=`<div>우측 단쿠션 <b>${r0(s.c1Adj)} 지점</b>(우하 코너=0, 위로 10/칸) 겨냥 · `+
-      `당점 <b>${tipLabel}</b></div>`;
+    if(s.valid)
+      h+=`<div>우측 단쿠션 <b>${r0(s.c1Adj)} 지점</b>(우하 코너=0, 위로 10/칸) 겨냥 · `+
+        `당점 <b>${tipLabel}</b></div>`;
     if(s.valid&&!s.nearBottom)
       h+=`<div style="opacity:.65;font-size:12px">⚠ 플러스는 수구와 목표가 모두 `+
         `하단 장쿠션 부근일 때 정확한 시스템입니다.</div>`;
@@ -3755,8 +3760,8 @@ function showResult(s){
         h+=`<div class="hit" style="margin-top:6px">→ 첫 조합(굵게)이 두께 부담이 가장 적습니다.</div>`;
       }
     } else {
-      h+=`<div class="miss">⚠ 총 볼값 ${r1(s.total)}이 두께+팁 범위(1~7)를 벗어납니다. `+
-        `배치를 조정하거나 회전·기울기 보정이 필요합니다.</div>`;
+      h+=`<div class="miss">⚠ 총 볼값 ${r1(s.total)} — 두께+팁으로 낼 수 있는 범위(1~7) 밖입니다.</div>`+
+        sysfix('볼 시스템으로는 이 배치를 칠 두께·당점 조합이 없습니다.');
     }
     resEl.innerHTML=h;
   }
@@ -3780,24 +3785,20 @@ function verdict(s){
   if(!s.valid){
     if(s.reason==='notrack' && s.sys==='five'){
       const cm=s.nearMiss?Math.round(s.err/(PW/2844)/10):null;
-      return `<div class="miss">⚠ 이 배치에서는 3쿠션 트랙이 제2적구를 지나가게 만들 수 없습니다.`+
-        (cm!=null?`<br>당구대의 <b>빨간 점선</b>이 가장 가까운 트랙이며, 제2적구에서 약 <b>${cm}cm</b> 벗어납니다.`:'')+
-        `<br>파이브앤하프는 수구가 <b>노란 하이라이트 구역</b>(수구수 20~90)에 있고 제2적구가 `+
-        `3쿠션 이후 트랙(하단→우측 방향) 위에 있어야 합니다. 배치가 다르면 `+
-        `플러스·볼 시스템 또는 [물리 경로 제안]이 더 적합합니다.</div>`;
+      return `<div class="miss">⚠ 3쿠션 트랙을 제2적구까지 보낼 수 없는 배치입니다`+
+        (cm!=null?` — <b>빨간 점선</b>이 가장 가까운 트랙이고 약 <b>${cm}cm</b> 빗나갑니다`:'')+
+        `.</div>`+
+        sysfix('파이브앤하프는 수구가 노란 구역(수구수 20~90)에 있고, 제2적구가 3쿠션 이후 트랙 위에 있어야 합니다.');
     }
     if(s.reason==='c1range' && s.sys==='five')
-      return `<div class="miss">⚠ 제1쿠션수 ${r0(s.c1Num)} 또는 수구수 ${r0(s.cueNum)}이(가) `+
-        `유효 범위(1쿠션 0~55 · 수구수 20~90)를 벗어납니다.<br>`+
-        `당구대의 <b>빨간 점선</b>은 공식이 계산한 형태(신뢰 불가 구간)입니다 — `+
-        `수구를 <b>노란 하이라이트 구역</b>으로 옮기거나 [물리 경로 제안]을 쓰세요.</div>`;
+      return `<div class="miss">⚠ 수구수 ${r0(s.cueNum)} · 제1쿠션수 ${r0(s.c1Num)} — `+
+        `파이브앤하프 유효 범위 밖입니다.</div>`+
+        sysfix('수구를 노란 구역(수구수 20~90)으로 옮기면 이 시스템이 맞습니다. 빨간 점선은 범위 밖이라 신뢰할 수 없습니다.');
     if(s.reason==='c1range' && s.sys==='plus')
-      return `<div class="miss">⚠ 제1쿠션수 ${r0(s.c1Adj)}이(가) 유효 구간(15~40)을 벗어납니다.<br>`+
-        `당구대의 <b>빨간 점선</b>은 유효 경계로 강제한 참고 형태(신뢰 불가)입니다. `+
-        `플러스는 수구와 목표가 <b>노란 하이라이트(하단)</b> 부근에 있을 때 쓰는 시스템입니다 — `+
-        `이 배치는 파이브앤하프 또는 [물리 경로 제안]이 더 적합합니다.</div>`;
-    return `<div class="miss">⚠ 계산값이 시스템 적용 범위를 벗어납니다 — `+
-      `다른 시스템이 더 적합한 배치입니다.</div>`;
+      return `<div class="miss">⚠ 제1쿠션수 ${r0(s.c1Adj)} — 플러스 유효 구간(15~40) 밖입니다.</div>`+
+        sysfix('플러스는 수구와 목표가 모두 하단 노란 구역에 있을 때만 맞습니다. 그래서 경로를 그리지 않았습니다.');
+    return `<div class="miss">⚠ 계산값이 이 시스템의 적용 범위를 벗어납니다.</div>`+
+      sysfix('다른 시스템이 더 적합한 배치입니다.');
   }
   if(s.sys==='plus')
     return blockWarn+`<div class="hit">→ 단-장-장 진행 · 우측 단쿠션 ${r0(s.c1Adj)} 지점을 겨냥하세요. `+
@@ -3806,6 +3807,16 @@ function verdict(s){
     return blockWarn+`<div class="hit">→ 3쿠션 ${r0(s.c3Num)} 경유 · 트랙 오차 ${r0(s.err)}px · 득점 라인</div>`;
   return blockWarn+`<div class="miss">→ 트랙이 목표에서 ${r0(s.err)}px 벗어남 — 당점을 바꾸거나 배치를 확인하세요.</div>`;
 }
+// 시스템이 안 맞을 때 붙이는 행동 블록 — 왜 안 되는지 길게 쓰는 대신,
+// 이 배치의 실제 답인 물리 경로를 한 번에 볼 수 있게 한다.
+function sysfix(why){
+  return `<div class="sysfix"><button class="tool primary" data-act="phys">`+
+    `🎯 물리 경로로 답 보기</button><span class="why">${why}</span></div>`;
+}
+// 결과 영역은 매번 innerHTML로 다시 그려지므로 위임으로 받는다
+document.getElementById('g3-result').addEventListener('click',e=>{
+  if(e.target.closest('[data-act="phys"]')) document.getElementById('g3-phys').click();
+});
 const r0=v=>Math.round(v);
 const r1=v=>Number.isInteger(v)?v:v.toFixed(1);
 
@@ -4072,6 +4083,69 @@ function drawSolution(s){
     ctx.fillStyle='#14110d'; ctx.font='bold 9px "Bricolage Grotesque"';
     ctx.fillText(i+1,p.x,p.y);
   });
+  if(s.valid) drawNumTags(s);
+}
+
+// 시스템의 숫자는 추상값이 아니라 레일 위의 '그 지점'이다. 결과 카드의 숫자와
+// 당구대의 위치가 눈으로 이어져야 숫자→겨냥 변환을 익힐 수 있으므로,
+// 계산에 성공한 배치에서는 숫자를 해당 다이아몬드에 직접 붙여준다.
+function drawNumTags(s){
+  if(s.sys==='five'){
+    // 수구수는 '1쿠션점 → 수구'를 레일까지 연장해 읽는 값 — 그 연장선을 함께 보여준다
+    const cp=fiveCueNumPt(s.cueNum);
+    if(cp&&s.c1Pt){
+      ctx.save();
+      ctx.strokeStyle='rgba(95,184,232,.55)'; ctx.setLineDash([4,5]); ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(s.c1Pt.x,s.c1Pt.y); ctx.lineTo(cp.x,cp.y); ctx.stroke();
+      ctx.restore();
+      numTag(cp,`수구수 ${r0(s.cueNum)}`,'#5fb8e8', cp.y>=play.y1-1?'u':'l', 8);
+    }
+    if(s.c1Pt) numTag(s.c1Pt,`1쿠션 ${r0(s.c1Num)}`,'#e8b53e','d',8);
+    if(s.c3Pt) numTag(s.c3Pt,`3쿠션 ${r0(s.c3Num)}`,'#d9582b','u',8);
+  } else if(s.sys==='plus'){
+    const sp={x:balls.cue.x, y:play.y1};      // 출발수 = 수구를 하단 레일로 내린 지점
+    ctx.save();
+    ctx.strokeStyle='rgba(95,184,232,.55)'; ctx.setLineDash([4,5]); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(balls.cue.x,balls.cue.y); ctx.lineTo(sp.x,sp.y); ctx.stroke();
+    ctx.restore();
+    // 플러스는 수구가 늘 하단 레일 근처라, 라벨을 레일 지점에 두면 수구에 가린다.
+    // 라벨은 공 옆에 두고 '레일에서 읽는다'는 의미는 위 점선이 대신한다.
+    numTag(balls.cue,`출발 ${r0(s.startNum)}`,'#5fb8e8','l',BALL_R+8);
+    if(s.c1Pt) numTag(s.c1Pt,`1쿠션 ${r0(s.c1Adj)}`,'#e8b53e','l',8);
+    if(s.c3Pt) numTag(s.c3Pt,`도착 ${r0(s.c3Num)}`,'#d9582b','u',8);
+  }
+}
+// 수구수 눈금 위치 — 하단 장쿠션(50~90) 또는 우측 단쿠션(50 미만). drawCoords와 같은 기준.
+function fiveCueNumPt(v){
+  if(v==null) return null;
+  if(v>=50) return {x:play.x1-(v-50)/10*DX, y:play.y1};
+  return {x:play.x1, y:play.y1-(50-v)/10*DY};
+}
+// 라벨은 당구대 안쪽에 붙인다 — 레일 바깥은 눈금 숫자 자리라 겹친다.
+function numTag(p,text,color,dir,off){
+  ctx.save();
+  ctx.font='bold 11px "Bricolage Grotesque"';
+  const w=ctx.measureText(text).width+12, h=19;
+  let x=p.x, y=p.y;
+  if(dir==='u') y-=h/2+off;
+  else if(dir==='d') y+=h/2+off;
+  else if(dir==='l') x-=w/2+off;
+  else if(dir==='r') x+=w/2+off;
+  x=clamp(x, play.x0+w/2+2, play.x1-w/2-2);
+  y=clamp(y, play.y0+h/2+2, play.y1-h/2-2);
+  const x0=x-w/2, y0=y-h/2, rr=6;
+  ctx.beginPath();
+  ctx.moveTo(x0+rr,y0);
+  ctx.lineTo(x0+w-rr,y0); ctx.quadraticCurveTo(x0+w,y0,x0+w,y0+rr);
+  ctx.lineTo(x0+w,y0+h-rr); ctx.quadraticCurveTo(x0+w,y0+h,x0+w-rr,y0+h);
+  ctx.lineTo(x0+rr,y0+h); ctx.quadraticCurveTo(x0,y0+h,x0,y0+h-rr);
+  ctx.lineTo(x0,y0+rr); ctx.quadraticCurveTo(x0,y0,x0+rr,y0);
+  ctx.closePath();
+  ctx.fillStyle='rgba(8,6,4,.86)'; ctx.fill();
+  ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.fillStyle=color; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(text,x,y);
+  ctx.restore();
 }
 
 /* ===== 🎯 물리 경로 제안 — 4구 v4 시간스텝 엔진 이식 (쓰리쿠션 규칙) =====

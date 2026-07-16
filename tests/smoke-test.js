@@ -12,6 +12,7 @@ const CANVAS_SIZE = { 'g4-table': [840, 460], 'g3-table': [860, 460] };
 const ctxProxy = () => new Proxy({}, {
   get: (t, k) => {
     if (k === 'createRadialGradient') return () => ({ addColorStop() {} });
+    if (k === 'measureText') return (s) => ({ width: String(s).length * 6 });
     if (k === 'canvas') return {};
     return (...a) => {};
   },

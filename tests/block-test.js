@@ -5,7 +5,9 @@ const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
 const handlers = {}, els = {};
 const CANVAS_SIZE = { 'g4-table': [840, 460], 'g3-table': [860, 460] };
 const ctxProxy = () => new Proxy({}, {
-  get: (t, k) => k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : (...a) => {},
+  get: (t, k) => k === 'createRadialGradient' ? () => ({ addColorStop() {} })
+    : k === 'measureText' ? (s) => ({ width: String(s).length * 6 })
+    : (...a) => {},
   set: () => true,
 });
 function mkEl(id) {
