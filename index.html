@@ -1349,6 +1349,9 @@ window.hbSfx=(function(){
   // 조절하는 유일한 손잡이. 각 호출의 기본값을 고치는 방식은 통하지 않는다 —
   // 공/쿠션 소리는 충돌 세기를 인자로 넘겨받아 기본값을 쓰지 않기 때문.
   var MASTER=0.8;
+  // 소리별 보정 — 음원마다 녹음 레벨이 달라 귀로 맞춘 값. 최종 음량은
+  // 세기 × MASTER × GAIN 이다. 특정 소리만 조절할 땐 여기를 만진다.
+  var GAIN={ cue:1, first:1, second:0.8, cushion:1 };
   var ctx=null, muted=false, raw={}, buf={};
 
   for(var key in SRC)(function(k){          // 미리 받아만 둔다 (디코딩은 나중)
@@ -1380,7 +1383,7 @@ window.hbSfx=(function(){
   }
   function play(k,vol){
     if(muted) return;
-    var v=Math.max(0,Math.min(1,vol==null?1:vol))*MASTER;
+    var v=Math.max(0,Math.min(1,vol==null?1:vol))*MASTER*(GAIN[k]||1);
     var c=ready();
     if(!c||!buf[k]) return fallback(k,v);     // 아직 디코딩 전이거나 Web Audio 없음
     try{
