@@ -1345,6 +1345,10 @@ window.hbSfx=(function(){
     second:  'sound/03.second_hit.mp3',
     cushion: 'sound/04.cushion_hit.mp3'
   };
+  // 전체 음량 — 호출부가 넘기는 세기(intensity)에 곱한다. 음량을 한 번에
+  // 조절하는 유일한 손잡이. 각 호출의 기본값을 고치는 방식은 통하지 않는다 —
+  // 공/쿠션 소리는 충돌 세기를 인자로 넘겨받아 기본값을 쓰지 않기 때문.
+  var MASTER=0.8;
   var ctx=null, muted=false, raw={}, buf={};
 
   for(var key in SRC)(function(k){          // 미리 받아만 둔다 (디코딩은 나중)
@@ -1376,7 +1380,7 @@ window.hbSfx=(function(){
   }
   function play(k,vol){
     if(muted) return;
-    var v=Math.max(0,Math.min(1,vol==null?1:vol));
+    var v=Math.max(0,Math.min(1,vol==null?1:vol))*MASTER;
     var c=ready();
     if(!c||!buf[k]) return fallback(k,v);     // 아직 디코딩 전이거나 Web Audio 없음
     try{
