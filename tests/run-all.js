@@ -26,6 +26,7 @@ const CASES = [
   // ── UI 마크업 단위 검증 ──
   { f: 'overlap-test.js', exit0: true, match: [/겹침 검증 회귀: OK/] },
   { f: 'block-test.js', match: [/경고 포함: OK/] },
+  { f: 'block2-test.js', match: [/제2적구 출발-경로 차단 검사 통과/] },
   { f: 'side-check2.js', match: [/좌\/우 라벨 포함 여부: OK/] },
   { f: 'badge-check.js', match: [/gather 배지 포함: OK/] },
 ];

@@ -3482,7 +3482,10 @@ function targetBlocksPath(path){
     const d=sub(path[j+1],path[j]), L2=d.x*d.x+d.y*d.y;
     if(L2<1e-9) continue;
     const t=dot2(sub(balls.target,path[j]),d)/L2;
-    if(t<=0.05||t>=1) continue;          // 시작점 뒤·끝점은 제외
+    // 수구 뒤(t<=0)만 제외한다. 예전엔 t<=0.05까지 걸렀는데, 그러면 수구
+    // 바로 앞에 붙은 제2적구가 사각지대에 들어간다 — 가장 확실히 먼저 맞는
+    // 위치인데도 '득점 라인'이라고 알려주던 원인.
+    if(t<=0||t>=1) continue;
     const q={x:path[j].x+d.x*t, y:path[j].y+d.y*t};
     minR=Math.min(minR, len(sub(balls.target,q))/BALL_R);   // 반지름 단위 거리
   }
@@ -3736,7 +3739,7 @@ function showResult(s){
       ` = 제1쿠션수 <b>${r0(s.c1Num)}</b></div>`;
     // 무효 배치에서는 겨냥 지시를 내지 않는다 — 유효 범위 밖 숫자는 레일에
     // 존재하지 않는 지점이라, 겨냥하라고 하면 없는 곳을 가리키는 셈이 된다.
-    if(s.valid)
+    if(s.valid&&!s.blockedT)
       h+=`<div>상단 장쿠션 <b>${r0(s.c1Num)} 지점</b>(좌상 코너=50) 겨냥 · `+
         `당점 <b>${tipLabel}</b> 순방향 회전</div>`;
     h+=verdict(s);
@@ -3746,7 +3749,7 @@ function showResult(s){
       numBox('제1쿠션수',s.c1Adj,'')+numBox('도착수',s.c3Num,'target');
     let h=`<div>도착수 <b>${r0(s.c3Num)}</b> − 출발수 <b>${r0(s.startNum)}</b>`+
       `${tip!==2?' (당점 보정 포함)':''} = 제1쿠션수 <b>${r0(s.c1Adj)}</b></div>`;
-    if(s.valid)
+    if(s.valid&&!s.blockedT)
       h+=`<div>우측 단쿠션 <b>${r0(s.c1Adj)} 지점</b>(우하 코너=0, 위로 10/칸) 겨냥 · `+
         `당점 <b>${tipLabel}</b></div>`;
     if(s.valid&&!s.nearBottom)
@@ -3795,11 +3798,12 @@ function verdict(s){
     `진로가 바뀝니다. 배치를 확인하거나 [물리 경로 제안]을 사용하세요.</div>`:'';
   // 제2적구가 쿠션 전 출발 경로를 막으면 경고 — 쿠션을 돌기 전에 먼저 맞는다
   const targetWarn=s.blockedT?
-    `<div class="miss">⚠ 제2적구(빨강)가 쿠션 전 <b>출발 경로</b> 위에 있습니다 — 실제로는 `+
-    `쿠션을 돌기 전에 제2적구를 먼저 맞습니다. 이 배치는 ${s.sys==='plus'?'플러스':'파이브앤하프'}로 `+
-    `칠 수 없습니다. <b>[물리 경로 제안]</b>을 사용하세요.</div>`:'';
-  // 출발이 막히면 그게 결론 — 초록 '득점 라인'을 숨긴다
-  if(s.valid&&s.blockedT) return blockWarn+targetWarn;
+    `<div class="miss">⚠ 제2적구(빨강)가 쿠션 전 <b>출발 경로</b> 위에 있습니다 — `+
+    `쿠션을 돌기 전에 먼저 맞습니다.</div>`:'';
+  // 출발이 막히면 그게 결론 — 초록 '득점 라인'을 숨기고 행동을 준다
+  if(s.valid&&s.blockedT)
+    return blockWarn+targetWarn+
+      sysfix(`이 배치는 ${s.sys==='plus'?'플러스':'파이브앤하프'} 계산대로 칠 수 없습니다.`);
   if(!s.valid){
     if(s.reason==='notrack' && s.sys==='five'){
       const cm=s.nearMiss?Math.round(s.err/(PW/2844)/10):null;
@@ -5070,10 +5074,14 @@ const SYS_INFO={
 // 시스템별 표준 초기 배치 — 각 시스템이 가정하는 출발 형태에 맞춤
 // (좌표는 경로가 당구대 안에 들어오고 쿠션수가 유효 범위가 되도록 검증됨)
 const SYS_PRESET={
-  // 파이브앤하프: 수구 우하 구역(수구수 ~60), 제2적구는 3쿠션 20 트랙 위
+  // 파이브앤하프: 수구 우하 구역(수구수 ~52), 제2적구는 3쿠션 20 트랙 위.
+  // 제2적구는 트랙 위에 있으면서 '출발 경로'에서 충분히 떨어져야 한다 —
+  // 예전 자리(DX*1.2, DY*0.8)는 수구 바로 앞이라 쿠션을 돌기 전에 먼저
+  // 맞는 배치였다(여유 1.1R). 지금 자리는 같은 숫자(52−20=32)를 내면서
+  // 출발 경로에서 17R 이상 떨어져 있다.
   five:{
     cue:    {x:play.x1-DX*1.0, y:play.y1-DY*0.55},
-    target: {x:play.x1-DX*1.2, y:play.y1-DY*0.8},
+    target: {x:play.x1-DX*3.6, y:play.y1-DY*0.4},
   },
   // 플러스: 출발수 ~7, 도착수 ~32 → 제1쿠션수 ~25 (유효)
   plus:{
