@@ -4321,6 +4321,10 @@ function collideBB3(a,b,P){
   if(vn<=0) return null;
   const rsp=Math.hypot(rvx,rvy)||1;
   const cut=Math.abs(rvx*ny-rvy*nx)/rsp;
+  // 조준 측(두께 방향) 계산용 — 반드시 충격량을 적용하기 '전' 값이어야 한다.
+  // 여기가 접촉 순간의 진행방향과 중심선을 동시에 아는 유일한 지점이다.
+  // (실제 충돌 때만 만들어지므로 탐색 성능에 영향 없음)
+  const pre={ax:a.vx, ay:a.vy, bx:b.vx, by:b.vy};
   const j=(1+P.ebb)/2*vn;
   a.vx-=j*nx; a.vy-=j*ny;
   b.vx+=j*nx; b.vy+=j*ny;
@@ -4329,7 +4333,7 @@ function collideBB3(a,b,P){
   const jt=Math.min(P.mubb*(1+P.ebb)*vn, Math.abs(ut)/7)*Math.sign(ut);
   a.vx-=jt*tx*0.5; a.vy-=jt*ty*0.5;
   b.vx+=jt*tx*0.5; b.vy+=jt*ty*0.5;
-  return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, thickness:1-cut};
+  return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, thickness:1-cut, nx, ny, pre};
 }
 function collideCushion3(b,P){
   let n=null;
@@ -4380,6 +4384,13 @@ function simulate3(dir,speed,spin,P,rec){
       const cueIn=(S[i].k==='cue'||S[j].k==='cue');
       if(!cueIn) continue;
       const other=S[i].k==='cue'?S[j].k:S[i].k;
+      // 조준 측 — 4구와 같은 정의: 수구 진행방향 기준으로 적구 중심이
+      // 오른쪽에 있으면(cross>=0) 수구가 적구의 왼쪽을 지나감 = '왼쪽 두께'.
+      // nx,ny는 a→b 방향이므로 수구가 b쪽이면 뒤집는다.
+      const cueIsA=S[i].k==='cue';
+      const cvx=cueIsA?c.pre.ax:c.pre.bx, cvy=cueIsA?c.pre.ay:c.pre.by;
+      const ox=cueIsA?c.nx:-c.nx, oy=cueIsA?c.ny:-c.ny;
+      c.aimSide=(cvx*oy-cvy*ox)>=0?'L':'R';
       if(!res.first){ res.first=other; res.firstInfo=c; }
       else if(other!==res.first&&!res.second){
         res.second=other; res.cushAtSecond=res.cush; res.secondInfo=c;
@@ -4509,7 +4520,8 @@ async function solve3(onProgress){
       gather=Math.round(5+(1-tt)*90);
       gatherAvg=d;
     }
-    out.push({...c, prob, thickness:r.firstInfo.thickness, gather, gatherAvg,
+    out.push({...c, prob, thickness:r.firstInfo.thickness,
+      aimSide:r.firstInfo.aimSide||'L', gather, gatherAvg,
       path:r.paths.cue, hits:[r.firstInfo,r.secondInfo].filter(Boolean),
       anim:r.frames,
       score:prob*100+c.tol+(gather||0)*0.05});
@@ -4538,6 +4550,21 @@ async function solve3(onProgress){
 let phyRoutes=null, phySel=0;
 let justSolved3=false;   // 방금 새 계산 결과인지 — 등장 애니메이션 트리거용
 const PHY_COLORS=['#f4f1e8','#5fb8e8','#c98ce0'];
+// 두께 시각화 — 적구 위에 수구를 실제 비율로 겹쳐 그린다. 4구의 thicknessSVG와
+// 같은 규칙: eighths 1~8 · side 'L'=왼쪽 두께(수구가 적구의 왼쪽을 지나감).
+function thicknessSVG3(eighths,side){
+  const R=11, objX=32, ballY=18;
+  // 8/8(정면)이면 중심이 일치, 1/8(얇게)이면 지름만큼 벌어진다.
+  const s=(side==='R'&&eighths<8)?1:-1;
+  const cx=objX + s*(2*R)*(1-eighths/8);
+  return `<svg width="64" height="36" viewBox="0 0 64 36">
+    <circle cx="${objX}" cy="${ballY}" r="${R}" fill="#d23b2b" stroke="#9c281c" stroke-width="1.5"/>
+    <circle cx="${cx}" cy="${ballY}" r="${R}" fill="#f7f4ea" stroke="#cfc8b4"
+       stroke-width="1.5" fill-opacity="0.92"/>
+    ${eighths<8?`<line x1="${objX+s*R}" y1="3" x2="${objX+s*R}" y2="33"
+       stroke="#9b9484" stroke-width="0.8" stroke-dasharray="2,2"/>`:''}
+  </svg>`;
+}
 function tipSVG3(spin){
   let cx=15,cy=15;
   cx+=spin.h*8; cy-=spin.v*8;
@@ -4563,11 +4590,12 @@ function renderPhyCards(){
     if(phyRoutes&&phyRoutes.length){
       const r=phyRoutes[phySel];
       const eighths=Math.max(1,Math.min(8,Math.round(r.thickness*8)));
-      const thickLabel=eighths>=8?'정면 8/8':`${eighths}/8`;
+      const thickLabel=eighths>=8?'정면 8/8'
+        :`${r.aimSide==='R'?'오른쪽':'왼쪽'} ${eighths}/8`;
       brief.innerHTML=
         `<span class="swatch" style="background:${PHY_COLORS[phySel]}"></span>`+
         `<span class="sbi" title="권장 당점">${tipSVG3(r.spin)}${r.spin.label}</span>`+
-        `<span class="sbi" title="맞히는 두께"><b>${thickLabel}</b> 두께</span>`+
+        `<span class="sbi" title="맞히는 두께">${thicknessSVG3(eighths,r.aimSide)}${thickLabel}</span>`+
         `<span class="sbi" title="경유 쿠션"><b>쿠션 ${r.cush}회</b></span>`;
     }
   }
@@ -4593,7 +4621,8 @@ function renderPhyCards(){
   box.classList.toggle('just', !!justSolved3);   // 새 계산 결과일 때만 등장 애니메이션
   box.innerHTML=phyRoutes.map((r,i)=>{
     const eighths=Math.max(1,Math.min(8,Math.round(r.thickness*8)));
-    const thickLabel=eighths>=8?'8/8(정면)':`${eighths}/8`;
+    const thickLabel=eighths>=8?'8/8(정면)'
+      :`${r.aimSide==='R'?'오른쪽':'왼쪽'} ${eighths}/8`;
     return `<div class="rcard ${i===phySel?'sel':''}" data-i="${i}" style="--d:${i*70}ms">
       <div class="rc-top">
         <span class="swatch" style="background:${PHY_COLORS[i]}"></span>
@@ -4621,8 +4650,8 @@ function renderPhyCards(){
         </div>
         <div class="metric">
           <div class="mlabel">맞히는 두께</div>
-          <div class="mvis" style="font-size:20px;font-weight:800">${thickLabel}</div>
-          <div class="mval">첫 적구 기준</div>
+          <div class="mvis">${thicknessSVG3(eighths,r.aimSide)}</div>
+          <div class="mval">${eighths>=8?'정면 8/8':`${r.aimSide==='R'?'오른쪽':'왼쪽'} ${eighths}/8`}</div>
         </div>
         <div class="metric">
           <div class="mlabel">경유 쿠션</div>
