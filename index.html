@@ -3411,6 +3411,24 @@ const PW=play.x1-play.x0, PH=play.y1-play.y0;
 // ① 실측 스케일 — 3구 공 지름 61.5mm / 대대 2844mm 비율 반영 (≈8.3px)
 const BALL_R=30.75*PW/2844;
 
+// 캔버스는 내부 860×460 좌표를 CSS로 축소해 그린다 — 폰 0.37배·데스크톱 0.76배.
+// 그래서 '12px' 폰트가 화면에서는 4~9px로 찍혀 읽히지 않는다. 도형은 축소돼도
+// 의미가 남지만 글자는 안 읽히면 끝이므로, 축소율의 역수를 곱해 숫자 라벨만
+// 화면 기준 크기를 유지한다. (레일 눈금은 여백 44px에 2줄로 들어가 있어
+//  키우면 서로 겹치고 캔버스를 벗어나므로 손대지 않는다.)
+let uiS=1;
+function syncUiScale(){
+  const w=cv.getBoundingClientRect().width;
+  if(w>4){
+    const s=clamp(W/w,1,3);
+    if(Math.abs(s-uiS)>0.01){ uiS=s; return true; }
+  }
+  return false;
+}
+// 폭이 바뀔 때만 다시 그린다 — draw()마다 레이아웃을 읽으면 재생 중 프레임이 밀린다
+if(typeof ResizeObserver!=='undefined')
+  new ResizeObserver(()=>{ if(syncUiScale()) draw(); }).observe(cv);
+
 let system='five';   // five | plus | ball
 let tip=2, activeBall='cue', dragging=null, solution=null;
 
@@ -4098,10 +4116,10 @@ function drawNumTags(s){
       ctx.strokeStyle='rgba(95,184,232,.55)'; ctx.setLineDash([4,5]); ctx.lineWidth=1.5;
       ctx.beginPath(); ctx.moveTo(s.c1Pt.x,s.c1Pt.y); ctx.lineTo(cp.x,cp.y); ctx.stroke();
       ctx.restore();
-      numTag(cp,`수구수 ${r0(s.cueNum)}`,'#5fb8e8', cp.y>=play.y1-1?'u':'l', 8);
+      numTag(cp,lbl('수구수',s.cueNum),'#5fb8e8', cp.y>=play.y1-1?'u':'l', 8);
     }
-    if(s.c1Pt) numTag(s.c1Pt,`1쿠션 ${r0(s.c1Num)}`,'#e8b53e','d',8);
-    if(s.c3Pt) numTag(s.c3Pt,`3쿠션 ${r0(s.c3Num)}`,'#d9582b','u',8);
+    if(s.c1Pt) numTag(s.c1Pt,lbl('1쿠션',s.c1Num),'#e8b53e','d',8);
+    if(s.c3Pt) numTag(s.c3Pt,lbl('3쿠션',s.c3Num),'#d9582b','u',8);
   } else if(s.sys==='plus'){
     const sp={x:balls.cue.x, y:play.y1};      // 출발수 = 수구를 하단 레일로 내린 지점
     ctx.save();
@@ -4110,11 +4128,15 @@ function drawNumTags(s){
     ctx.restore();
     // 플러스는 수구가 늘 하단 레일 근처라, 라벨을 레일 지점에 두면 수구에 가린다.
     // 라벨은 공 옆에 두고 '레일에서 읽는다'는 의미는 위 점선이 대신한다.
-    numTag(balls.cue,`출발 ${r0(s.startNum)}`,'#5fb8e8','l',BALL_R+8);
-    if(s.c1Pt) numTag(s.c1Pt,`1쿠션 ${r0(s.c1Adj)}`,'#e8b53e','l',8);
-    if(s.c3Pt) numTag(s.c3Pt,`도착 ${r0(s.c3Num)}`,'#d9582b','u',8);
+    numTag(balls.cue,lbl('출발',s.startNum),'#5fb8e8','l',BALL_R+8);
+    if(s.c1Pt) numTag(s.c1Pt,lbl('1쿠션',s.c1Adj),'#e8b53e','l',8);
+    if(s.c3Pt) numTag(s.c3Pt,lbl('도착',s.c3Num),'#d9582b','u',8);
   }
 }
+// 화면이 좁으면(캔버스 축소율이 크면) 라벨을 숫자만으로 줄인다 — 글자를 화면
+// 기준 크기로 키운 탓에 폰에서는 이름까지 넣으면 칩이 공을 덮는다. 칩 색이
+// 레일 눈금·범례와 같으므로 숫자만으로도 어느 수인지 구분된다.
+const lbl=(name,v)=>uiS>=1.8?`${r0(v)}`:`${name} ${r0(v)}`;
 // 수구수 눈금 위치 — 하단 장쿠션(50~90) 또는 우측 단쿠션(50 미만). drawCoords와 같은 기준.
 function fiveCueNumPt(v){
   if(v==null) return null;
@@ -4122,18 +4144,35 @@ function fiveCueNumPt(v){
   return {x:play.x1, y:play.y1-(50-v)/10*DY};
 }
 // 라벨은 당구대 안쪽에 붙인다 — 레일 바깥은 눈금 숫자 자리라 겹친다.
+// 글자·테두리·여백은 uiS로 키워 화면에서 항상 12px로 읽히게 하고, 점에서
+// 떨어지는 거리(off)만 내부 좌표 그대로 둬 라벨이 지점에 딱 붙어 보이게 한다.
 function numTag(p,text,color,dir,off){
   ctx.save();
-  ctx.font='bold 11px "Bricolage Grotesque"';
-  const w=ctx.measureText(text).width+12, h=19;
-  let x=p.x, y=p.y;
-  if(dir==='u') y-=h/2+off;
-  else if(dir==='d') y+=h/2+off;
-  else if(dir==='l') x-=w/2+off;
-  else if(dir==='r') x+=w/2+off;
-  x=clamp(x, play.x0+w/2+2, play.x1-w/2-2);
-  y=clamp(y, play.y0+h/2+2, play.y1-h/2-2);
-  const x0=x-w/2, y0=y-h/2, rr=6;
+  const s=uiS;
+  ctx.font=`bold ${(12*s).toFixed(1)}px "Bricolage Grotesque"`;
+  const w=ctx.measureText(text).width+12*s, h=19*s;
+  // 라벨이 화면 기준으로 커지면서 공을 덮는 일이 생긴다(특히 파이브앤하프의
+  // 수구수 — 수구를 지나 연장해 읽는 값이라 라벨이 늘 수구 근처다).
+  // 원하는 방향부터 시도해 공을 가리지 않는 첫 자리를 쓴다.
+  const place=(d,o)=>{
+    let x=p.x, y=p.y;
+    if(d==='u') y-=h/2+o;
+    else if(d==='d') y+=h/2+o;
+    else if(d==='l') x-=w/2+o;
+    else if(d==='r') x+=w/2+o;
+    return {x:clamp(x, play.x0+w/2+2, play.x1-w/2-2),
+            y:clamp(y, play.y0+h/2+2, play.y1-h/2-2)};
+  };
+  const clear=q=>['cue','obj','target'].every(k=>{
+    const b=balls[k];
+    return Math.abs(b.x-q.x)>w/2+BALL_R+2 || Math.abs(b.y-q.y)>h/2+BALL_R+2;
+  });
+  // 같은 방향으로 더 멀리 밀어 피한다. 레일과 나란한 쪽으로 옮기면 칩이 레일의
+  // '다른 눈금'을 가리키게 되어 틀린 값을 읽히므로, 방향은 유지한 채 띄운다.
+  const cands=[0,1,2,3].map(k=>place(dir,off+k*16*s));
+  const pos=cands.find(clear)||cands[0];
+  const x=pos.x, y=pos.y;
+  const x0=x-w/2, y0=y-h/2, rr=6*s;
   ctx.beginPath();
   ctx.moveTo(x0+rr,y0);
   ctx.lineTo(x0+w-rr,y0); ctx.quadraticCurveTo(x0+w,y0,x0+w,y0+rr);
@@ -4141,8 +4180,8 @@ function numTag(p,text,color,dir,off){
   ctx.lineTo(x0+rr,y0+h); ctx.quadraticCurveTo(x0,y0+h,x0,y0+h-rr);
   ctx.lineTo(x0,y0+rr); ctx.quadraticCurveTo(x0,y0,x0+rr,y0);
   ctx.closePath();
-  ctx.fillStyle='rgba(8,6,4,.86)'; ctx.fill();
-  ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.fillStyle='rgba(8,6,4,.9)'; ctx.fill();
+  ctx.strokeStyle=color; ctx.lineWidth=1.5*s; ctx.stroke();
   ctx.fillStyle=color; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(text,x,y);
   ctx.restore();
