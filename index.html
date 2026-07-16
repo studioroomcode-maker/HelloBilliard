@@ -1328,53 +1328,80 @@
   }catch(e){}
 })();
 
-// ===== 충돌 사운드 — Web Audio 합성 (음원 파일 없음 · 외부 요청 0건) =====
-// 공-공 '딱', 쿠션 '툭'을 실시간 합성한다. 재생(▶) 클릭이 사용자 제스처라
-// 그 시점에 AudioContext를 열 수 있어 모바일 자동재생 정책도 통과한다.
+// ===== 효과음 — sound/*.mp3 (같은 오리진 · 외부 요청 0건) =====
+// 예전엔 Web Audio로 '딱/툭'을 합성했지만, 실제 녹음 음원으로 바꿨다.
+//   01.que_hit     ▶ 재생 = 큐로 수구를 치는 순간
+//   02.first_hit   수구가 첫 번째 공을 맞을 때
+//   03.second_hit  수구가 두 번째 공을 맞을 때
+//   04.cushion_hit 쿠션에 맞을 때
+//   05.ball_in     (아직 안 씀 — 나중에 포켓볼 기능에서 공이 들어갈 때)
+//
+// 파일이 작아(총 ~52KB) 페이지 로드 때 받아만 두고, 디코딩은 첫 사용자
+// 제스처(▶ 클릭) 때 한다 — AudioContext는 제스처 전에 열 수 없기 때문.
 window.hbSfx=(function(){
-  var ctx=null, muted=false;
+  var SRC={
+    cue:     'sound/01.que_hit.mp3',
+    first:   'sound/02.first_hit.mp3',
+    second:  'sound/03.second_hit.mp3',
+    cushion: 'sound/04.cushion_hit.mp3'
+  };
+  var ctx=null, muted=false, raw={}, buf={};
+
+  for(var key in SRC)(function(k){          // 미리 받아만 둔다 (디코딩은 나중)
+    fetch(SRC[k]).then(function(r){ return r.ok?r.arrayBuffer():null; })
+      .then(function(b){ if(b){ raw[k]=b; decodeOne(k); } })
+      .catch(function(){});                  // 실패해도 <audio> 폴백이 있다
+  })(key);
+
   function ac(){
-    if(ctx) return ctx;
-    try{ var AC=window.AudioContext||window.webkitAudioContext; ctx=AC?new AC():null; }
-    catch(e){ ctx=null; }
+    if(ctx!==null) return ctx;
+    try{ var AC=window.AudioContext||window.webkitAudioContext; ctx=AC?new AC():false; }
+    catch(e){ ctx=false; }
+    if(ctx) for(var k in raw) decodeOne(k);   // 컨텍스트가 생기면 밀린 것들을 푼다
     return ctx;
   }
-  function ready(){ var c=ac(); if(!c) return null; if(c.state==='suspended'){ try{c.resume();}catch(e){} } return c; }
-  // 공끼리 부딪는 '딱' — 짧은 고음 클릭 + 하이패스 노이즈 틱
-  function clack(intensity){
-    if(muted) return; var c=ready(); if(!c) return;
-    var now=c.currentTime, vol=Math.max(0.06,Math.min(1,intensity||0.6));
-    var o=c.createOscillator(), g=c.createGain();
-    o.type='triangle';
-    o.frequency.setValueAtTime(2700,now);
-    o.frequency.exponentialRampToValueAtTime(1300,now+0.03);
-    g.gain.setValueAtTime(0.0001,now);
-    g.gain.exponentialRampToValueAtTime(0.5*vol,now+0.002);
-    g.gain.exponentialRampToValueAtTime(0.0001,now+0.07);
-    o.connect(g); g.connect(c.destination); o.start(now); o.stop(now+0.08);
+  function decodeOne(k){
+    if(!ctx||buf[k]||!raw[k]) return;
+    var data=raw[k]; raw[k]=null;             // decodeAudioData가 버퍼를 가져간다
+    var ok=function(b){ buf[k]=b; }, no=function(){};
     try{
-      var len=Math.floor(c.sampleRate*0.02), buf=c.createBuffer(1,len,c.sampleRate), d=buf.getChannelData(0);
-      for(var i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);
-      var src=c.createBufferSource(), ng=c.createGain(), hp=c.createBiquadFilter();
-      src.buffer=buf; hp.type='highpass'; hp.frequency.value=1600;
-      ng.gain.setValueAtTime(0.28*vol,now); ng.gain.exponentialRampToValueAtTime(0.0001,now+0.03);
-      src.connect(hp); hp.connect(ng); ng.connect(c.destination); src.start(now); src.stop(now+0.03);
+      var p=ctx.decodeAudioData(data, ok, no);   // 구형(콜백) · 신형(프로미스) 모두
+      if(p&&p.then) p.then(ok, no);
     }catch(e){}
   }
-  // 쿠션 충돌 '툭' — 낮고 둔한 소리
-  function cushion(intensity){
-    if(muted) return; var c=ready(); if(!c) return;
-    var now=c.currentTime, vol=Math.max(0.04,Math.min(0.8,intensity||0.3));
-    var o=c.createOscillator(), g=c.createGain();
-    o.type='sine';
-    o.frequency.setValueAtTime(330,now);
-    o.frequency.exponentialRampToValueAtTime(150,now+0.06);
-    g.gain.setValueAtTime(0.0001,now);
-    g.gain.exponentialRampToValueAtTime(0.4*vol,now+0.004);
-    g.gain.exponentialRampToValueAtTime(0.0001,now+0.13);
-    o.connect(g); g.connect(c.destination); o.start(now); o.stop(now+0.14);
+  function ready(){
+    var c=ac(); if(!c) return null;
+    if(c.state==='suspended'){ try{ c.resume(); }catch(e){} }
+    return c;
   }
-  return { clack:clack, cushion:cushion, setMuted:function(m){muted=!!m;}, isMuted:function(){return muted;} };
+  function play(k,vol){
+    if(muted) return;
+    var v=Math.max(0,Math.min(1,vol==null?1:vol));
+    var c=ready();
+    if(!c||!buf[k]) return fallback(k,v);     // 아직 디코딩 전이거나 Web Audio 없음
+    try{
+      var s=c.createBufferSource(), g=c.createGain();
+      s.buffer=buf[k]; g.gain.value=v;
+      s.connect(g); g.connect(c.destination); s.start(0);
+    }catch(e){ fallback(k,v); }
+  }
+  function fallback(k,v){
+    try{ var a=new Audio(SRC[k]); a.volume=v; var p=a.play(); if(p&&p.catch) p.catch(function(){}); }
+    catch(e){}
+  }
+  // 첫 사용자 입력에서 컨텍스트를 미리 열어 디코딩까지 끝내둔다.
+  // ▶를 누른 순간에야 열면 디코딩이 안 끝나 첫 소리만 <audio> 폴백으로 나간다.
+  ['pointerdown','keydown','touchstart'].forEach(function(ev){
+    window.addEventListener(ev, function(){ ready(); }, {once:true, passive:true});
+  });
+  return {
+    cue:     function(v){ play('cue',     v==null?0.9:v); },
+    first:   function(v){ play('first',   v==null?0.9:v); },
+    second:  function(v){ play('second',  v==null?0.9:v); },
+    cushion: function(v){ play('cushion', v==null?0.7:v); },
+    setMuted:function(m){ muted=!!m; },
+    isMuted: function(){ return muted; }
+  };
 })();
 
 // ===== 4구 모드 (스코프 격리) =====
@@ -2074,7 +2101,7 @@ function sfxDetect(anim, n){
   const nearRail=(i)=>{ const x=cur[i*2],y=cur[i*2+1];
     return x<=play.x0+R+3||x>=play.x1-R-3||y<=play.y0+R+3||y>=play.y1-R-3; };
   if(!anim._sfx){   // 첫 프레임은 상태만 초기화
-    const s={pd:{},dec:{},rc:[]};
+    const s={pd:{},dec:{},rc:[],hit:{},seq:0};   // hit: 수구가 이미 맞힌 공 · seq: 몇 번째 공인지
     for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const k=i+'-'+j;s.pd[k]=dist(i,j);s.dec[k]=false;}
     for(let i=0;i<n;i++) s.rc[i]=nearRail(i);
     anim._sfx=s; return;
@@ -2086,7 +2113,7 @@ function sfxDetect(anim, n){
       const mind=s.pd[k];
       if(mind<2*R*1.32){
         const inten=Math.max(0.3,Math.min(1,0.4+(2*R*1.32-mind)/(2*R)*0.7));
-        sfx&&sfx.clack(inten);
+        sfx&&sfxBallHit(s,i,j,inten);
       }
     }
     s.dec[k]=dec; s.pd[k]=dd;
@@ -2097,10 +2124,20 @@ function sfxDetect(anim, n){
     else if(!nr&&s.rc[i]){ s.rc[i]=false; }
   }
 }
+// 공-공 충돌 소리 — 수구(0번)가 낀 충돌이면 '몇 번째로 맞힌 공인지'로 음원을 고른다.
+// 같은 공을 다시 맞히면 순번은 그대로다. 적구끼리 부딪는 소리는 first를 쓴다.
+function sfxBallHit(s,i,j,inten){
+  const sfx=window.hbSfx;
+  if(i!==0&&j!==0){ sfx.first(inten); return; }
+  const other=(i===0?j:i);
+  if(!s.hit[other]){ s.hit[other]=true; s.seq++; }
+  (s.seq>=2?sfx.second:sfx.first)(inten);
+}
 function playRoute(){
   const r=routes[selected];
   if(!r||!r.anim||r.anim.length<2) return;
   stopAnim(false);
+  window.hbSfx&&window.hbSfx.cue();   // ▶ = 큐로 수구를 치는 순간
   anim={frames:r.anim, t0:performance.now(), i:0, raf:null, cur:null};
   const step=()=>{
     if(!anim) return;
@@ -3965,7 +4002,7 @@ function sfxTick3(anim){
   const nearRail=(i)=>{ const x=cur[i*2],y=cur[i*2+1];
     return x<=play.x0+R+3||x>=play.x1-R-3||y<=play.y0+R+3||y>=play.y1-R-3; };
   if(!anim._sfx){
-    const s={pd:{},dec:{},rc:[]};
+    const s={pd:{},dec:{},rc:[],hit:{},seq:0};   // hit: 수구가 이미 맞힌 공 · seq: 몇 번째 공인지
     for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const k=i+'-'+j;s.pd[k]=dist(i,j);s.dec[k]=false;}
     for(let i=0;i<n;i++) s.rc[i]=nearRail(i);
     anim._sfx=s; return;
@@ -3977,7 +4014,7 @@ function sfxTick3(anim){
       const mind=s.pd[k];
       if(mind<2*R*1.32){
         const inten=Math.max(0.3,Math.min(1,0.4+(2*R*1.32-mind)/(2*R)*0.7));
-        sfx&&sfx.clack(inten);
+        sfx&&sfxBallHit3(s,i,j,inten);
       }
     }
     s.dec[k]=dec; s.pd[k]=dd;
@@ -3988,10 +4025,20 @@ function sfxTick3(anim){
     else if(!nr&&s.rc[i]){ s.rc[i]=false; }
   }
 }
+// 4구의 sfxBallHit과 같은 규칙 — 스코프가 갈려 있어 따로 둔다.
+// 프레임 0번이 수구(AIDX3.cue===0)라 i/j에 0이 끼면 수구 충돌이다.
+function sfxBallHit3(s,i,j,inten){
+  const sfx=window.hbSfx;
+  if(i!==0&&j!==0){ sfx.first(inten); return; }
+  const other=(i===0?j:i);
+  if(!s.hit[other]){ s.hit[other]=true; s.seq++; }
+  (s.seq>=2?sfx.second:sfx.first)(inten);
+}
 function playRoute3(){
   const r=phyRoutes&&phyRoutes[phySel];
   if(!r||!r.anim||r.anim.length<2) return;
   stopAnim3(false);
+  window.hbSfx&&window.hbSfx.cue();   // ▶ = 큐로 수구를 치는 순간
   anim3={frames:r.anim, t0:performance.now(), i:0, raf:null, cur:null};
   const step=()=>{
     if(!anim3) return;

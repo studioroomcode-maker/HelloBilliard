@@ -1,6 +1,6 @@
 // Hello Billiard 서비스워커 — 오프라인 캐시
 // 버전을 올리면 이전 캐시가 정리되고 새 파일이 배포된다.
-const VERSION = 'hb-v17';
+const VERSION = 'hb-v18';
 const SHELL = [
   './',
   './manifest.webmanifest',
@@ -8,6 +8,11 @@ const SHELL = [
   './icons/icon-512.png',
   './fonts/bricolage-grotesque-latin.woff2',
   './fonts/spline-sans-mono-latin.woff2',
+  // 효과음 — 재생 중 즉시 필요해 미리 받아둔다 (05.ball_in은 아직 안 씀)
+  './sound/01.que_hit.mp3',
+  './sound/02.first_hit.mp3',
+  './sound/03.second_hit.mp3',
+  './sound/04.cushion_hit.mp3',
 ];
 
 self.addEventListener('install', e => {
