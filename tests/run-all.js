@@ -27,6 +27,11 @@ const CASES = [
   { f: 'overlap-test.js', exit0: true, match: [/겹침 검증 회귀: OK/] },
   { f: 'block-test.js', match: [/경고 포함: OK/] },
   { f: 'block2-test.js', match: [/제2적구 출발-경로 차단 검사 통과/] },
+  { f: 'first-entry-test.js', exit0: true, match: [/첫 진입 배치 검사 통과/] },
+  { f: 'power-test.js', exit0: true, match: [/추천 파워 실측 검사 통과/] },
+  { f: 'exp-badge-test.js', exit0: true, match: [/실험적 배지 검사 통과/] },
+  { f: 'g3-settings-test.js', exit0: true, match: [/3구 설정 노출 검사 통과/] },
+  { f: 'showall-test.js', exit0: true, match: [/선택 경로만 표시 검사 통과/] },
   { f: 'side-check2.js', match: [/좌\/우 라벨 포함 여부: OK/] },
   { f: 'badge-check.js', match: [/gather 배지 포함: OK/] },
 ];

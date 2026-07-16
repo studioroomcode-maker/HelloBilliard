@@ -7,7 +7,7 @@ const code = m[1];
 
 const handlers = {};
 const els = {};
-const CANVAS_SIZE = { 'g4-table': [840, 460], 'g3-table': [860, 460] };
+const CANVAS_SIZE = { 'g4-table': [840, 460], 'g3-table': [892, 492] };
 
 const ctxProxy = () => new Proxy({}, {
   get: (t, k) => {

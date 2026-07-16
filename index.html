@@ -380,6 +380,17 @@
   .result .sysfix .why {
     flex:1 1 140px; font-size:11px; line-height:1.5; color:var(--tx-3, #9b9484);
   }
+  /* 신뢰도 배지 — 검증 범위 밖 구간을 '틀렸다'가 아니라 '아직 모른다'로 표시.
+     경고(.miss)보다 약하게: 계산을 막는 게 아니라 믿을 만큼만 믿으라는 뜻이다. */
+  .result .exp {
+    margin-top:10px; padding:8px 10px;
+    background:var(--surface-2, #171309);
+    border:1px solid var(--line, #312819);
+    border-left:3px solid var(--warn);
+    border-radius:8px;
+    font-size:11px; line-height:1.55; color:var(--tx-3, #9b9484);
+  }
+  .result .exp b { color:var(--warn); }
   /* 당점 카드 — '3팁 순방향'을 수구 정면도로 */
   .result .aimcard {
     display:flex; align-items:center; gap:12px;
@@ -563,6 +574,12 @@
     color: var(--ink);
   }
   .stage-bar .route-picks .tool.mini.on .dot { border-color: rgba(0,0,0,.45); }
+  /* [겹쳐 보기] — 켜진 상태를 경로 선택 칩과 같은 방식으로 보여준다 */
+  .stage-bar .tool.mini.on {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--ink);
+  }
 
   /* === 내 수구 색 — 공 선택 버튼 바로 위 === */
   .myball-row {
@@ -1060,7 +1077,7 @@
           <span class="tune-label">쿠션 보정</span>
           <div class="tune-options">
             <button data-cal="cush" data-d="-1">− 짧게</button>
-            <button class="cal-val" id="calCush" disabled>0</button>
+            <button class="cal-val" data-cal-val="cush" disabled>0</button>
             <button data-cal="cush" data-d="1">+ 길게</button>
           </div>
         </div>
@@ -1068,7 +1085,7 @@
           <span class="tune-label">구름 보정</span>
           <div class="tune-options">
             <button data-cal="roll" data-d="-1">− 짧게</button>
-            <button class="cal-val" id="calRoll" disabled>0</button>
+            <button class="cal-val" data-cal-val="roll" disabled>0</button>
             <button data-cal="roll" data-d="1">+ 길게</button>
           </div>
         </div>
@@ -1187,7 +1204,11 @@
   <div class="mode-panel" id="panel-m3">
   <div class="col-board">
   <details class="venue" style="margin:0 0 12px">
-  <summary>개인 설정 <span class="venue-sub">내 실력 · 4구와 공유</span></summary>
+  <summary>개인 설정 <span class="venue-sub">내 실력 · 내 수구 색 · 테이블 보정</span></summary>
+  <!-- 이 값들은 3구 계산에 그대로 쓰이는데 예전에는 4구 탭에만 있었다.
+       3구만 쓰는 사람은 사진 인식이 내 수구를 반대로 잡아도 고칠 방법을
+       찾지 못했다. 저장소(hb_skill·hb4_myball·hb4_calib)는 4구와 공유하므로
+       한쪽에서 바꾸면 양쪽에 반영된다. -->
   <div class="tune-controls" style="margin-top:8px">
     <div class="tune-row">
       <span class="tune-label">내 실력</span>
@@ -1197,7 +1218,34 @@
         <button data-skill="adv">상급</button>
       </div>
     </div>
+    <div class="tune-row">
+      <span class="tune-label">내 수구 색</span>
+      <div class="tune-options">
+        <button data-myball="white"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f7f4ea" stroke="#8b8574"/></svg> 흰공</button>
+        <button data-myball="yellow"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f0c542" stroke="#b89220"/></svg> 노란공</button>
+      </div>
+    </div>
+    <div class="tune-row">
+      <span class="tune-label">쿠션 보정</span>
+      <div class="tune-options">
+        <button data-cal="cush" data-d="-1">− 짧게</button>
+        <button class="cal-val" data-cal-val="cush" disabled>0</button>
+        <button data-cal="cush" data-d="1">+ 길게</button>
+      </div>
+    </div>
+    <div class="tune-row">
+      <span class="tune-label">구름 보정</span>
+      <div class="tune-options">
+        <button data-cal="roll" data-d="-1">− 짧게</button>
+        <button class="cal-val" data-cal-val="roll" disabled>0</button>
+        <button data-cal="roll" data-d="1">+ 길게</button>
+      </div>
+    </div>
   </div>
+  <p class="hint" style="margin-top:8px">사진 인식은 <b>내 수구 색</b>으로 수구를 고릅니다 —
+    잘못 잡히면 여기서 바꾸고 다시 인식하세요. 실제 공이 예측보다 짧게 반사되면
+    쿠션 보정 「− 짧게」, 덜 굴러가면 구름 보정을 조절합니다.
+    <b>물리 경로 제안</b>에 바로 반영되고 4구 탭과 값을 공유합니다.</p>
   </details>
 
   <div class="toolbar" id="g3-toolbar" style="margin-bottom:10px"></div>
@@ -1211,10 +1259,12 @@
   <div class="board">
   <div class="shot-brief" id="g3-shotBrief" hidden></div>
   <div class="stage">
-    <canvas id="g3-table" width="860" height="460" role="img" aria-label="3구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
+    <canvas id="g3-table" width="892" height="492" role="img" aria-label="3구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
   </div>
   <div class="stage-bar" id="g3-stageBar" hidden>
     <div class="route-picks" id="g3-routePicks"></div>
+    <button class="tool mini" id="g3-showAll" aria-pressed="false"
+      title="다른 제안 경로도 흐리게 함께 표시">겹쳐 보기</button>
     <button class="tool mini play" id="g3-play" aria-label="경로 재생" title="경로 재생"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg></button>
   </div>
   </div>
@@ -2563,18 +2613,24 @@ calcBtn.addEventListener('click',()=>{
     if(pendingRecalc){ pendingRecalc=false; calcBtn.click(); }
   });
 });
-// ⑥ 캘리브레이션 버튼
-document.querySelectorAll('#g4-tuning [data-cal]').forEach(b=>
+// ⑥ 캘리브레이션 버튼 — 4구·3구 두 탭에 같은 컨트롤이 있다. 저장소가 하나
+// (hb4_calib)이므로 어느 쪽을 눌러도 같은 값을 바꾸고 양쪽 표시를 함께 갱신한다.
+document.querySelectorAll('[data-cal]').forEach(b=>
   b.addEventListener('click',()=>{
     const k=b.dataset.cal;
     calib[k]=clamp(calib[k]+ +b.dataset.d,-5,5);
     saveCalib(); syncCalib();
     routes=[];selected=0;renderCards();draw();
     drawPhoto();
+    // 3구도 이 값으로 물리 경로를 계산한다 — 이미 그려둔 경로는 옛 보정값 기준
+    if(typeof window!=='undefined'&&window.__hb3refresh) window.__hb3refresh();
   }));
 function syncCalib(){
-  document.getElementById('calCush').textContent=(calib.cush>0?'+':'')+calib.cush;
-  document.getElementById('calRoll').textContent=(calib.roll>0?'+':'')+calib.roll;
+  // 두 탭에 같은 값 칩이 있으므로 id 가 아니라 전부 갱신한다
+  document.querySelectorAll('[data-cal-val]').forEach(el=>{
+    const v=calib[el.dataset.calVal];
+    el.textContent=(v>0?'+':'')+v;
+  });
 }
 syncCalib();
 // 실력 단계 버튼 (4구 쪽 — 3구와 localStorage 공유)
@@ -3479,17 +3535,22 @@ draw();renderCards();
 const cv=document.getElementById('g3-table');
 const ctx=cv.getContext('2d');
 const W=cv.width, H=cv.height;
-const M=44;
+// 여백(M)에는 레일 눈금이 최대 2줄 들어간다. 폰에서는 캔버스가 CSS로 크게
+// 축소되므로(860→약 340px, 0.4배) 예전 여백 44px 는 화면에서 17px 밖에 안 됐고,
+// 그 안에 10px 눈금 2줄을 넣으니 화면상 4px — 계산값을 실제 다이아몬드로 옮겨야
+// 하는 사람에게 정작 제일 중요한 숫자가 안 읽혔다. 여백을 60 으로 늘리고
+// 캔버스를 그만큼 키워 경기면(772×372) 크기는 그대로 두었다 —
+// 경기면이 바뀌면 BALL_R·DX·DY 와 세 시스템의 좌표가 전부 딸려 움직인다.
+const M=60;
 const play={x0:M,y0:M,x1:W-M,y1:H-M};
 const PW=play.x1-play.x0, PH=play.y1-play.y0;
 // ① 실측 스케일 — 3구 공 지름 61.5mm / 대대 2844mm 비율 반영 (≈8.3px)
 const BALL_R=30.75*PW/2844;
 
-// 캔버스는 내부 860×460 좌표를 CSS로 축소해 그린다 — 폰 0.37배·데스크톱 0.76배.
+// 캔버스는 내부 892×492 좌표를 CSS로 축소해 그린다 — 폰 0.38배·데스크톱 0.76배.
 // 그래서 '12px' 폰트가 화면에서는 4~9px로 찍혀 읽히지 않는다. 도형은 축소돼도
-// 의미가 남지만 글자는 안 읽히면 끝이므로, 축소율의 역수를 곱해 숫자 라벨만
-// 화면 기준 크기를 유지한다. (레일 눈금은 여백 44px에 2줄로 들어가 있어
-//  키우면 서로 겹치고 캔버스를 벗어나므로 손대지 않는다.)
+// 의미가 남지만 글자는 안 읽히면 끝이므로, 축소율의 역수를 곱해 글자만
+// 화면 기준 크기를 유지한다 — 경로 위 숫자 태그(numTag)도, 레일 눈금(railF)도.
 let uiS=1;
 function syncUiScale(){
   const w=cv.getBoundingClientRect().width;
@@ -3505,14 +3566,21 @@ if(typeof ResizeObserver!=='undefined')
 
 let system='five';   // five | plus | ball
 let tip=2, activeBall='cue', dragging=null, solution=null;
+// 사용자가 이 배치를 직접 만들었는가 (드래그·탭 배치·사진 인식·초기화).
+// false 인 동안은 화면에 있는 배치가 '앱이 고른 예시'라는 뜻이라,
+// 탭을 옮기면 그 시스템의 예시 배치로 갈아끼운다 — 첫 화면이 '유효 범위 밖'으로
+// 시작하면 처음 쓰는 사람은 기능이 고장 난 줄 안다. 한 번이라도 사용자가
+// 공을 놓으면 그 배치는 사용자의 것이므로 다시는 건드리지 않는다.
+let userPlaced=false;
 
 // ---------- 공 ----------
+// 3구 정식 초구 배치 — 수구: 헤드 스폿 아래 왼쪽 / 제1적구: 헤드 스폿 /
+// 제2적구: 풋 스폿. 경기면(play) 기준 비율로 적는다 — 절대 픽셀로 박아 두면
+// 여백(M)을 조정하는 순간 배치가 당구대에서 통째로 미끄러진다.
 const balls={
-  // 3구 정식 초구 배치 (헤드 스폿 x≈237 / 풋 스폿 x≈623, 중심선 y≈230)
-  // 수구: 헤드 스폿 아래 왼쪽 / 제1적구: 헤드 스폿 / 제2적구: 풋 스폿
-  cue:    {x:200, y:285, color:'#5fb8e8', ring:'#3a8cb8', name:'수구'},
-  obj:    {x:237, y:230, color:'#e85f9c', ring:'#b03c70', name:'제1적구'},
-  target: {x:623, y:230, color:'#d9582b', ring:'#a23d1c', name:'제2적구'},
+  cue:    {x:play.x0+PW*0.202, y:play.y0+PH*0.648, color:'#5fb8e8', ring:'#3a8cb8', name:'수구'},
+  obj:    {x:play.x0+PW*0.25,  y:play.y0+PH*0.5,   color:'#e85f9c', ring:'#b03c70', name:'제1적구'},
+  target: {x:play.x0+PW*0.75,  y:play.y0+PH*0.5,   color:'#d9582b', ring:'#a23d1c', name:'제2적구'},
 };
 const defaults=JSON.parse(JSON.stringify(
   Object.fromEntries(Object.entries(balls).map(([k,v])=>[k,{x:v.x,y:v.y}]))));
@@ -3834,6 +3902,23 @@ function aimCard(s,tipLabel){
     `<span>상하는 중단 기준 — 이 시스템은 좌우 회전만 규정합니다</span></div></div>`;
 }
 
+// 검증된 구간 밖이라는 표시 — 파이브앤하프는 제1쿠션수가 커질수록(깊은 뱅크)
+// 앱의 물리 시뮬레이션과 차트 예측이 벌어진다. tests/validate-path.js 의
+// 교차 검증은 제1쿠션수 20~25 만 합격 판정하고 30~35 는 '정보'로만 출력하는데,
+// 그 구간의 실측 차이가 크기 때문이다 (1쿠션 30 → 차트 20 / 물리 31,
+// 1쿠션 35 → 차트 15 / 물리 33). 둘 중 어느 쪽이 맞는지는 실제 대대에서
+// 재보정하기 전까지 알 수 없다 — 그래서 '틀렸다'가 아니라 '검증 안 됨'으로 적는다.
+const FIVE_VERIFIED_C1=[20,25], DEEP_BANK_C1=30;
+function expBadge(s){
+  if(s.sys!=='five'||!s.valid||s.c1Num==null) return '';
+  if(s.c1Num<DEEP_BANK_C1) return '';
+  return `<div class="exp"><b>⚠ 실험적</b> — 제1쿠션수 ${r0(s.c1Num)}은 `+
+    `교차 검증된 구간(${FIVE_VERIFIED_C1[0]}~${FIVE_VERIFIED_C1[1]}) 밖입니다. `+
+    `이 앱의 물리 시뮬레이션은 깊은 뱅크에서 시스템 예측보다 길게 나오고`+
+    `(1쿠션 30 → 시스템 20 / 시뮬 31), 어느 쪽이 실제와 맞는지는 아직 `+
+    `실측으로 확인하지 않았습니다. 첫 샷으로 도착점을 보고 판단하세요.</div>`;
+}
+
 // ===== 결과 출력 =====
 function showResult(s){
   const numsEl=document.getElementById('g3-nums');
@@ -3851,7 +3936,7 @@ function showResult(s){
     if(s.valid&&!s.blockedT)
       h+=`<div>상단 장쿠션 <b>${r0(s.c1Num)} 지점</b>(좌상 코너=50) 겨냥</div>`+
         aimCard(s,tipLabel);
-    h+=verdict(s);
+    h+=verdict(s)+expBadge(s);
     resEl.innerHTML=h;
   } else if(s.sys==='plus'){
     numsEl.innerHTML=numBox('출발수',s.startNum,'cue')+
@@ -3967,7 +4052,10 @@ function draw(){
   drawCoords();
   if(solution) drawSolution(solution);
   if(phyRoutes&&phyRoutes.length){
-    phyRoutes.forEach((r,i)=>{ if(i!==phySel) drawPhyRoute(r,PHY_COLORS[i],0.2); });
+    // 기본은 선택 경로 하나만 — 폰 화면에서 3개를 겹쳐 그리면 선이 교차해
+    // 정작 쳐야 할 조준선을 읽을 수 없다. 비교하려면 [겹쳐 보기]로 켠다.
+    if(phyShowAll)
+      phyRoutes.forEach((r,i)=>{ if(i!==phySel) drawPhyRoute(r,PHY_COLORS[i],0.2); });
     if(phyRoutes[phySel]) drawPhyRoute(phyRoutes[phySel],PHY_COLORS[phySel],1);
   }
   if(anim3&&anim3.trail&&anim3.trail.length>1){
@@ -4071,65 +4159,77 @@ function playRoute3(){
   anim3.raf=requestAnimationFrame(step);
 }
 
+// 레일 눈금 크기 — 캔버스는 CSS 로 축소되므로(폰 약 0.38배) 고정 10px 는
+// 화면에서 4px 로 찍혀 못 읽는다. 축소율(uiS)을 곱해 화면 기준 크기를 지키되,
+// 여백 M 안에 2줄이 들어가야 하므로 상한을 둔다 (2줄 = R1 + R2 + 반글자 ≤ M).
+function railF(){ return clamp(9*uiS,10,22); }
+// 눈금 줄 위치 — 폰트가 커지면 줄 간격도 같이 벌어져야 겹치지 않는다
+function railRow(n){ const F=railF(); return 8+F*0.5+(n-1)*(F+4); }
+// 우측 단쿠션은 가로로 놓이므로 글자 '높이'가 아니라 '폭'만큼 띄워야 눈금과 안 겹친다
+function railSide(){ const F=railF(); return 8+F*0.8; }
 function drawCoords(){
   ctx.textAlign='center'; ctx.textBaseline='middle';
+  const F=railF(), R1=railRow(1), R2=railRow(2), RS=railSide();
+  ctx.font=`${F.toFixed(1)}px "Spline Sans Mono", monospace`;
   if(system==='five'){
-    ctx.font='10px "Spline Sans Mono", monospace';
     // 수구수: 하단 장쿠션 우측 절반(50~90, 우→좌) + 우측 단쿠션(45~20, 위로)
     ctx.fillStyle='#5fb8e8';
     for(let v=50;v<=90;v+=10){
       const x=play.x1-(v-50)/10*DX;
-      tick2(x,play.y1,'d'); ctx.fillText(v,x,play.y1+20);
+      tick2(x,play.y1,'d'); ctx.fillText(v,x,play.y1+R1);
     }
     [45,40,35,30,25,20].forEach(v=>{
       const y=play.y1-(50-v)/10*DY;
-      tick(play.x1,y,'r'); ctx.fillText(v,play.x1+22,y);
+      tick(play.x1,y,'r'); ctx.fillText(v,play.x1+RS,y);
     });
     // 1쿠션수: 상단 장쿠션 (좌상 코너 50 → 오른쪽으로 감소)
     ctx.fillStyle='#e8b53e';
     for(let v=50;v>=0;v-=10){
       const x=fiveC1X(v);
-      tick2(x,play.y0,'u'); ctx.fillText(v,x,play.y0-20);
+      tick2(x,play.y0,'u'); ctx.fillText(v,x,play.y0-R1);
     }
-    // 3쿠션수: 하단 장쿠션 좌측 절반 (좌하 코너 0 → 오른쪽으로)
+    // 3쿠션수: 하단 장쿠션 좌측 절반 (좌하 코너 0 → 오른쪽으로) — 둘째 줄
     ctx.fillStyle='#d9582b';
     for(let v=0;v<=40;v+=10){
       const x=fiveC3X(v);
-      tick2(x,play.y1,'d'); ctx.fillText(v,x,play.y1+32);
+      tick2(x,play.y1,'d'); ctx.fillText(v,x,play.y1+R2);
     }
     legend(['수구수:#5fb8e8','1쿠션수(상단):#e8b53e','3쿠션수(하단):#d9582b']);
   } else if(system==='plus'){
-    ctx.font='10px "Spline Sans Mono", monospace';
     // 출발·도착수: 하단 장쿠션 (우하 코너 0 → 왼쪽으로)
     ctx.fillStyle='#5fb8e8';
     for(let v=0;v<=80;v+=10){
       const x=play.x1-v/10*DX;
-      tick2(x,play.y1,'d'); ctx.fillText(v,x,play.y1+20);
+      tick2(x,play.y1,'d'); ctx.fillText(v,x,play.y1+R1);
     }
     // 1쿠션수: 우측 단쿠션 (우하 코너 0 → 위로)
     ctx.fillStyle='#e8b53e';
     for(let v=0;v<=40;v+=10){
       const y=play.y1-v/10*DY;
-      tick(play.x1,y,'r'); ctx.fillText(v,play.x1+22,y);
+      tick(play.x1,y,'r'); ctx.fillText(v,play.x1+RS,y);
     }
     legend(['출발·도착수(하단):#5fb8e8','1쿠션수(우측):#e8b53e']);
   } else {
-    ctx.font='10px "Spline Sans Mono", monospace';
     ctx.fillStyle='#e85f9c';
-    for(let n=1;n<=7;n++){ const x=play.x0+(n-1)/6*PW; tick2(x,play.y0,'u'); ctx.fillText(n,x,play.y0-20); }
+    for(let n=1;n<=7;n++){ const x=play.x0+(n-1)/6*PW; tick2(x,play.y0,'u'); ctx.fillText(n,x,play.y0-R1); }
     ctx.fillStyle='#d9582b';
-    for(let n=1;n<=8;n++){ const y=play.y0+(n-1)/7*PH; tick(play.x1,y,'r'); ctx.fillText(n,play.x1+20,y); }
+    for(let n=1;n<=8;n++){ const y=play.y0+(n-1)/7*PH; tick(play.x1,y,'r'); ctx.fillText(n,play.x1+RS,y); }
     legend(['제1적구수(상단):#e85f9c','제3쿠션수(우측):#d9582b']);
   }
 }
 function legend(items){
-  ctx.font='9px "Spline Sans Mono", monospace';
+  // 범례는 1쿠션수 줄 위에 얹힌다 — 눈금이 커지면 같이 밀려 올라가야 한다
+  const F=clamp(8*uiS,9,18), y=play.y0-railRow(1)-railF()*0.5-F*0.5-3;
+  ctx.font=`${F.toFixed(1)}px "Spline Sans Mono", monospace`;
   ctx.textAlign='left';
   let x=play.x0+6;
   items.forEach(it=>{
     const [t,c]=it.split(':');
-    ctx.fillStyle=c; ctx.fillText('● '+t, x, play.y0-30);
-    x+=t.length*6.5+24;
+    const s='● '+t;
+    ctx.fillStyle=c; ctx.fillText(s, x, y);
+    // 글자 폭은 재서 쓴다 — 한글은 글자당 폭이 라틴보다 넓어서 길이×상수로
+    // 어림하면 항목끼리 달라붙는다
+    x+=ctx.measureText(s).width+F*1.4;
   });
   ctx.textAlign='center';
 }
@@ -4204,12 +4304,15 @@ function drawSolution(s){
     ctx.lineTo(balls.target.x,balls.target.y);
     ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle='rgba(244,241,232,.75)';
-    ctx.font='10px "Bricolage Grotesque"'; ctx.textAlign='center';
+    // 눈금과 같은 이유로 화면 기준 크기를 지킨다 — 이 라벨은 '이 점선은 경로가
+    // 아니다'라는 오해 방지 문구라, 안 읽히면 있으나 마나다
+    const F=railF();
+    ctx.font=`${F.toFixed(1)}px "Bricolage Grotesque"`; ctx.textAlign='center';
     const m1={x:(balls.cue.x+balls.obj.x)/2, y:(balls.cue.y+balls.obj.y)/2};
     const m2={x:(balls.obj.x+balls.target.x)/2, y:(balls.obj.y+balls.target.y)/2};
-    ctx.fillText('큐선 (기울기 측정)', m1.x, m1.y-8);
-    ctx.fillText('적구 연결선', m2.x, m2.y-8);
-    ctx.fillText('※ 경로 아님 — 두께·팁 산출용 조준 기준선', (play.x0+play.x1)/2, play.y1-12);
+    ctx.fillText('큐선 (기울기 측정)', m1.x, m1.y-F*0.8);
+    ctx.fillText('적구 연결선', m2.x, m2.y-F*0.8);
+    ctx.fillText('※ 경로 아님 — 두께·팁 산출용 조준 기준선', (play.x0+play.x1)/2, play.y1-F*1.2);
     ctx.restore();
     drawTilt(s);
     return;
@@ -4350,6 +4453,7 @@ function numTag(p,text,color,dir,off){
    쿠션을 3회 이상 경유해야 한다 (첫 적구 전 쿠션도 인정 = 실제 규칙).
    물리 상수·수치 적분은 4구 엔진과 동일, 4구 테이블 보정값(hb4_calib)을 공유. */
 const MM3=PW/2844, G3PX=9800*MM3, DT3=0.0025, MAXT3=7, SLIDE3=2, STOP3=4;
+const PHY_BASE_SPEED=1450;   // 스트로크 속도 '중' 기준 (px/s) — SPEEDS3 가 이 값에 배수를 건다
 const rot3=(a,t)=>({x:a.x*Math.cos(t)-a.y*Math.sin(t), y:a.x*Math.sin(t)+a.y*Math.cos(t)});
 function gauss3(){
   let u=0,v=0;
@@ -4373,7 +4477,7 @@ function getSkill3(){
 function phyParams(){
   const sk=SKILLS3[getSkill3()];
   const p={mus:0.20, mur:0.012, ec:0.85, muc:0.20, ebb:0.93, mubb:0.06,
-           speed:1450, aimSigma:0.010*sk.aim, spdSigma:0.05*sk.spd,
+           speed:PHY_BASE_SPEED, aimSigma:0.010*sk.aim, spdSigma:0.05*sk.spd,
            spinSigma:0.08*sk.spin, skill:sk};
   try{
     const c=JSON.parse(localStorage.getItem('hb4_calib')||'{}');
@@ -4546,13 +4650,24 @@ const yieldTick3=IS_BROWSER3?(function(){
   ch.port1.onmessage=()=>{ const r=pending; pending=null; if(r) r(); };
   return ()=>new Promise(r=>{ pending=r; ch.port2.postMessage(0); });
 })():()=>Promise.resolve();
+// 표시할 경로마다 실측할 스트로크 속도 3종 (px/s — P.speed 가 '중' 기준).
+// 같은 배치·같은 당점이라도 속도가 달라지면 쿠션 반발과 시네루가 먹는 양이
+// 달라져 경로가 통째로 바뀐다. 하나로 고정해 두고 카드에 파워를 적어 주는 건
+// 계산하지 않은 값을 지어내는 것이므로, 세 속도를 실제로 돌려 보고 고른다.
+const SPEEDS3=[
+  {mul:0.72, label:'약'},
+  {mul:1.00, label:'중'},
+  {mul:1.28, label:'강'},
+];
 async function solve3(onProgress){
   const P=phyParams();
   const cue=balls.cue;
   const cands=[];
   let done=0;
   const spinN=P.skill.keys?Object.keys(P.skill.keys).length:SPINS3.length;
-  const est=2*spinN*73 + 10*24 + 3*24 + 5;
+  // 진행률 추정 — 전수 스캔 + 상위 10후보 MC
+  //   + 표시 3경로 × (속도 2종 재조준 17 + 속도 3종 MC 24 + 확정 속도 정밀 24)
+  const est=2*spinN*73 + 10*24 + 3*(2*17 + 3*24 + 24) + 5;
   const bump=async()=>{
     done++;
     if((done&7)===0){
@@ -4582,7 +4697,8 @@ async function solve3(onProgress){
         const r=simulate3(dir,P.speed,spin,P,false);
         await bump();
         if(r.success&&r.first===fk){
-          const item={fk, spin, dir, cush:r.cushAtSecond};
+          // off 를 함께 남긴다 — 나중에 다른 속도로 조준을 다시 맞출 때 기준점이 된다
+          const item={fk, spin, dir, off, cush:r.cushAtSecond};
           if(run.length&&run[0].cush!==item.cush) flush();
           run.push(item);
         } else flush();
@@ -4593,18 +4709,57 @@ async function solve3(onProgress){
   if(!cands.length) return [];
   for(const c of cands) c.pre=c.tol*3-c.cush;
   cands.sort((a,b)=>b.pre-a.pre);
-  // 상위 후보만 몬테카를로 성공률 실측
-  const mc3=async(c,N)=>{
+  // 상위 후보만 몬테카를로 성공률 실측 (speed 생략 시 기준 속도)
+  const mc3=async(c,N,speed)=>{
+    const base=speed||c.speed||P.speed;
     let ok=0;
     for(let i=0;i<N;i++){
       const dir=rot3(c.dir,gauss3()*P.aimSigma);
-      const spd=P.speed*(1+gauss3()*P.spdSigma);
+      const spd=base*(1+gauss3()*P.spdSigma);
       const spin={v:clamp(c.spin.v+gauss3()*P.spinSigma,-1,1),
                   h:clamp(c.spin.h+gauss3()*P.spinSigma,-1,1)};
       if(simulate3(dir,spd,spin,P,false).success) ok++;
       await bump();
     }
     return ok/N;
+  };
+  // 다른 속도로 같은 경로를 다시 맞추기 — 속도가 바뀌면 궤적이 휘므로 기준
+  // 조준(off) 주변만 좁게 다시 훑어 그 속도에서 성립하는 조준을 찾는다.
+  // 같은 첫 적구·같은 쿠션수를 유지하는 것만 '같은 경로'로 인정한다.
+  const retune3=async(c,speed)=>{
+    const first=balls[c.fk];
+    const aimBase=norm(sub(first,cue));
+    const perp={x:-aimBase.y,y:aimBase.x};
+    let run=[], best=null;
+    const flush=()=>{
+      if(run.length>=2){
+        const m=run[(run.length/2)|0];
+        if(!best||run.length>best.tol) best={...m, tol:run.length};
+      }
+      run=[];
+    };
+    for(let i=0;i<=16;i++){
+      const off=c.off-0.2+0.4*i/16;
+      const aimPt={x:first.x+perp.x*off*BALL_R*2, y:first.y+perp.y*off*BALL_R*2};
+      const dir=norm(sub(aimPt,cue));
+      const r=simulate3(dir,speed,c.spin,P,false);
+      await bump();
+      if(r.success&&r.first===c.fk&&r.cushAtSecond===c.cush) run.push({...c, dir, off});
+      else flush();
+    }
+    flush();
+    return best;
+  };
+  // 모임도 — 적구끼리 간격 50% + 수구→각 적구 25%씩 가중 평균을 %로.
+  // 최종 배치는 속도에 따라 달라지므로 경로를 다시 기록할 때마다 같이 다시 낸다.
+  const gather3=(final)=>{
+    if(!final) return {gather:null, gatherAvg:null};
+    const diag=Math.hypot(PW,PH);
+    const d=len(sub(final.obj,final.target))*0.5
+           +len(sub(final.cue,final.obj))*0.25
+           +len(sub(final.cue,final.target))*0.25;
+    const tt=clamp((d-BALL_R*8)/(diag*0.45-BALL_R*8),0,1);
+    return {gather:Math.round(5+(1-tt)*90), gatherAvg:d};
   };
   const out=[];
   for(const c of cands.slice(0,10)){
@@ -4615,21 +4770,8 @@ async function solve3(onProgress){
     if(ok<1) continue;
     const r=simulate3(c.dir,P.speed,c.spin,P,true);
     if(!r.success||!r.firstInfo) continue;
-    // 모임도 — 적구끼리 간격 50% + 수구→각 적구 25%씩 가중 평균을 %로
-    let gather=null, gatherAvg=null;
-    if(r.final){
-      const diag=Math.hypot(PW,PH);
-      const d=len(sub(r.final.obj,r.final.target))*0.5
-             +len(sub(r.final.cue,r.final.obj))*0.25
-             +len(sub(r.final.cue,r.final.target))*0.25;
-      const tt=clamp((d-BALL_R*8)/(diag*0.45-BALL_R*8),0,1);
-      gather=Math.round(5+(1-tt)*90);
-      gatherAvg=d;
-    }
-    out.push({...c, prob, thickness:r.firstInfo.thickness,
-      aimSide:r.firstInfo.aimSide||'L', gather, gatherAvg,
-      path:r.paths.cue, hits:[r.firstInfo,r.secondInfo].filter(Boolean),
-      anim:r.frames,
+    const {gather}=gather3(r.final);
+    out.push({...c, prob, gather,
       score:prob*100+c.tol+(gather||0)*0.05});
   }
   out.sort((a,b)=>b.score-a.score);
@@ -4643,17 +4785,57 @@ async function solve3(onProgress){
     if(picked.length>=3) break;
     if(!picked.includes(r)) picked.push(r);
   }
-  // 표시될 경로는 추가 24회로 정밀 실측 (총 48회 — 표시 분산 축소)
+  // 표시될 경로마다 속도 3종을 각각 24회씩 실측해 '가장 잘 들어가는 속도'를 고른다.
+  // 예전에는 기준 속도 하나로만 돌리고 카드에 '강(4레일)'을 하드코딩했다 —
+  // 계산한 적 없는 값을 권장한 셈이라, 이제는 고른 속도와 그 근거를 함께 남긴다.
+  // 이 단계가 재검사도 겸한다: 후보는 1차 24회에서 '1회라도 재현'하면 통과하므로
+  // 무너지는 경로가 섞이는데, 예전에는 평균만 내고 걸러내지 않아 성공률 0% 카드가
+  // 그대로 '제안 경로'로 나갔다. 재현되지 않는 경로는 제안이 아니다.
+  const kept=[];
   for(const r of picked){
-    const p2=await mc3(r,24);
-    r.prob=(r.prob*24+p2*24)/48;
+    let best=null;
+    for(const sp of SPEEDS3){
+      const speed=P.speed*sp.mul;
+      // 기준 속도는 이미 그 조준으로 맞춰져 있다 — 나머지 속도만 다시 맞춘다
+      const c=sp.mul===1?r:await retune3(r,speed);
+      if(!c) continue;
+      const prob=await mc3(c,24,speed);
+      if(prob>0&&(!best||prob>best.prob)) best={...c, prob, speed, power:sp.label};
+    }
+    // 어떤 속도로도 24회 중 한 번도 재현되지 않음 → 제안하지 않는다
+    if(!best) continue;
+    // 고른 속도로 24회를 더 돌려 총 48회로 실측 (24회만으로는 표시가 5%p 단위로
+    // 널뛴다). 속도 선택에 쓴 24회와 조건이 같으므로 그대로 합칠 수 있다.
+    const p2=await mc3(best,24,best.speed);
+    best.prob=(best.prob*24+p2*24)/48;
+    // p2===0 → 재검사 24회 전부 실패 · prob<0.025 → 표시(5% 단위)가 0%로 찍힘
+    if(p2===0||best.prob<0.025) continue;
+    // 고른 속도·조준으로 경로와 두께를 다시 기록 (카드·재생이 쓰는 값)
+    const sim=simulate3(best.dir,best.speed,best.spin,P,true);
+    if(!sim.success||!sim.firstInfo) continue;
+    best.path=sim.paths.cue; best.anim=sim.frames;
+    best.thickness=sim.firstInfo.thickness;
+    best.aimSide=sim.firstInfo.aimSide||'L';
+    best.hits=[sim.firstInfo,sim.secondInfo].filter(Boolean);
+    best.cush=sim.cushAtSecond;
+    const g=gather3(sim.final);
+    best.gather=g.gather; best.gatherAvg=g.gatherAvg;
+    // 수구가 실제로 구른 거리 — '몇 레일 파워'의 근거가 되는 측정값
+    best.travel=0;
+    for(let i=1;i<best.path.length;i++)
+      best.travel+=len(sub(best.path[i],best.path[i-1]));
+    kept.push(best);
   }
-  picked.sort((a,b)=>b.prob-a.prob);
-  return picked;
+  kept.sort((a,b)=>b.prob-a.prob);
+  // 경로를 찾긴 했으나 전부 재현성이 없어 버린 경우를 빈 결과와 구분한다
+  kept.dropped=picked.length-kept.length;
+  return kept;
 }
 
 // ---- 물리 경로 UI ----
 let phyRoutes=null, phySel=0;
+// 제안 경로를 전부 겹쳐 그릴지 — 기본은 끄고 선택한 경로만 보여준다
+let phyShowAll=false;
 let justSolved3=false;   // 방금 새 계산 결과인지 — 등장 애니메이션 트리거용
 const PHY_COLORS=['#f4f1e8','#5fb8e8','#c98ce0'];
 // 두께 '양'만 보여주는 그림 — 볼 시스템 전용.
@@ -4713,6 +4895,10 @@ function renderPhyCards(){
   if(coach && phyRoutes && phyRoutes.length) coach.hidden=true;
   const bar=document.getElementById('g3-stageBar');
   if(bar) bar.hidden=!(phyRoutes&&phyRoutes.length);   // 재생 버튼은 경로가 있을 때만
+  // [겹쳐 보기]는 비교할 경로가 2개 이상일 때만 의미가 있다
+  const sa=document.getElementById('g3-showAll');
+  if(sa) sa.style.display=(phyRoutes&&phyRoutes.length>1)?'':'none';
+  syncShowAll();
   // 샷 요약 — 선택한 경로의 당점·두께·경유 쿠션을 당구대 위에 한 줄로
   const brief=document.getElementById('g3-shotBrief');
   if(brief){
@@ -4726,7 +4912,8 @@ function renderPhyCards(){
         `<span class="swatch" style="background:${PHY_COLORS[phySel]}"></span>`+
         `<span class="sbi" title="권장 당점">${tipSVG3(r.spin)}${r.spin.label}</span>`+
         `<span class="sbi" title="맞히는 두께">${thicknessSVG3(eighths,r.aimSide)}${thickLabel}</span>`+
-        `<span class="sbi" title="경유 쿠션"><b>쿠션 ${r.cush}회</b></span>`;
+        `<span class="sbi" title="경유 쿠션"><b>쿠션 ${r.cush}회</b></span>`+
+        `<span class="sbi" title="추천 파워"><b>파워 ${r.power}</b></span>`;
     }
   }
   // 경로 1·2·3 선택 버튼 — 카드 선택과 동일하게 동작
@@ -4743,8 +4930,14 @@ function renderPhyCards(){
   drawP3();   // 사진이 열려 있으면 경로 오버레이도 갱신 (지움 포함)
   if(!phyRoutes){ box.innerHTML=''; return; }
   if(!phyRoutes.length){
-    box.innerHTML='<div class="panel"><span class="empty">쓰리쿠션 득점 경로를 찾지 못했습니다 — '+
-      '배치를 바꾸거나 시스템 계산기를 활용해 보세요.</span></div>';
+    // 경로 자체가 없었는지, 찾았지만 재현성이 없어 버렸는지를 구분해 준다 —
+    // 후자는 '이 배치가 어렵다'는 정보이지 계산 실패가 아니다.
+    box.innerHTML=phyRoutes.dropped
+      ? '<div class="panel"><span class="empty">득점 경로를 찾았지만 재현율이 너무 낮아 '+
+        '(48회 시뮬레이션 중 성공률 5% 미만) 제안하지 않습니다 — 아주 어려운 배치입니다. '+
+        '배치를 바꾸거나 시스템 계산기를 활용해 보세요.</span></div>'
+      : '<div class="panel"><span class="empty">쓰리쿠션 득점 경로를 찾지 못했습니다 — '+
+        '배치를 바꾸거나 시스템 계산기를 활용해 보세요.</span></div>';
     return;
   }
   const NAME={obj:'제1적구',target:'제2적구'};
@@ -4767,9 +4960,14 @@ function renderPhyCards(){
       </div>
       <div class="desc">수구 → ${NAME[r.fk]} <b>${thickLabel} 두께</b>
         → 쿠션 <b>${r.cush}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점 ·
-        추천 파워 <b>강(4레일)</b>
+        추천 파워 <b>${r.power}</b>(수구 ${(r.travel/PW).toFixed(1)}레일 구름)
         <details class="rdetail"><summary>기술 상세</summary><div>
-        성공률은 실전 오차 몬테카를로 48회 시뮬레이션 예상치 (5% 단위 표시)${
+        추천 파워는 약·중·강 세 속도를 각각 24회씩 시뮬레이션해 <b>이 경로에서
+        성공률이 가장 높았던 속도</b>입니다 — 수구가 실제로 구른 거리는
+        <b>${(r.travel/PW).toFixed(1)}레일</b>(장쿠션 ${Math.round(PW/MMS/10)}cm 기준)입니다.
+        테이블 반응에 따라 달라지는 <b>근삿값</b>이니 첫 샷으로 감을 잡고 조절하세요.
+        <br>성공률은 이 속도에서 실전 오차 몬테카를로 <b>48회</b> 시뮬레이션한 예상치
+        (5% 단위 표시) — 실제 사용자 통계가 아닙니다${
         r.gather!=null&&r.gatherAvg?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b>
         + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${Math.round(r.gatherAvg/MMS/10)}cm</b> 기준`:''}</div></details></div>
       <div class="metrics">
@@ -4865,6 +5063,17 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
     btn.textContent='물리 경로 제안'; btn.disabled=false;
   });
 });
+document.getElementById('g3-showAll').addEventListener('click',()=>{
+  phyShowAll=!phyShowAll;
+  syncShowAll();
+  draw(); drawP3();
+});
+function syncShowAll(){
+  const b=document.getElementById('g3-showAll');
+  if(!b) return;
+  b.classList.toggle('on',phyShowAll);
+  if(b.setAttribute) b.setAttribute('aria-pressed',phyShowAll?'true':'false');
+}
 document.getElementById('g3-play').addEventListener('click',()=>{ playRoute3(); });
 document.getElementById('g3-share').addEventListener('click',()=>{
   draw();
@@ -5028,7 +5237,9 @@ function drawP3(){
       }
       p3ctx.restore();
     };
-    phyRoutes.forEach((r,i)=>{ if(i!==phySel) drawOne(r,PHY_COLORS[i],0.22); });
+    // 당구대와 같은 규칙 — 기본은 선택 경로만 (사진 위는 더 좁아 겹치면 더 안 읽힌다)
+    if(phyShowAll)
+      phyRoutes.forEach((r,i)=>{ if(i!==phySel) drawOne(r,PHY_COLORS[i],0.22); });
     if(phyRoutes[phySel]) drawOne(phyRoutes[phySel],PHY_COLORS[phySel],0.95);
   }
 }
@@ -5129,6 +5340,7 @@ document.getElementById('g3-detect').addEventListener('click',()=>{
     res.found[k]={x:play.x0+b.x*MMS, y:play.y0+b.y*MMS};
   }
   // 3구 매핑: 내 수구(설정 색) → cue, 나머지 수구+빨강 → 가까운 순 obj/target
+  userPlaced=true;   // 사진에서 온 실제 배치 — 탭을 옮겨도 예시로 덮지 않는다
   let myYellow=false;
   try{ myYellow=localStorage.getItem('hb4_myball')==='yellow'; }catch(e){}
   const white=res.found.cue, yellow=res.found.cue2, red=res.found.r1;
@@ -5211,6 +5423,7 @@ function onDown(e){
   const p=cpos(e), k=hitB(p);
   if(k){dragging=k;activeBall=k;syncTb();}
   else{const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
+    userPlaced=true;
     solution=null;phyRoutes=null;renderPhyCards();autoSystem();}   // 탭 배치 → 자동 계산
   draw();
 }
@@ -5219,6 +5432,7 @@ function onMove(e){
   e.preventDefault();
   const c=clampB(cpos(e));
   balls[dragging].x=c.x;balls[dragging].y=c.y;
+  userPlaced=true;
   solution=null; phyRoutes=null; renderPhyCards(); draw();
   autoSystem();   // 드래그 중 debounce 자동 계산
 }
@@ -5281,13 +5495,15 @@ const SYS_INFO={
 // 시스템별 표준 초기 배치 — 각 시스템이 가정하는 출발 형태에 맞춤
 // (좌표는 경로가 당구대 안에 들어오고 쿠션수가 유효 범위가 되도록 검증됨)
 const SYS_PRESET={
-  // 파이브앤하프: 수구 우하 구역(수구수 ~52), 제2적구는 3쿠션 20 트랙 위.
-  // 제2적구는 트랙 위에 있으면서 '출발 경로'에서 충분히 떨어져야 한다 —
-  // 예전 자리(DX*1.2, DY*0.8)는 수구 바로 앞이라 쿠션을 돌기 전에 먼저
-  // 맞는 배치였다(여유 1.1R). 지금 자리는 같은 숫자(52−20=32)를 내면서
-  // 출발 경로에서 17R 이상 떨어져 있다.
+  // 파이브앤하프: 수구 우하 구역(수구수 45), 제2적구는 3쿠션 20 트랙 위 →
+  // 45 − 20 = 제1쿠션수 25. 이 배치는 첫 화면에 그대로 뜨므로 세 조건을 만족해야 한다:
+  //  ① 숫자가 반듯할 것 (45−20=25 — 시스템을 처음 보는 사람이 식을 눈으로 따라갈 수 있다)
+  //  ② 제1쿠션수가 교차 검증 구간(20~25) 안일 것 — 예전 자리(수구수 52 → 1쿠션수 32)는
+  //     깊은 뱅크라 expBadge() 의 '실험적' 배지가 첫 화면부터 붙었다
+  //  ③ 제2적구가 '출발 경로'에서 멀 것 — 예전 자리(DX*1.2, DY*0.8)는 수구 바로 앞이라
+  //     쿠션을 돌기 전에 먼저 맞았다(여유 1.1R). 지금은 38R 떨어져 있다.
   five:{
-    cue:    {x:play.x1-DX*1.0, y:play.y1-DY*0.55},
+    cue:    {x:play.x1-DX*0.3, y:play.y1-DY*0.7},
     target: {x:play.x1-DX*3.6, y:play.y1-DY*0.4},
   },
   // 플러스: 출발수 ~7, 도착수 ~32 → 제1쿠션수 ~25 (유효)
@@ -5315,8 +5531,10 @@ function applySystem(){
   document.getElementById('g3-panelText').textContent=info.panelText;
   document.getElementById('g3-tipseg').style.display = system==='ball'?'none':'flex';
   if(!SYS_BALLS[system].includes(activeBall)) activeBall=SYS_BALLS[system][0];
-  // 탭 전환 시 배치는 그대로 둔다 (정식 초구 유지).
-  // 시스템 가정과 안 맞으면 계산 시 경고가 표시됨.
+  // 사용자가 직접 배치한 적 없으면 이 시스템의 예시 배치로 시작한다 —
+  // 각 시스템은 저마다 다른 출발 형태를 가정하므로, 하나의 배치가 세 탭에서
+  // 모두 유효할 수는 없다. 사용자 배치는 시스템을 바꿔도 그대로 둔다.
+  if(!userPlaced) applyPreset();
   buildToolbar();
   solution=null;
   stopAnim3(false);
@@ -5430,13 +5648,29 @@ document.getElementById('g3-example').addEventListener('click',()=>{
 });
 document.getElementById('g3-reset').addEventListener('click',()=>{
   stopAnim3(false);
-  // 정식 초구 배치로 복원
+  // 정식 초구 배치로 복원 — 사용자가 명시적으로 고른 배치이므로 탭을 옮겨도
+  // 예시로 갈아끼우지 않는다 (예시로 돌아가려면 [예시 배치]).
   for(const k in defaults){ balls[k].x=defaults[k].x; balls[k].y=defaults[k].y; }
+  userPlaced=true;
   phyRoutes=null; renderPhyCards();
   autoSystem(true);   // 초기 배치 기준 자동 계산
 });
 
 applySystem();
+
+// 4구 탭에서 테이블 보정을 바꿨을 때 호출된다 — 두 탭이 hb4_calib 를 공유하므로
+// 이미 그려둔 물리 경로는 옛 보정값으로 계산된 값이라 그대로 두면 거짓말이 된다.
+// (이벤트 대신 함수 훅인 이유: 테스트의 document 스텁에는 addEventListener 가 없다)
+if(typeof window!=='undefined')
+  window.__hb3refresh=function(){
+    phyRoutes=null; renderPhyCards(); autoSystem(true); draw();
+  };
+
+// 테스트용 노출 (window.__hbVision·__hbOverlap 과 같은 용도) — 배치·계산 경로를
+// 밖에서 읽을 수 있게 한다. 이게 없으면 테스트가 '경로 위의 점'을 좌표로
+// 하드코딩해야 하고, 예시 배치를 옮기는 순간 의미 없이 깨진다.
+if(typeof window!=='undefined')
+  window.__hb3test={balls, play, sol:()=>solution};
 
 })();
 

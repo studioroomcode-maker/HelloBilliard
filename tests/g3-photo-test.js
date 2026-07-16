@@ -6,7 +6,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
 
 const handlers = {}, els = {};
-const CANVAS_SIZE = { 'g4-table': [840, 460], 'g3-table': [860, 460] };
+const CANVAS_SIZE = { 'g4-table': [840, 460], 'g3-table': [892, 492] };
 const ctxProxy = () => new Proxy({}, {
   get: (t, k) => k === 'createRadialGradient' ? () => ({ addColorStop() {} })
     : k === 'measureText' ? (s) => ({ width: String(s).length * 6 })
@@ -48,8 +48,8 @@ for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
 }
 const img = { data, width: W, height: H };
 
-// 3구 좌표계 (M=44, 860×460)
-const play3 = { x0: 44, y0: 44, x1: 816, y1: 416 };
+// 3구 좌표계 (M=60, 892×492) — index.html 의 M/캔버스 크기와 함께 움직인다
+const play3 = { x0: 60, y0: 60, x1: 832, y1: 432 };
 
 const oc = V.orderCorners(V.insetCorners(V.orderCorners(V.autoCorners(img))));
 const cand = [oc, [oc[3], oc[0], oc[1], oc[2]]];

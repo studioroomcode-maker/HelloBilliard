@@ -82,7 +82,7 @@ const check=(name,val,lo,hi,unit)=>{
   const s=html.indexOf('/* ===== 🎯 물리 경로 제안');
   const e=html.indexOf('// ---- 물리 경로 UI ----');
   const block=html.slice(s,e);
-  const M=44, W3=860, H3=460;
+  const M=60, W3=892, H3=492;
   const play={x0:M,y0:M,x1:W3-M,y1:H3-M};
   const PW=play.x1-play.x0, PH=play.y1-play.y0;
   const BALL_R=30.75*PW/2844;
