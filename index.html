@@ -370,13 +370,29 @@
   .result b { color:var(--accent); }
   .result .hit { color:#5fd08a; }
   .result .miss { color:var(--warn); }
-  /* 시스템이 안 맞는 배치 — 설명을 늘어놓는 대신 바로 누를 행동을 준다 */
+  /* 시스템이 안 맞는 배치 — 설명을 늘어놓는 대신 바로 누를 행동을 준다.
+     색은 반드시 테마 변수로 — 라이트/다크가 뒤집히면 글자가 사라진다. */
   .result .sysfix {
     display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    margin-top:10px; padding-top:10px; border-top:1px solid #312819;
+    margin-top:10px; padding-top:10px; border-top:1px solid var(--line, #312819);
   }
   .result .sysfix button { flex:0 0 auto; min-width:0; padding:9px 14px; font-size:12px; }
-  .result .sysfix .why { flex:1 1 140px; font-size:11px; color:#9b9484; line-height:1.5; }
+  .result .sysfix .why {
+    flex:1 1 140px; font-size:11px; line-height:1.5; color:var(--tx-3, #9b9484);
+  }
+  /* 당점 카드 — '3팁 순방향'을 수구 정면도로 */
+  .result .aimcard {
+    display:flex; align-items:center; gap:12px;
+    margin:8px 0 2px; padding:8px 10px;
+    background:var(--surface-2, #171309);
+    border:1px solid var(--line, #312819);
+    border-radius:10px;
+  }
+  .result .aimcard svg { flex:0 0 auto; width:52px; height:52px; display:block; }
+  .result .aimtxt { font-size:12px; line-height:1.45; color:var(--tx-1, #f6f2e9); }
+  .result .aimtxt span {
+    display:block; font-size:11px; margin-top:2px; color:var(--tx-3, #9b9484);
+  }
   .seg { display:flex; gap:6px; margin-bottom:12px; }
   .seg button {
     flex:1; background:#211c14; border:1.5px solid #3a3024;
@@ -3725,6 +3741,38 @@ function computeBall(){
     valid:combos.length>0};
 }
 
+// 순방향(러닝) 회전의 좌/우 — 1쿠션에서 공이 레일을 따라 어느 쪽으로 진행하는지
+// 에서 유도한다. 하드코딩하지 않는 이유: 1쿠션 레일이 시스템마다 다르다
+// (파이브앤하프=상단 장쿠션, 플러스=우측 단쿠션).
+//   접선 t̂ = (-n.y, n.x) · 레일 접점 미끄럼 ut = vt - wz·R  (collideCushion과 동일)
+//   미끄러지지 않고 '구르며' 나가려면 wz·R = vt 이므로, vt>0이면 wz>0.
+//   부호 규약(setShot): wz = -1.375·h·speed/R → wz>0 ⟺ h<0 (좌 시네루).
+// 따라서 h의 부호 = -sign(vt).
+function runningSide(path){
+  if(!path||path.length<2) return -1;
+  const p=path[1], d=sub(p,path[0]);
+  let n=null;                                       // 1쿠션 레일의 안쪽 법선
+  if(Math.abs(p.y-play.y0)<0.5) n={x:0,y:1};        // 상단
+  else if(Math.abs(p.y-play.y1)<0.5) n={x:0,y:-1};  // 하단
+  else if(Math.abs(p.x-play.x1)<0.5) n={x:-1,y:0};  // 우측
+  else if(Math.abs(p.x-play.x0)<0.5) n={x:1,y:0};   // 좌측
+  if(!n) return -1;
+  const vt=d.x*(-n.y)+d.y*(n.x);                    // 레일을 따라가는 성분
+  return vt>0?-1:1;
+}
+// 팁수 → 당점의 좌우 거리 (0=중앙, 1=가장자리). 맥시멈이 가장 바깥.
+const TIP_H={1:0.5, 2:0.75, 3:1.0};
+// 당점 카드 — '3팁 순방향 회전'을 글자 대신 수구 정면도로 보여준다.
+// 상하(밀어/끌어)는 빈쿠션 시스템이 규정하지 않는 값이라 중단(v=0)에 찍고,
+// 지어내는 대신 그렇다고 적는다.
+function aimCard(s,tipLabel){
+  const side=runningSide(s.path);
+  const spin={h:side*TIP_H[tip], v:0};
+  return `<div class="aimcard">${tipSVG3(spin)}`+
+    `<div class="aimtxt"><b>${tipLabel}</b> · ${side<0?'좌':'우'} 순방향 회전`+
+    `<span>상하는 중단 기준 — 이 시스템은 좌우 회전만 규정합니다</span></div></div>`;
+}
+
 // ===== 결과 출력 =====
 function showResult(s){
   const numsEl=document.getElementById('g3-nums');
@@ -3740,8 +3788,8 @@ function showResult(s){
     // 무효 배치에서는 겨냥 지시를 내지 않는다 — 유효 범위 밖 숫자는 레일에
     // 존재하지 않는 지점이라, 겨냥하라고 하면 없는 곳을 가리키는 셈이 된다.
     if(s.valid&&!s.blockedT)
-      h+=`<div>상단 장쿠션 <b>${r0(s.c1Num)} 지점</b>(좌상 코너=50) 겨냥 · `+
-        `당점 <b>${tipLabel}</b> 순방향 회전</div>`;
+      h+=`<div>상단 장쿠션 <b>${r0(s.c1Num)} 지점</b>(좌상 코너=50) 겨냥</div>`+
+        aimCard(s,tipLabel);
     h+=verdict(s);
     resEl.innerHTML=h;
   } else if(s.sys==='plus'){
@@ -3750,8 +3798,8 @@ function showResult(s){
     let h=`<div>도착수 <b>${r0(s.c3Num)}</b> − 출발수 <b>${r0(s.startNum)}</b>`+
       `${tip!==2?' (당점 보정 포함)':''} = 제1쿠션수 <b>${r0(s.c1Adj)}</b></div>`;
     if(s.valid&&!s.blockedT)
-      h+=`<div>우측 단쿠션 <b>${r0(s.c1Adj)} 지점</b>(우하 코너=0, 위로 10/칸) 겨냥 · `+
-        `당점 <b>${tipLabel}</b></div>`;
+      h+=`<div>우측 단쿠션 <b>${r0(s.c1Adj)} 지점</b>(우하 코너=0, 위로 10/칸) 겨냥</div>`+
+        aimCard(s,tipLabel);
     if(s.valid&&!s.nearBottom)
       h+=`<div style="opacity:.65;font-size:12px">⚠ 플러스는 수구와 목표가 모두 `+
         `하단 장쿠션 부근일 때 정확한 시스템입니다.</div>`;
