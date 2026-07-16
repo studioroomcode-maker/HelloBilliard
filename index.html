@@ -563,9 +563,20 @@
     flex: 0 0 auto;
     min-width: 0;
     padding: 6px 10px;
-    font-size: 16px;
     line-height: 1;
     background: #2c2419;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .toolbar .histbtn svg {
+    display: block;
+    width: 19px; height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
   .toolbar .histbtn:disabled { opacity: .4; cursor: default; }
   .toolbar .tool[data-ball] { flex: 1 1 0; }
@@ -653,7 +664,8 @@
     .toolbar { display: flex; flex-wrap: nowrap; gap: 4px; margin: 8px 0 6px; }
     .tool { min-width: 0; padding: 6px 2px; font-size: 11px; }
     .tool .dot { width: 9px; height: 9px; margin-right: 3px; }
-    .toolbar .histbtn { padding: 6px 7px; font-size: 15px; }
+    .toolbar .histbtn { padding: 6px 7px; }
+    .toolbar .histbtn svg { width: 17px; height: 17px; }
     .myball-row { gap: 6px; margin-bottom: 6px; }
     .myball-row .myball-lbl { font-size: 11px; }
     .myball-row button { font-size: 11px; padding: 7px 4px; min-height: 36px; }
@@ -1034,8 +1046,8 @@
     <button data-myball="yellow"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f0c542" stroke="#b89220"/></svg> 노란공</button>
   </div>
   <div class="toolbar" id="g4-toolbar">
-    <button class="tool histbtn" id="g4-undo" aria-label="공 이동 되돌리기" title="되돌리기" disabled>↩️</button>
-    <button class="tool histbtn" id="g4-redo" aria-label="공 이동 다시하기" title="다시하기" disabled>↪️</button>
+    <button class="tool histbtn" id="g4-undo" aria-label="공 이동 되돌리기" title="되돌리기" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button class="tool histbtn" id="g4-redo" aria-label="공 이동 다시하기" title="다시하기" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     <button class="tool active" data-ball="cue"><span class="dot" style="background:#f7f4ea"></span>내 수구</button>
     <button class="tool" data-ball="cue2"><span class="dot" style="background:#f0c542"></span>상대 수구</button>
     <button class="tool" data-ball="r1"><span class="dot" style="background:#d23b2b"></span>적구 1</button>
