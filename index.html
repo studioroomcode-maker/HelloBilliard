@@ -2395,8 +2395,14 @@ function renderCards(){
     }
     const ruleTxt=cushRule==='any'?'':
       ` (쿠션 수 ${cushRule===3?'3회 이상':cushRule+'회'} 조건 적용 중 — 조건을 '추천'으로 바꾸면 더 찾을 수 있습니다)`;
-    box.innerHTML='<div class="panel"><span class="empty">계산된 경로가 없습니다. '+
-      '공 배치를 바꿔 다시 시도해 보세요.'+ruleTxt+'</span></div>';
+    // 실력이 낮으면 회전·얇은 두께 샷을 제외하므로, 배치가 아니라 실력 제한 때문에
+    // 못 찾는 경우가 많다 — '공 배치를 바꾸라'는 안내만으로는 오해를 준다.
+    const sk=getSkill();
+    const skillTxt = sk==='adv' ? '' : sk==='beg'
+      ? ` <b>지금 실력이 초급</b>이라 회전(시네루)·얇은 두께 샷을 빼고 계산합니다 — 실력을 <b>중급/상급</b>으로 올리면 경로가 나올 수 있습니다.`
+      : ` <b>지금 실력이 중급</b>이라 혼합 당점 샷을 빼고 계산합니다 — <b>상급</b>으로 올리면 더 찾을 수 있습니다.`;
+    box.innerHTML='<div class="panel"><span class="empty">이 배치에서 지금 조건으로 칠 수 있는 득점 경로를 찾지 못했습니다.'+
+      skillTxt+ruleTxt+' 공 배치를 바꿔 다시 시도해 볼 수도 있습니다.</span></div>';
     return;
   }
   const STRAT={none:'정석 — 무회전 기본 경로',draw:'끌어치기 — 각을 크게 만드는 경로',
