@@ -3614,6 +3614,28 @@ function pathBlockedByObj(path){
     if(distToSeg(balls.obj,path[i-1],path[i])<BALL_R*2) return true;
   return false;
 }
+// 시스템이 만든 경로가 물리적으로 성립하는가 — 빈쿠션 시스템(파이브·플러스)의
+// 최종 관문. 공식은 극단 배치에서 '그림'을 지어낼 수 있다:
+//  ① 퇴화: 1쿠션점이 코너에 얹혀 2·3쿠션이 한 점으로 겹침(세그먼트 길이 0)
+//  ② 반사 부호 위반: 수직 쿠션은 x만, 수평 쿠션은 y만 뒤집어야 하는데
+//     반대 성분이 뒤집힘 (수구가 레일에 바싹 붙어 반사 방향이 뒤집히는 그림)
+// 회전을 아무리 줘도 이런 반사는 존재하지 않으므로, 걸리면 '유효'로 내보내지 않는다.
+// (마지막=도착 구간은 3쿠션 이후 실측 트랙 팬이라 순수 반사가 아니므로, 부호는
+//  중간 쿠션점에서만 검사한다.)
+function pathImpossible(path){
+  if(!path||path.length<3) return false;
+  for(let i=0;i<path.length-1;i++)
+    if(len(sub(path[i+1],path[i]))<1) return true;          // ① 퇴화 세그먼트
+  for(let i=1;i<path.length-1;i++){
+    const p=path[i];
+    const vert=Math.abs(p.x-play.x0)<0.5||Math.abs(p.x-play.x1)<0.5;
+    const horz=Math.abs(p.y-play.y0)<0.5||Math.abs(p.y-play.y1)<0.5;
+    const inD=sub(p,path[i-1]), outD=sub(path[i+1],p);
+    if(vert&&!horz&&inD.y*outD.y<-1e-6) return true;         // ② 수직 쿠션 y반전
+    if(horz&&!vert&&inD.x*outD.x<-1e-6) return true;         //    수평 쿠션 x반전
+  }
+  return false;
+}
 // 제2적구가 '쿠션 전(도착 구간 제외)' 경로를 막는가 —
 // 빈쿠션 시스템(파이브앤하프·플러스)은 쿠션을 돌아 제2적구에 도착해야 하는데,
 // 출발/중간 구간에 제2적구가 있으면 쿠션 전에 먼저 맞아 성립하지 않는다.
@@ -3765,6 +3787,12 @@ function computeFive(){
   // 경로 마지막 구간 = 3쿠션 → 4쿠션 트랙
   const path=[{x:cue.x,y:cue.y}, r.p1, r.p2, r.p3, r.p4];
   const err=Math.abs(r.e);
+  // 수구가 상단 레일에 바싹 붙는 등 극단 배치에서는 공식이 물리적으로 불가능한
+  // 반사(상단 쿠션에서 x가 뒤집히는 그림)를 내놓는다 — 그건 칠 수 없는 배치다.
+  if(pathImpossible(path))
+    return {sys:'five', cueNum:r.cueNum, c1Num:r.c1v, c3Num:sol.v, tipAdj,
+      c1Pt:r.p1, c2Pt:r.p2, c3Pt:r.p3, path,
+      valid:false, ok:false, reason:'impossible', err};
   return {sys:'five', cueNum:r.cueNum, c1Num:r.c1v, c3Num:sol.v, tipAdj,
     c1Pt:r.p1, c2Pt:r.p2, c3Pt:r.p3, path, valid:true, ok:err<30, err,
     blocked:pathBlockedByObj(path), blockedT:targetBlocksPath(path)};
@@ -3811,6 +3839,11 @@ function computePlus(){
   const x2=clamp(p1.x+(m.x-p1.x)*k, play.x0, play.x1);
   const p2={x:x2, y:play.y0};
   const path=[{x:cue.x,y:cue.y}, p1, p2, p3];
+  // 1쿠션수가 정확히 40이면 1쿠션점이 우상단 코너에 얹혀 2·3쿠션이 한 점으로
+  // 겹친다(퇴화). 그 밖의 극단에서도 반사가 뒤집힐 수 있으므로 최종 관문을 둔다.
+  if(pathImpossible(path))
+    return {sys:'plus', startNum, c1Num, c3Num, c1Adj, c1Pt:p1,
+            path:null, valid:false, ok:false, reason:'impossible'};
   return {sys:'plus', startNum, c1Num, c3Num, c1Adj,
           c1Pt:p1, c2Pt:p2, c3Pt:p3, path, valid:true, ok:true, nearBottom,
           blocked:pathBlockedByObj(path), blockedT:targetBlocksPath(path)};
@@ -4037,6 +4070,10 @@ function verdict(s){
         `이 배치에서 수구는 그 지점을 향해 <b>내려가며</b> 맞으므로, 거기서 상단 장쿠션으로 `+
         `올라가는 플러스 경로는 나올 수 없습니다.</div>`+
         sysfix('플러스는 수구가 1쿠션 지점보다 아래에 있어야 성립합니다. 수구를 하단 쪽으로 내리면 이 시스템이 맞습니다.');
+    if(s.reason==='impossible')
+      return `<div class="miss">⚠ 이 배치에서는 계산 경로가 물리적으로 성립하지 않습니다 `+
+        `— 수구가 쿠션에 너무 붙어 있거나 1쿠션이 코너에 걸려 반사가 나오지 않습니다.</div>`+
+        sysfix('배치를 조금 옮기거나 물리 경로로 실제 답을 확인하세요.');
     return `<div class="miss">⚠ 계산값이 이 시스템의 적용 범위를 벗어납니다.</div>`+
       sysfix('다른 시스템이 더 적합한 배치입니다.');
   }
@@ -5617,6 +5654,8 @@ function evalOneSystem(sys){
     if(valid){
       const sweet = s.cueNum>=25 && s.cueNum<=78 && s.c1Num>=5 && s.c1Num<=50;
       stars=sweet?5:4; status=sweet?'적용 가능':'범위 경계';
+    } else if(s.reason==='impossible'){
+      stars=1; status='경로 성립 안 함';
     } else {
       const cm=s.err!=null?Math.round(s.err/MMS/10):null;
       stars=(cm!=null&&cm<35)?2:1;
@@ -5624,7 +5663,8 @@ function evalOneSystem(sys){
     }
   } else if(sys==='plus'){
     if(valid){ stars=s.nearBottom?5:3; status=s.nearBottom?'적용 가능':'하단 배치용'; }
-    else { stars=1; status=s.reason==='above'?'수구가 1쿠션보다 위':'유효 범위 밖'; }
+    else { stars=1; status=s.reason==='above'?'수구가 1쿠션보다 위'
+      :s.reason==='impossible'?'경로 성립 안 함':'유효 범위 밖'; }
   } else { // ball
     if(valid){ stars=s.objNearRail?3:4; status=s.objNearRail?'키스 주의':'적용 가능'; }
     else { stars=2; status='볼값 범위 밖'; }
