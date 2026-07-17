@@ -4660,6 +4660,11 @@ function simulate3(dir,speed,spin,P,rec){
       if(!res.first){ res.first=other; res.firstInfo=c; }
       else if(other!==res.first&&!res.second){
         res.second=other; res.cushAtSecond=res.cush; res.secondInfo=c;
+        // 키스 감지 — 두 번째 적구가 수구에 맞기 전 이미 (제1적구에 밀려) 움직였는가.
+        // 밀려났다면 수구는 '시작 위치'가 아닌 '밀려난 위치'에서 맞히므로, 공을
+        // 시작 위치에 그리는 정적 그림은 선이 그 공을 빗나가 보인다(오해 유발).
+        const b2=B3[other];
+        res.secondMoved=Math.hypot(b2.x-balls[other].x, b2.y-balls[other].y);
         // 규칙: 두 번째 적구 접촉 전 쿠션 3회 이상이어야 득점
         if(res.cush>=3) res.success=true; else res.fail=true;
       }
@@ -4874,6 +4879,9 @@ async function solve3(onProgress){
     best.aimSide=sim.firstInfo.aimSide||'L';
     best.hits=[sim.firstInfo,sim.secondInfo].filter(Boolean);
     best.cush=sim.cushAtSecond;
+    // 키스 — 제2적구가 수구에 맞기 전 제1적구에 밀려났으면, 그림의 선이 (시작
+    // 위치에 그려진) 제2적구를 빗나가 보인다. 물리는 실제지만 그림이 오해를 준다.
+    best.kiss=(sim.secondMoved||0) > 1.5*BALL_R;
     const g=gather3(sim.final);
     best.gather=g.gather; best.gatherAvg=g.gatherAvg;
     // 수구가 실제로 구른 거리 — '몇 레일 파워'의 근거가 되는 측정값
@@ -5044,7 +5052,11 @@ function renderPhyCards(){
         <br>성공률은 이 속도에서 실전 오차 몬테카를로 <b>48회</b> 시뮬레이션한 예상치
         (5% 단위 표시) — 실제 사용자 통계가 아닙니다${
         r.gather!=null&&r.gatherAvg?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b>
-        + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${Math.round(r.gatherAvg/MMS/10)}cm</b> 기준`:''}</div></details></div>
+        + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${Math.round(r.gatherAvg/MMS/10)}cm</b> 기준`:''}${
+        r.kiss?`<br><b style="color:var(--warn)">키스 경로</b> — 제1적구가 제2적구를 먼저 건드려
+        밀어낸 뒤 그 자리에서 득점합니다. 그림의 선이 <b>제자리에 그려진 제2적구를 빗나가</b>
+        보이는 건 이 때문이며, 키스는 재현이 까다로워 성공률이 낮습니다.`:''}</div></details></div>
+      ${r.kiss?`<div class="miss" style="margin-top:6px;font-size:12px">⚠ 키스 경로 — 제1적구가 제2적구를 건드립니다 (선이 제2적구를 빗나가 보임)</div>`:''}
       <div class="metrics">
         <div class="metric">
           <div class="mlabel">권장 당점</div>
@@ -5751,7 +5763,7 @@ if(typeof window!=='undefined')
 // 밖에서 읽을 수 있게 한다. 이게 없으면 테스트가 '경로 위의 점'을 좌표로
 // 하드코딩해야 하고, 예시 배치를 옮기는 순간 의미 없이 깨진다.
 if(typeof window!=='undefined')
-  window.__hb3test={balls, play, sol:()=>solution};
+  window.__hb3test={balls, play, sol:()=>solution, routes:()=>phyRoutes, BALL_R};
 
 })();
 
