@@ -95,6 +95,44 @@ const missesTarget = (r) => {
   }
   if (!sawKissCard) console.log('  (키스 카드를 못 만나 카드 문구 검사는 생략 — 다음 실행에서 확인)');
 
+  // ── 3) 4구도 같은 원칙 — 두 번째 적구가 밀려나 선이 빗나가면 키스로 표시 ──
+  // 4구 키스는 적구끼리 충돌·재타격만 잡고 접촉 직전 밀림은 놓쳤다(회귀 대상).
+  // 이 배치(밀어치기 계열)는 제1적구를 맞히기 전 그 공이 밀려나는 경로를 낸다.
+  const g4 = global.window.__hb4test;
+  const g4run = async () => {
+    els['g4-routes'].innerHTML = '';
+    handlers['g4-calc:click'][0]();
+    for (let k = 0; k < 5000 && !els['g4-routes'].innerHTML; k++) await new Promise(r => setImmediate(r));
+    return g4.routes() || [];
+  };
+  const g4seg = (path, b) => {
+    let m = Infinity;
+    for (let i = 1; i < path.length; i++) {
+      const a = path[i - 1], c = path[i], dx = c.x - a.x, dy = c.y - a.y, L2 = dx * dx + dy * dy;
+      let t = L2 < 1e-9 ? 0 : ((b.x - a.x) * dx + (b.y - a.y) * dy) / L2;
+      t = Math.max(0, Math.min(1, t));
+      m = Math.min(m, Math.hypot(b.x - (a.x + dx * t), b.y - (a.y + dy * t)));
+    }
+    return m / g4.BALL_R;
+  };
+  const G4DX = (g4.play.x1 - g4.play.x0) / 8, G4DY = (g4.play.y1 - g4.play.y0) / 4;
+  let g4miss = 0, g4flagged = 0, g4checked = 0;
+  for (let a = 0; a < 10; a++) {
+    g4.balls.cue.x = g4.play.x0 + G4DX * 4.4; g4.balls.cue.y = g4.play.y0 + G4DY * 3.35;
+    g4.balls.r1.x = g4.play.x0 + G4DX * 3.5; g4.balls.r1.y = g4.play.y0 + G4DY * 0.6;
+    g4.balls.r2.x = g4.play.x0 + G4DX * 5.0; g4.balls.r2.y = g4.play.y0 + G4DY * 3.4;
+    g4.balls.cue2.x = g4.play.x0 + G4DX * 7.5; g4.balls.cue2.y = g4.play.y0 + G4DY * 3.7;
+    for (const r of await g4run()) {
+      if (!r.cuePath || r.cuePath.length < 2) continue;
+      g4checked++;
+      const d1 = g4seg(r.cuePath, g4.balls.r1), d2 = g4seg(r.cuePath, g4.balls.r2);
+      if (d1 > 2.5 || d2 > 2.5) { g4miss++; if (r.kiss) g4flagged++; }
+    }
+  }
+  console.log(`  4구: 경로 ${g4checked}개 중 선이 적구 빗나감 ${g4miss}개 · 키스표시 ${g4flagged}개`);
+  check('4구도 선이 적구를 빗나가는 경로는 모두 키스로 표시된다', g4miss === 0 || g4flagged === g4miss);
+  check('  └ 4구 검사할 경로가 실제로 있었다', g4checked > 5);
+
   if (fails) { console.log(`\n${fails}건 실패`); process.exit(1); }
   console.log('\n키스 정직성 검사 통과');
 })();

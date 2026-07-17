@@ -1740,6 +1740,12 @@ function simulateShot(dir,speed,spin,P,rec,firstKey,maxPre){
           if(!res.secondInfo){
             res.secondInfo={x:c.x,y:c.y};
             res.cushAtSecond=cushBefore+res.cushAfterFirst;
+            // 키스 — 두 번째 적구가 수구에 맞기 전 이미 시작 위치에서 밀려났는가.
+            // 밀려났다면 수구는 '밀려난 위치'에서 맞히므로, 공을 시작 위치에 그리는
+            // 정적 그림은 선이 그 공을 빗나가 보인다(3구와 같은 오해). 적구끼리
+            // 충돌(아래)로 잡히는 경우가 많지만, 접촉 직전 관통·미세 이동은 놓친다.
+            if(Math.hypot(B[other].x-balls[other].x, B[other].y-balls[other].y) > 1.5*BALL_R)
+              res.kiss=true;
           }
         } else res.kiss=true;                    // 같은 적구 재충돌 = 키스
         if(other==='r1') res.hitR1=true;
@@ -2577,6 +2583,8 @@ function overlappingBalls(bs,r){
   return null;
 }
 if(typeof window!=='undefined') window.__hbOverlap=overlappingBalls;  // 테스트용 노출
+// 4구 배치·경로를 테스트에서 읽기 위한 노출 (__hb3test 와 같은 용도, 읽기 전용)
+if(typeof window!=='undefined') window.__hb4test={balls, play, BALL_R, routes:()=>routes};
 calcBtn.addEventListener('click',()=>{
   if(calcBtn.disabled) return;
   // 공 겹침 방어 — 물리적으로 불가능한 배치는 계산을 막고 안내
