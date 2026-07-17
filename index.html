@@ -857,7 +857,7 @@
     inset 0 1px 0 rgba(255,255,255,.3); }
   .actions.sub-actions .tool{ background:transparent; color:var(--tx-3); border-color:var(--line-soft); }
   .stage-bar .tool.mini{ border-radius:12px; background:var(--surface-2); border-color:var(--line); }
-  /* 스테이지 바(경로/재생/저장) 줄과 아래 액션(경로 3개 제안 등) 사이 간격 */
+  /* 스테이지 바(경로/재생/저장) 줄과 아래 액션(경로 제안 등) 사이 간격 */
   .board + .actions{ margin-top:14px; }
   .stage-bar .tool.mini.play{ background:var(--accent); color:var(--on-accent);
     border-color:transparent; box-shadow:0 8px 22px -6px var(--accent-glow),
@@ -981,7 +981,7 @@
   "screenshot": "https://hellobilliard.studioroomkr.com/og-image.png",
   "featureList": [
     "당구대 사진에서 공 배치 자동 인식 (온디바이스)",
-    "4구 득점 경로 3개 제안 + 몬테카를로 성공률",
+    "4구 득점 경로 제안 + 몬테카를로 성공률",
     "빈쿠션·뱅크샷 경로 탐색 및 쿠션 수 규칙 선택",
     "쓰리쿠션 파이브앤하프·플러스·볼 시스템 계산기",
     "테이블 캘리브레이션 및 실력 3단계"
@@ -1127,7 +1127,7 @@
   </div>
 
   <div class="actions">
-    <button class="tool primary" id="g4-calc">경로 3개 제안</button>
+    <button class="tool primary" id="g4-calc">경로 제안</button>
     <button class="tool" id="g4-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
   </div>
   <div class="actions sub-actions">
@@ -1162,7 +1162,7 @@
   </div>
 
   <div class="routes" id="g4-routes">
-    <div class="panel"><span class="empty">공을 배치하고 ‘경로 3개 제안’을 누르세요.</span></div>
+    <div class="panel"><span class="empty">공을 배치하고 ‘경로 제안’을 누르세요.</span></div>
   </div>
 
   <details class="venue guide" style="margin-top:14px">
@@ -1568,7 +1568,11 @@ const SKILLS={
   mid:{label:'중급', aim:1.0, spin:1.0, spd:1.0, maxOff:0.85, tipScale:1.0, spinOK:s=>!(s.v!==0&&s.h!==0)},
   adv:{label:'상급', aim:0.6, spin:0.6, spd:0.8, maxOff:0.92, tipScale:1.0, spinOK:()=>true},
 };
+// 폴백 탐색용 실력 오버라이드 — 현재 실력으로 경로가 0개일 때만, 상위 실력
+// 기준으로 재탐색하기 위해 잠시 설정한다 (저장된 실력은 바꾸지 않는다).
+let skillOverride=null;
 function getSkill(){
+  if(skillOverride) return skillOverride;
   try{
     const k=localStorage.getItem('hb_skill');
     return SKILLS[k]?k:'mid';
@@ -2091,28 +2095,54 @@ function sortedRoutes(){
   return pickDiverse(allRoutes);
 }
 
-// 전략이 겹치지 않게 3개 추리기
+// ── 경로 다양성 선발 ──
+// 예전엔 '회전 키가 다르면 다르다'로 뽑아서, 같은 방향·같은 형태의 미세 변형
+// 3개가 나란히 나오곤 했다. 사용자가 원하는 건 '다른 방식·다른 방향' 3개다.
+// 수구 경로 폴리라인을 호길이 기준 16점으로 리샘플해 형태 거리를 재고,
+// 형태를 결정적으로 가르는 범주(첫 적구·뱅크/직접·두께 방향·회전 부호)에
+// 보너스를 더해, 이미 뽑힌 경로들과 '가장 다른' 경로를 탐욕적으로 고른다.
+function resampleCue(p,N){
+  if(!p||p.length<2) return null;
+  const seg=[0]; let L=0;
+  for(let i=1;i<p.length;i++){ L+=Math.hypot(p[i].x-p[i-1].x,p[i].y-p[i-1].y); seg.push(L); }
+  if(L<1) return null;
+  const pts=[];
+  for(let k=0;k<N;k++){
+    const t=L*k/(N-1);
+    let i=1; while(i<seg.length-1&&seg[i]<t) i++;
+    const u=(t-seg[i-1])/((seg[i]-seg[i-1])||1e-9);
+    pts.push({x:p[i-1].x+(p[i].x-p[i-1].x)*u, y:p[i-1].y+(p[i].y-p[i-1].y)*u});
+  }
+  return pts;
+}
+function routeDist(a,b){
+  const A=a._rs16||(a._rs16=resampleCue(a.cuePath,16));
+  const B=b._rs16||(b._rs16=resampleCue(b.cuePath,16));
+  let d=0;
+  if(A&&B){ for(let i=0;i<16;i++) d+=Math.hypot(A[i].x-B[i].x,A[i].y-B[i].y); d/=16; }
+  if(a.first!==b.first) d+=200;                       // 다른 공을 먼저 맞힘
+  if((a.cushBefore>0)!==(b.cushBefore>0)) d+=150;     // 뱅크 vs 직접
+  if(a.aimSide!==b.aimSide) d+=80;                    // 왼두께 vs 오른두께
+  if(Math.sign(a.spin.h)!==Math.sign(b.spin.h)) d+=60;// 좌회전 vs 우회전
+  if(Math.sign(a.spin.v)!==Math.sign(b.spin.v)) d+=40;// 끌기 vs 밀기
+  return d;
+}
 function pickDiverse(found){
   if(!found.length) return [];
   found.sort((a,b)=>b.score-a.score);
-  const picked=[];
-  const usedSpin=new Set();
-  // 1순위: 최고점
-  picked.push(found[0]); usedSpin.add(found[0].spin.key);
-  // 2,3순위: 회전 종류가 다른 것 우선
-  for(const f of found){
-    if(picked.length>=3) break;
-    if(usedSpin.has(f.spin.key)) continue;
-    // 경로가 너무 비슷하면 skip
-    if(picked.some(p=>similar(p,f))) continue;
-    picked.push(f); usedSpin.add(f.spin.key);
-  }
-  // 그래도 모자라면 점수순 채움
-  for(const f of found){
-    if(picked.length>=3) break;
-    if(picked.includes(f)) continue;
-    if(picked.some(p=>similar(p,f))) continue;
-    picked.push(f);
+  const picked=[found[0]];   // 1순위는 최고점 — 기준 경로
+  while(picked.length<3){
+    let best=null, bestVal=-Infinity;
+    for(const f of found){
+      if(picked.includes(f)) continue;
+      // 이미 뽑힌 것들과의 최소 거리 = '가장 비슷한 기존 경로'와 얼마나 다른가.
+      // 점수도 섞어, 그저 다르기만 한 저품질 경로가 좋은 대안을 밀어내진 않게 한다.
+      const minD=Math.min(...picked.map(p=>routeDist(p,f)));
+      const val=minD + f.score*2;
+      if(val>bestVal){ bestVal=val; best=f; }
+    }
+    if(!best) break;
+    picked.push(best);
   }
   return picked;
 }
@@ -2390,7 +2420,7 @@ function renderCards(){
   }
   if(!routes.length){
     if(!calcTried){
-      box.innerHTML='<div class="panel"><span class="empty">공을 배치하고 ‘경로 3개 제안’을 누르세요.</span></div>';
+      box.innerHTML='<div class="panel"><span class="empty">공을 배치하고 ‘경로 제안’을 누르세요.</span></div>';
       return;
     }
     const ruleTxt=cushRule==='any'?'':
@@ -2411,7 +2441,15 @@ function renderCards(){
     drawR:'끌어+우 — 각 확대와 쿠션 조절',follL:'밀어+좌 — 각 축소와 쿠션 조절',
     follR:'밀어+우 — 각 축소와 쿠션 조절'};
   box.classList.toggle('just', !!justSolved);   // 새 계산 결과일 때만 등장 애니메이션
-  box.innerHTML=routes.map((r,i)=>{
+  // 실력 폴백 배너 — 현재 실력 기준으론 경로가 없어 상위 실력 기준으로 제안했음을
+  // 밝힌다. 성공률도 그 실력의 실행 오차 기준이므로 함께 명시한다.
+  const fb=routes[0]&&routes[0].skillFallback;
+  const fbBanner=fb?`<div class="panel" style="margin-bottom:10px"><span class="empty">`+
+    `⚠ <b>${SKILLS[routes[0].skillBase].label}</b> 기준으로는 이 배치를 칠 수 있는 경로가 없습니다 — `+
+    `${routes[0].skillBase==='beg'?'초보가 치기 어려운 코스입니다':'상급 기술이 필요한 코스입니다'}. `+
+    `아래는 <b>${SKILLS[fb].label} 기준</b>(${fb==='adv'?'혼합 당점·얇은 두께 포함':'회전·얇은 두께 포함'}) 제안이며, `+
+    `성공률도 ${SKILLS[fb].label} 기준입니다.</span></div>`:'';
+  box.innerHTML=fbBanner+routes.map((r,i)=>{
     const f=r.first==='r1'?'적구 1':'적구 2';
     const s=r.second==='r1'?'적구 1':'적구 2';
     // 두께를 8분의 N 으로 표기 (4구 표준)
@@ -2624,7 +2662,23 @@ calcBtn.addEventListener('click',()=>{
   calcBtn.disabled=true;
   calcBtn.textContent='계산 중…';
   const myGen=++solveGen;
-  solve(p=>{ calcBtn.textContent=`계산 중… ${p}%`; }).then(rs=>{
+  // 현재 실력으로 경로가 0개면 상위 실력 기준으로 재탐색한다 — "아예 안 나옴"은
+  // 없어야 한다. 초급이 못 치는 배치라도 '이건 중급 기술이 필요한 코스'라는 답을
+  // 주는 게 빈 화면보다 낫다. 저장된 실력은 바꾸지 않고, 결과에 기준 실력을 밝힌다.
+  const solveWithFallback=async(onProgress)=>{
+    const base=getSkill();
+    let rs=await solve(onProgress);
+    const ups={beg:['mid','adv'], mid:['adv']}[base]||[];
+    for(const up of ups){
+      if(rs.length) break;
+      skillOverride=up;
+      try{ rs=await solve(onProgress); }
+      finally{ skillOverride=null; }
+      if(rs.length) rs.forEach(r=>{ r.skillFallback=up; r.skillBase=base; });
+    }
+    return rs;
+  };
+  solveWithFallback(p=>{ calcBtn.textContent=`계산 중… ${p}%`; }).then(rs=>{
     if(myGen!==solveGen) return;        // 계산 중 배치가 바뀜 — 폐기
     routes=rs; selected=0;
     justSolved=true; renderCards(); justSolved=false;   // 등장 애니메이션
@@ -2638,7 +2692,7 @@ calcBtn.addEventListener('click',()=>{
     if(box) box.innerHTML='<div class="panel"><span class="empty">계산 중 오류가 발생했습니다. 공 배치를 바꿔 다시 시도해 주세요.</span></div>';
     try{ window.__hbReport&&window.__hbReport('solve/g4',err); }catch(_){}
   }).finally(()=>{
-    calcBtn.textContent='경로 3개 제안'; calcBtn.disabled=false;
+    calcBtn.textContent='경로 제안'; calcBtn.disabled=false;
     // 계산 중 설정(수구 색 등)이 바뀌어 재계산이 예약됐으면 지금 실행
     if(pendingRecalc){ pendingRecalc=false; calcBtn.click(); }
   });
@@ -4587,7 +4641,10 @@ const SKILLS3={
   mid:{label:'중급', aim:1.0, spin:1.0, spd:1.0, keys:{left:1,right:1,follL:1,follR:1}},
   adv:{label:'상급', aim:0.6, spin:0.6, spd:0.8, keys:null},   // 전부
 };
+// 4구와 같은 폴백용 오버라이드 — 경로 0개일 때 상위 실력 기준 재탐색에만 쓴다
+let skillOverride3=null;
 function getSkill3(){
+  if(skillOverride3) return skillOverride3;
   try{
     const k=localStorage.getItem('hb_skill');
     return SKILLS3[k]?k:'mid';
@@ -5088,8 +5145,14 @@ function renderPhyCards(){
     return;
   }
   const NAME={obj:'제1적구',target:'제2적구'};
+  // 실력 폴백 배너 (4구와 동일) — 상위 실력 기준 제안임을 밝힌다
+  const fb3=phyRoutes.skillFallback;
+  const fb3Banner=fb3?`<div class="panel" style="margin-bottom:10px"><span class="empty">`+
+    `⚠ <b>${SKILLS3[phyRoutes.skillBase].label}</b> 기준으로는 이 배치를 칠 수 있는 경로가 없습니다 — `+
+    `${phyRoutes.skillBase==='beg'?'초보가 치기 어려운 코스입니다':'상급 기술이 필요한 코스입니다'}. `+
+    `아래는 <b>${SKILLS3[fb3].label} 기준</b> 제안이며, 성공률도 ${SKILLS3[fb3].label} 기준입니다.</span></div>`:'';
   box.classList.toggle('just', !!justSolved3);   // 새 계산 결과일 때만 등장 애니메이션
-  box.innerHTML=phyRoutes.map((r,i)=>{
+  box.innerHTML=fb3Banner+phyRoutes.map((r,i)=>{
     const eighths=Math.max(1,Math.min(8,Math.round(r.thickness*8)));
     const thickLabel=eighths>=8?'8/8(정면)'
       :`${r.aimSide==='R'?'오른쪽':'왼쪽'} ${eighths}/8`;
@@ -5198,7 +5261,22 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
   btn.textContent='계산 중…'; btn.disabled=true;
   stopAnim3(false);
   const myGen=++solveGen3;
-  solve3(p=>{ btn.textContent=`계산 중… ${p}%`; }).then(rs=>{
+  // 4구와 같은 실력 폴백 — 현재 실력 기준 0개면 상위 실력으로 재탐색해
+  // '이건 상위 기술이 필요한 코스'라는 답을 준다 (빈 화면 금지).
+  const solve3WithFallback=async(onProgress)=>{
+    const base=getSkill3();
+    let rs=await solve3(onProgress);
+    const ups={beg:['mid','adv'], mid:['adv']}[base]||[];
+    for(const up of ups){
+      if(rs.length) break;
+      skillOverride3=up;
+      try{ rs=await solve3(onProgress); }
+      finally{ skillOverride3=null; }
+      if(rs.length){ rs.skillFallback=up; rs.skillBase=base; }
+    }
+    return rs;
+  };
+  solve3WithFallback(p=>{ btn.textContent=`계산 중… ${p}%`; }).then(rs=>{
     if(myGen!==solveGen3) return;
     solution=null;
     phyRoutes=rs; phySel=0;

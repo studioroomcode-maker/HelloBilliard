@@ -34,6 +34,7 @@ const CASES = [
   { f: 'showall-test.js', exit0: true, match: [/선택 경로만 표시 검사 통과/] },
   { f: 'path-physical-test.js', exit0: true, match: [/경로 물리 성립성 검사 통과/] },
   { f: 'kiss-test.js', exit0: true, match: [/키스 정직성 검사 통과/] },
+  { f: 'skill-fallback-test.js', exit0: true, match: [/실력 폴백 검사 통과/] },
   { f: 'side-check2.js', match: [/좌\/우 라벨 포함 여부: OK/] },
   { f: 'badge-check.js', match: [/gather 배지 포함: OK/] },
 ];
