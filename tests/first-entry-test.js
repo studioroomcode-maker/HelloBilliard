@@ -56,6 +56,13 @@ check('  └ 첫 진입에 "유효 범위 밖"이 없다', !/유효 범위 밖/.
 check('  └ 첫 진입에 "적용 어려움"이 없다', !/적용 어려움/.test(first));
 check('  └ AI 추천이 파이브앤하프를 5점으로 본다',
   /파이브앤하프 ★★★★★/.test(strip('g3-coach')));
+// 첫 화면은 '검증된 구간'이어야 한다 — 실험적 배지가 붙은 채로 시작하면
+// 1번(성공하는 첫 화면)의 의미가 없다
+check('  └ 첫 진입에 실험적 배지가 붙지 않는다', !/실험적/.test(first));
+// 식이 반듯해야 처음 보는 사람이 눈으로 따라갈 수 있다 (g3-nums 는 원값 44.8,
+// 사용자가 읽는 식은 g3-result 의 반올림값이다)
+check('  └ 첫 진입 식이 반듯하다 (45 − 20 = 25)',
+  /수구수 45 − 제3쿠션수 20 = 제1쿠션수 25/.test(first));
 
 // --- 2) 탭을 옮기면 그 시스템의 예시 배치로 갈아끼운다 ---
 switchTo('plus');
@@ -88,5 +95,28 @@ switchTo('plus');
 switchTo('five');
 check('초기화 배치는 탭 전환 후에도 유지된다', strip('g3-nums') === afterReset);
 
-if (fails) { console.log(`\n${fails}건 실패`); process.exit(1); }
-console.log('\n첫 진입 배치 검사 통과');
+// --- 5) 예시 배치는 [물리 경로 제안]에도 답을 줘야 한다 ---
+// 회귀 대상: 시스템 숫자(1쿠션수 20~25·반듯한 값)만 보고 예시를 고르면 수구를
+// 코너에 붙이게 되는데, 그건 물리적으로 어려운 배치라 경로가 전부 걸러졌다.
+// 첫 화면에서 버튼을 눌렀더니 "경로를 찾지 못했습니다"가 나오면 1번은 반쪽이다.
+(async () => {
+  // 예시 배치로 되돌린 뒤 계산 (위 4번에서 정식 초구로 바꿔 놨다)
+  handlers['g3-example:click'][0]();
+  const { balls } = global.window.__hb3test;
+  const cueAt = { x: balls.cue.x, y: balls.cue.y };
+  let got = 0;
+  const TRIES = 3;
+  for (let i = 0; i < TRIES; i++) {
+    // solve3 는 몬테카를로라 수확량이 흔들린다 — 여러 번 보고 판단한다
+    balls.cue.x = cueAt.x; balls.cue.y = cueAt.y;
+    els['g3-phyRoutes'].innerHTML = '';
+    handlers['g3-phys:click'][0]();
+    for (let k = 0; k < 900 && !els['g3-phyRoutes'].innerHTML; k++)
+      await new Promise(r => setImmediate(r));
+    if (/class="rcard/.test(els['g3-phyRoutes'].innerHTML)) got++;
+  }
+  check(`예시 배치가 물리 경로도 낸다 (${TRIES}회 중 ${got}회)`, got >= TRIES - 1);
+
+  if (fails) { console.log(`\n${fails}건 실패`); process.exit(1); }
+  console.log('\n첫 진입 배치 검사 통과');
+})();
