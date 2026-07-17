@@ -4358,7 +4358,9 @@ function drawSolution(s){
   }
   if(s.sys==='ball'){
     // 볼 시스템: 경로 도형이 아니라 '조준 기준선'을 보여주는 시스템 —
-    // 큐선(수구→제1적구)과 제1→제2적구 연결선에 라벨을 달아 오해를 막는다
+    // 점선이 경로가 아님을 밝히고(하단 고지), 제1→제2적구 연결선에 라벨을 단다.
+    // (수구→제1적구 큐선은 아래 기울기 태그가 이미 측정값과 함께 라벨링하므로
+    //  별도 '큐선' 라벨은 중복이라 뺐다 — 태그와 겹쳐 읽히지 않던 원인이기도 하다)
     ctx.save();
     ctx.strokeStyle='rgba(244,241,232,.4)';
     ctx.setLineDash([5,5]); ctx.lineWidth=2;
@@ -4367,18 +4369,16 @@ function drawSolution(s){
     ctx.lineTo(balls.obj.x,balls.obj.y);
     ctx.lineTo(balls.target.x,balls.target.y);
     ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle='rgba(244,241,232,.75)';
-    // 눈금과 같은 이유로 화면 기준 크기를 지킨다 — 이 라벨은 '이 점선은 경로가
-    // 아니다'라는 오해 방지 문구라, 안 읽히면 있으나 마나다
+    // 눈금과 같은 이유로 화면 기준 크기를 지킨다 — '경로 아님' 고지는 안 읽히면 무의미
     const F=railF();
-    ctx.font=`${F.toFixed(1)}px "Bricolage Grotesque"`; ctx.textAlign='center';
-    const m1={x:(balls.cue.x+balls.obj.x)/2, y:(balls.cue.y+balls.obj.y)/2};
-    const m2={x:(balls.obj.x+balls.target.x)/2, y:(balls.obj.y+balls.target.y)/2};
-    ctx.fillText('큐선 (기울기 측정)', m1.x, m1.y-F*0.8);
-    ctx.fillText('적구 연결선', m2.x, m2.y-F*0.8);
+    ctx.fillStyle='rgba(244,241,232,.75)';
+    ctx.font=`${F.toFixed(1)}px "Bricolage Grotesque"`;
+    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
     ctx.fillText('※ 경로 아님 — 두께·팁 산출용 조준 기준선', (play.x0+play.x1)/2, play.y1-F*1.2);
     ctx.restore();
-    drawTilt(s);
+    // 기울기 태그를 먼저 그려 그 박스를 얻고, '적구 연결선'이 그 자리를 피하게 한다
+    const tiltBox=drawTilt(s);
+    drawAimLabel('적구 연결선', balls.obj, balls.target, tiltBox);
     return;
   }
   if(!s.path) return;
@@ -4405,9 +4405,9 @@ function drawSolution(s){
 // 무엇에서 벗어난 건지 알 수 없으므로, 기준이 되는 세로선과 가로 편차를
 // 칸 눈금과 함께 그린다.
 function drawTilt(s){
-  if(!s||s.cells==null) return;
+  if(!s||s.cells==null) return null;
   const cue=balls.cue, obj=balls.obj;
-  if(Math.abs(obj.x-cue.x)<1) return;            // 세로 배치 = 기울기 0, 그릴 것 없음
+  if(Math.abs(obj.x-cue.x)<1) return null;       // 세로 배치 = 기울기 0, 그릴 것 없음
   const yb=obj.y;                                 // 편차를 재는 가로 기준선
   ctx.save();
   // ① 기울기 0 기준선 — 수구에서 세로로
@@ -4425,8 +4425,33 @@ function drawTilt(s){
     ctx.beginPath(); ctx.moveTo(x,yb-5); ctx.lineTo(x,yb+5); ctx.stroke();
   }
   ctx.restore();
-  numTag({x:(cue.x+obj.x)/2, y:yb}, `기울기 ${r1(s.cells)}칸 · ${s.isObtuse?'엇각':'빗각'}`,
+  return numTag({x:(cue.x+obj.x)/2, y:yb}, `기울기 ${r1(s.cells)}칸 · ${s.isObtuse?'엇각':'빗각'}`,
     '#e8b53e', obj.y>cue.y?'d':'u', 10);
+}
+// 조준 기준선 라벨('적구 연결선') — 선분 a→b 위에 놓되, 기울기 태그 박스를 피한다.
+// 태그는 불투명 박스라 겹치면 라벨을 덮으므로, 목표(b) 쪽으로 밀며 안 겹치는 자리를 찾는다.
+function drawAimLabel(text, a, b, avoid){
+  ctx.save();
+  const F=railF();
+  ctx.font=`${F.toFixed(1)}px "Bricolage Grotesque"`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(244,241,232,.75)';
+  const tw=ctx.measureText(text).width, th=F*1.2;
+  // 선분 방향과, 위쪽(화면상 -y)을 향하는 법선
+  const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy)||1;
+  let nx=-dy/L, ny=dx/L; if(ny>0){ nx=-nx; ny=-ny; }   // 항상 위로 띄운다
+  const hit=(cx,cy)=> avoid &&
+    Math.abs(cx-(avoid.x0+avoid.w/2)) < (tw+avoid.w)/2+4 &&
+    Math.abs(cy-(avoid.y0+avoid.h/2)) < (th+avoid.h)/2+4;
+  let best=null;
+  for(const t of [0.6,0.72,0.84,0.5,0.4]){
+    const cx=clamp(a.x+dx*t+nx*(F*0.9), play.x0+tw/2+2, play.x1-tw/2-2);
+    const cy=clamp(a.y+dy*t+ny*(F*0.9), play.y0+th/2+2, play.y1-th/2-2);
+    if(!best) best={cx,cy};
+    if(!hit(cx,cy)){ best={cx,cy}; break; }
+  }
+  ctx.fillText(text, best.cx, best.cy);
+  ctx.restore();
 }
 
 // 시스템의 숫자는 추상값이 아니라 레일 위의 '그 지점'이다. 결과 카드의 숫자와
@@ -4510,6 +4535,7 @@ function numTag(p,text,color,dir,off){
   ctx.fillStyle=color; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(text,x,y);
   ctx.restore();
+  return {x0, y0, w, h};   // 그려진 박스 — 다른 라벨이 이 자리를 피할 수 있게
 }
 
 /* ===== 🎯 물리 경로 제안 — 4구 v4 시간스텝 엔진 이식 (쓰리쿠션 규칙) =====
