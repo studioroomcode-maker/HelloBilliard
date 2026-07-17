@@ -79,7 +79,7 @@ const check=(name,val,lo,hi,unit)=>{
 
 // ═══ 2. 3구 엔진 (HTML 추출) — 4구와 동일 물리인지 + 시스템 교차 검증 ═══
 {
-  const s=html.indexOf('/* ===== 🎯 물리 경로 제안');
+  const s=html.indexOf('/* ===== 🎯 경로 계산(물리)');
   const e=html.indexOf('// ---- 물리 경로 UI ----');
   const block=html.slice(s,e);
   const M=60, W3=892, H3=492;

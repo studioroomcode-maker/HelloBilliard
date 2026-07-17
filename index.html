@@ -857,7 +857,7 @@
     inset 0 1px 0 rgba(255,255,255,.3); }
   .actions.sub-actions .tool{ background:transparent; color:var(--tx-3); border-color:var(--line-soft); }
   .stage-bar .tool.mini{ border-radius:12px; background:var(--surface-2); border-color:var(--line); }
-  /* 스테이지 바(경로/재생/저장) 줄과 아래 액션(경로 제안 등) 사이 간격 */
+  /* 스테이지 바(경로/재생/저장) 줄과 아래 액션(경로 계산 등) 사이 간격 */
   .board + .actions{ margin-top:14px; }
   .stage-bar .tool.mini.play{ background:var(--accent); color:var(--on-accent);
     border-color:transparent; box-shadow:0 8px 22px -6px var(--accent-glow),
@@ -981,7 +981,7 @@
   "screenshot": "https://hellobilliard.studioroomkr.com/og-image.png",
   "featureList": [
     "당구대 사진에서 공 배치 자동 인식 (온디바이스)",
-    "4구 득점 경로 제안 + 몬테카를로 성공률",
+    "4구 득점 경로 계산 + 몬테카를로 성공률",
     "빈쿠션·뱅크샷 경로 탐색 및 쿠션 수 규칙 선택",
     "쓰리쿠션 파이브앤하프·플러스·볼 시스템 계산기",
     "테이블 캘리브레이션 및 실력 3단계"
@@ -1127,7 +1127,7 @@
   </div>
 
   <div class="actions">
-    <button class="tool primary" id="g4-calc">경로 제안</button>
+    <button class="tool primary" id="g4-calc">경로 계산</button>
     <button class="tool" id="g4-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
   </div>
   <div class="actions sub-actions">
@@ -1162,7 +1162,7 @@
   </div>
 
   <div class="routes" id="g4-routes">
-    <div class="panel"><span class="empty">공을 배치하고 ‘경로 제안’을 누르세요.</span></div>
+    <div class="panel"><span class="empty">공을 배치하고 ‘경로 계산’을 누르세요.</span></div>
   </div>
 
   <details class="venue guide" style="margin-top:14px">
@@ -1252,7 +1252,7 @@
   <p class="hint" style="margin-top:8px">사진 인식은 <b>내 수구 색</b>으로 수구를 고릅니다 —
     잘못 잡히면 여기서 바꾸고 다시 인식하세요. 실제 공이 예측보다 짧게 반사되면
     쿠션 보정 「− 짧게」, 덜 굴러가면 구름 보정을 조절합니다.
-    <b>물리 경로 제안</b>에 바로 반영되고 4구 탭과 값을 공유합니다.</p>
+    <b>경로 계산</b>에 바로 반영되고 4구 탭과 값을 공유합니다.</p>
   </details>
 
   <div class="toolbar" id="g3-toolbar" style="margin-bottom:10px"></div>
@@ -1278,7 +1278,7 @@
 
   <div class="actions">
     <button class="tool primary" id="g3-calc" style="display:none">시스템 계산</button>
-    <button class="tool primary" id="g3-phys">물리 경로 제안</button>
+    <button class="tool primary" id="g3-phys">경로 계산</button>
     <button class="tool" id="g3-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
   </div>
   <div class="actions sub-actions">
@@ -1312,8 +1312,8 @@
 
   <!-- 시스템 미선택(기본) 안내 — 물리 경로 우선, 시스템은 궁금할 때 -->
   <div class="none-hint" id="g3-noneHint">
-    <div class="nh-title">🎯 물리 경로 제안이 기본입니다</div>
-    <p>공을 배치하고 <b>[물리 경로 제안]</b>을 누르면 실제 시뮬레이션으로
+    <div class="nh-title">🎯 경로 계산이 기본입니다</div>
+    <p>공을 배치하고 <b>[경로 계산]</b>을 누르면 실제 시뮬레이션으로
       득점 경로를 성공률과 함께 찾아 줍니다.</p>
     <p class="nh-sub">파이브앤하프·플러스·볼 시스템은 각각 <b>특정 샷 패턴을 위한 조준
       계산법</b>입니다. 그 방식이 궁금하면 <b>위 탭</b>을 눌러 확인하고, 다시 누르면 끕니다.</p>
@@ -2420,7 +2420,7 @@ function renderCards(){
   }
   if(!routes.length){
     if(!calcTried){
-      box.innerHTML='<div class="panel"><span class="empty">공을 배치하고 ‘경로 제안’을 누르세요.</span></div>';
+      box.innerHTML='<div class="panel"><span class="empty">공을 배치하고 ‘경로 계산’을 누르세요.</span></div>';
       return;
     }
     const ruleTxt=cushRule==='any'?'':
@@ -2692,7 +2692,7 @@ calcBtn.addEventListener('click',()=>{
     if(box) box.innerHTML='<div class="panel"><span class="empty">계산 중 오류가 발생했습니다. 공 배치를 바꿔 다시 시도해 주세요.</span></div>';
     try{ window.__hbReport&&window.__hbReport('solve/g4',err); }catch(_){}
   }).finally(()=>{
-    calcBtn.textContent='경로 제안'; calcBtn.disabled=false;
+    calcBtn.textContent='경로 계산'; calcBtn.disabled=false;
     // 계산 중 설정(수구 색 등)이 바뀌어 재계산이 예약됐으면 지금 실행
     if(pendingRecalc){ pendingRecalc=false; calcBtn.click(); }
   });
@@ -4131,7 +4131,7 @@ function verdict(s){
   // 제1적구가 계산 경로 위에 있으면 경고 (빈쿠션 시스템은 제1적구를 무시하므로)
   const blockWarn=s.blocked?
     `<div class="miss">⚠ 제1적구(분홍)가 계산 경로 위에 있습니다 — 실제로는 먼저 맞아 `+
-    `진로가 바뀝니다. 배치를 확인하거나 [물리 경로 제안]을 사용하세요.</div>`:'';
+    `진로가 바뀝니다. 배치를 확인하거나 [경로 계산]을 사용하세요.</div>`:'';
   // 제2적구가 쿠션 전 출발 경로를 막으면 경고 — 쿠션을 돌기 전에 먼저 맞는다
   const targetWarn=s.blockedT?
     `<div class="miss">⚠ 제2적구(빨강)가 쿠션 전 <b>출발 경로</b> 위에 있습니다 — `+
@@ -4621,7 +4621,7 @@ function numTag(p,text,color,dir,off){
   return {x0, y0, w, h};   // 그려진 박스 — 다른 라벨이 이 자리를 피할 수 있게
 }
 
-/* ===== 🎯 물리 경로 제안 — 4구 v4 시간스텝 엔진 이식 (쓰리쿠션 규칙) =====
+/* ===== 🎯 경로 계산(물리) — 4구 v4 시간스텝 엔진 이식 (쓰리쿠션 규칙) =====
    득점 조건: 수구가 두 적구를 모두 맞히되, 두 번째 적구 접촉 '이전'에
    쿠션을 3회 이상 경유해야 한다 (첫 적구 전 쿠션도 인정 = 실제 규칙).
    물리 상수·수치 적분은 4구 엔진과 동일, 4구 테이블 보정값(hb4_calib)을 공유. */
@@ -5289,7 +5289,7 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
     if(box) box.innerHTML='<div class="panel"><span class="empty">계산 중 오류가 발생했습니다. 공 배치를 바꿔 다시 시도해 주세요.</span></div>';
     try{ window.__hbReport&&window.__hbReport('solve/g3',err); }catch(_){}
   }).finally(()=>{
-    btn.textContent='물리 경로 제안'; btn.disabled=false;
+    btn.textContent='경로 계산'; btn.disabled=false;
   });
 });
 document.getElementById('g3-showAll').addEventListener('click',()=>{
@@ -5592,6 +5592,7 @@ document.getElementById('g3-detect').addEventListener('click',()=>{
       got.push(NAME3[k]); raw[k]=b;
     } else p3Missing.push(k);
   }
+  pushHist3();   // 사진 인식 배치도 히스토리 기록 — 이전 배치로 되돌릴 수 있게
   // 오버레이 호모그래피(탭 지정·마크용)
   const tbl=[{x:play.x0,y:play.y0},{x:play.x1,y:play.y0},
              {x:play.x1,y:play.y1},{x:play.x0,y:play.y1}];
@@ -5645,6 +5646,41 @@ function hitB(p){
   for(const k of keys) if(len(sub(balls[k],p))<BALL_R+10) return k;
   return null;
 }
+// ── 배치 히스토리 (undo/redo) — 4구와 같은 방식, 3구는 공 3개 좌표만 기록 ──
+let hist3=[], histIdx3=-1;
+function snap3(){
+  return {cue:{x:balls.cue.x,y:balls.cue.y},
+          obj:{x:balls.obj.x,y:balls.obj.y},
+          target:{x:balls.target.x,y:balls.target.y}};
+}
+function same3(a,b){
+  for(const k of ['cue','obj','target'])
+    if(a[k].x!==b[k].x||a[k].y!==b[k].y) return false;
+  return true;
+}
+function pushHist3(){
+  const s=snap3();
+  if(histIdx3>=0&&same3(hist3[histIdx3],s)) return;   // 변화 없음 — 기록 생략
+  hist3=hist3.slice(0,histIdx3+1);                    // redo 분기 폐기
+  hist3.push(s); histIdx3=hist3.length-1;
+  syncUndoRedo3();
+}
+function applyState3(s){
+  for(const k of ['cue','obj','target']){ balls[k].x=s[k].x; balls[k].y=s[k].y; }
+  userPlaced=true;   // 히스토리 이동도 사용자의 배치 선택 — 예시로 덮지 않는다
+  stopAnim3(false);
+  solution=null; phyRoutes=null; renderPhyCards();
+  autoSystem(true);
+  draw(); drawP3();
+}
+function syncUndoRedo3(){
+  const u=document.getElementById('g3-undo'), r=document.getElementById('g3-redo');
+  if(u) u.disabled=histIdx3<=0;
+  if(r) r.disabled=histIdx3>=hist3.length-1;
+}
+function doUndo3(){ if(histIdx3>0){ histIdx3--; applyState3(hist3[histIdx3]); syncUndoRedo3(); } }
+function doRedo3(){ if(histIdx3<hist3.length-1){ histIdx3++; applyState3(hist3[histIdx3]); syncUndoRedo3(); } }
+
 function onDown(e){
   e.preventDefault();
   stopAnim3(false);
@@ -5653,7 +5689,8 @@ function onDown(e){
   if(k){dragging=k;activeBall=k;syncTb();}
   else{const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
     userPlaced=true;
-    solution=null;phyRoutes=null;renderPhyCards();autoSystem();}   // 탭 배치 → 자동 계산
+    solution=null;phyRoutes=null;renderPhyCards();autoSystem();
+    pushHist3();}   // 탭 배치 → 자동 계산 + 히스토리 기록
   draw();
 }
 function onMove(e){
@@ -5665,7 +5702,10 @@ function onMove(e){
   solution=null; phyRoutes=null; renderPhyCards(); draw();
   autoSystem();   // 드래그 중 debounce 자동 계산
 }
-function onUp(){ dragging=null; autoSystem(); }
+function onUp(){
+  if(dragging){ dragging=null; pushHist3(); }   // 드래그 끝 = 한 번의 배치 변경
+  autoSystem();
+}
 cv.addEventListener('mousedown',onDown);
 cv.addEventListener('mousemove',onMove);
 window.addEventListener('mouseup',onUp);
@@ -5682,12 +5722,21 @@ function buildToolbar(){
   const tb=document.getElementById('g3-toolbar');
   const labels={cue:'수구',obj:'제1적구',target:'제2적구(목표)'};
   const colors={cue:'#5fb8e8',obj:'#e85f9c',target:'#d9582b'};
-  tb.innerHTML=curBalls().map(k=>
+  // 맨 앞에 undo/redo — 4구 툴바와 같은 배치·아이콘. 툴바를 다시 그릴 때마다
+  // 버튼도 다시 만들어지므로 핸들러·활성 상태를 매번 함께 붙인다.
+  tb.innerHTML=
+    `<button class="tool histbtn" id="g3-undo" aria-label="공 이동 되돌리기" title="되돌리기" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>`+
+    `<button class="tool histbtn" id="g3-redo" aria-label="공 이동 다시하기" title="다시하기" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>`+
+    curBalls().map(k=>
     `<button class="tool ${k===activeBall?'active':''}" data-ball="${k}">`+
     `<span class="dot" style="background:${colors[k]}"></span>${labels[k]}</button>`
   ).join('');
-  tb.querySelectorAll('.tool').forEach(b=>
+  tb.querySelectorAll('.tool[data-ball]').forEach(b=>
     b.addEventListener('click',()=>{activeBall=b.dataset.ball;syncTb();}));
+  const u=document.getElementById('g3-undo'), r=document.getElementById('g3-redo');
+  if(u&&u.addEventListener) u.addEventListener('click',doUndo3);
+  if(r&&r.addEventListener) r.addEventListener('click',doRedo3);
+  syncUndoRedo3();
 }
 
 const SYS_INFO={
@@ -5731,7 +5780,7 @@ const SYS_PRESET={
   //     깊은 뱅크라 expBadge() 의 '실험적' 배지가 첫 화면부터 붙었다
   //  ③ 제2적구가 '출발 경로'에서 멀 것 — 예전 자리(DX*1.2, DY*0.8)는 수구 바로 앞이라
   //     쿠션을 돌기 전에 먼저 맞았다(여유 1.1R). 지금은 35R 떨어져 있다.
-  //  ④ [물리 경로 제안]을 눌렀을 때도 경로가 나올 것 — 시스템 계산만 보고 고르면
+  //  ④ [경로 계산]을 눌렀을 때도 경로가 나올 것 — 시스템 계산만 보고 고르면
   //     수구를 코너에 붙이게 되는데(DX*0.3), 그건 물리적으로 어려운 배치라
   //     경로가 5번 중 4번 0개로 걸러졌다. 지금 자리는 5번 중 5번 평균 3개가 나온다.
   five:{
@@ -5767,6 +5816,7 @@ function applySystem(){
   // 각 시스템은 저마다 다른 출발 형태를 가정하므로, 하나의 배치가 세 탭에서
   // 모두 유효할 수는 없다. 사용자 배치는 시스템을 바꿔도 그대로 둔다.
   if(!userPlaced) applyPreset();
+  pushHist3();   // 프리셋 전환도 배치 변경 — 되돌릴 수 있게 (변화 없으면 생략됨)
   buildToolbar();
   solution=null;
   stopAnim3(false);
@@ -5813,7 +5863,7 @@ document.querySelectorAll('#g3-tipseg button').forEach(b=>
   }));
 // ===== AI 시스템 추천 — 세 시스템의 적합도를 실제 계산으로 평가 =====
 // 각 시스템 compute()의 실제 반환값(유효성·기하 오차)으로 별점을 매긴다.
-// (무거운 물리 성공률은 [물리 경로 제안]에서 별도 제공 — 여기선 가벼운 기하 평가)
+// (무거운 물리 성공률은 [경로 계산]에서 별도 제공 — 여기선 가벼운 기하 평가)
 const SYS_NAME={five:'파이브앤하프', plus:'플러스', ball:'볼 시스템'};
 // 시스템별 '설계 적합도' 평가 — 각 시스템은 유효하면 조준을 정확히 맞추므로
 // 기하 잔차는 변별력이 없다. 대신 '이 배치가 그 시스템이 설계한 형태인가'를 본다.
@@ -5868,7 +5918,7 @@ function renderCoach(){
   }).join('');
   let reco, showSwitch=false;
   if(best.stars<=2){
-    reco=`이 배치는 세 시스템 모두 적용이 애매합니다. <b>[물리 경로 제안]</b>으로 실제 득점 경로를 찾아보세요.`;
+    reco=`이 배치는 세 시스템 모두 적용이 애매합니다. <b>[경로 계산]</b>으로 실제 득점 경로를 찾아보세요.`;
   } else if(best.sys===system){
     reco=`지금 배치에는 <b>${SYS_NAME[system]}</b>가 가장 적합합니다. 위 계산대로 조준해 보세요.`;
   } else {
@@ -5905,6 +5955,7 @@ document.getElementById('g3-calc').addEventListener('click',()=>{
 document.getElementById('g3-example').addEventListener('click',()=>{
   // 예시 배치 — 시스템이 켜져 있으면 그 시스템의 예시, 아니면 일반 파이브 예시
   applyPreset();
+  pushHist3();
   phyRoutes=null; renderPhyCards();
   if(system){ solution=compute(); showResult(solution); renderCoach(); }
   else solution=null;
@@ -5916,10 +5967,12 @@ document.getElementById('g3-reset').addEventListener('click',()=>{
   for(const k in defaults){ balls[k].x=defaults[k].x; balls[k].y=defaults[k].y; }
   userPlaced=false;
   setSystemNone();
+  pushHist3();
 });
 
 // 초기 진입 — 시스템 미선택(물리 우선). 궁금하면 탭을 눌러 계산법을 본다.
 setSystemNone();
+pushHist3();   // 초기 배치를 히스토리 기준점으로
 
 // 4구 탭에서 테이블 보정을 바꿨을 때 호출된다 — 두 탭이 hb4_calib 를 공유하므로
 // 이미 그려둔 물리 경로는 옛 보정값으로 계산된 값이라 그대로 두면 거짓말이 된다.
