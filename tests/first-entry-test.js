@@ -1,7 +1,8 @@
-// 첫 진입 화면은 '성공하는 배치'여야 한다 — 예시 배치 버튼을 누르지 않은 상태 검증.
-// 회귀 대상: 3구 탭 첫 화면이 정식 초구 배치로 시작하는데 파이브앤하프는 그 배치를
-// 지원하지 않아 곧바로 '유효 범위 밖'이 떴다. 처음 쓰는 사람은 고장으로 읽는다.
-// 규칙: 사용자가 직접 배치하기 전(userPlaced=false)에는 각 탭이 자기 예시 배치를 쓴다.
+// 3구 첫 진입은 '시스템 미선택(물리 우선)'이어야 한다.
+// 시스템(파이브앤하프·플러스·볼)은 특정 샷 패턴을 위한 조준 계산법이라, 하나를
+// 켜 두는 게 아니라 궁금할 때 탭을 눌러 보고 다시 누르면 끈다(토글).
+// 검증: ① 기본은 미선택(계산 패널 숨김·안내 표시) ② 탭을 누르면 유효 계산
+//        ③ 같은 탭을 다시 누르면 꺼짐 ④ 사용자 배치 유지 ⑤ 예시가 물리 경로도 냄
 const fs = require('fs');
 const html = fs.readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
@@ -44,65 +45,56 @@ const strip = (id) => (els[id].innerHTML || '').replace(/<[^>]+>/g, ' ').replace
 const ev = (x, y) => ({ clientX: x, clientY: y, preventDefault() {} });
 let fails = 0;
 const check = (name, cond) => { console.log(`${cond ? '✓' : '✗'} ${name}`); if (!cond) fails++; };
-const switchTo = (sys) => {
-  const b = tabBtns.find(x => x.dataset.sys === sys);
-  handlers['tab-' + sys + ':click'][0].call(b);
-};
+const t = global.window.__hb3test;
+const disp = (id) => (els[id] && els[id].style) ? els[id].style.display : undefined;
+const clickTab = (sys) => handlers['tab-' + sys + ':click'][0]
+  .call(tabBtns.find(x => x.dataset.sys === sys));
 
-// --- 1) 첫 화면(파이브앤하프)이 실패 메시지 없이 득점 라인을 낸다 ---
-const first = strip('g3-result');
-check('첫 진입이 득점 라인을 낸다', /득점 라인/.test(first));
-check('  └ 첫 진입에 "유효 범위 밖"이 없다', !/유효 범위 밖/.test(first));
-check('  └ 첫 진입에 "적용 어려움"이 없다', !/적용 어려움/.test(first));
-check('  └ AI 추천이 파이브앤하프를 5점으로 본다',
-  /파이브앤하프 ★★★★★/.test(strip('g3-coach')));
-// 첫 화면은 '검증된 구간'이어야 한다 — 실험적 배지가 붙은 채로 시작하면
-// 1번(성공하는 첫 화면)의 의미가 없다
-check('  └ 첫 진입에 실험적 배지가 붙지 않는다', !/실험적/.test(first));
-// 식이 반듯해야 처음 보는 사람이 눈으로 따라갈 수 있다 (g3-nums 는 원값 44.8,
-// 사용자가 읽는 식은 g3-result 의 반올림값이다)
-check('  └ 첫 진입 식이 반듯하다 (45 − 20 = 25)',
-  /수구수 45 − 제3쿠션수 20 = 제1쿠션수 25/.test(first));
+// --- 1) 기본 진입 = 시스템 미선택(물리 우선) ---
+check('첫 진입은 시스템 미선택이다', t.system() === null);
+check('  └ 계산 패널이 숨겨져 있다', disp('g3-calcPanel') === 'none');
+check('  └ 물리 우선 안내가 보인다', disp('g3-noneHint') === '');
+check('  └ 코치 카드가 숨겨져 있다', els['g3-coach'].hidden === true);
 
-// --- 2) 탭을 옮기면 그 시스템의 예시 배치로 갈아끼운다 ---
-switchTo('plus');
-check('플러스 탭 첫 진입이 유효하다',
-  /단-장-장/.test(strip('g3-result')) && !/유효 범위 밖/.test(strip('g3-result')));
-switchTo('ball');
-const ballOut = strip('g3-result');
-check('볼 시스템 탭 첫 진입이 유효하다',
-  /두께/.test(ballOut) && !/범위\(1~7\) 밖/.test(ballOut));
+// --- 2) 파이브앤하프 탭을 누르면 유효한 계산이 나온다 ---
+clickTab('five');
+const five = strip('g3-result');
+check('파이브앤하프를 누르면 득점 라인을 낸다', /득점 라인/.test(five));
+check('  └ 식이 반듯하다 (45 − 20 = 25)',
+  /수구수 45 − 제3쿠션수 20 = 제1쿠션수 25/.test(five));
+check('  └ 실험적 배지가 없다', !/실험적/.test(five));
+check('  └ 계산 패널이 보이고 안내는 숨는다',
+  disp('g3-calcPanel') === '' && disp('g3-noneHint') === 'none');
+check('  └ 코치 카드가 나타난다', els['g3-coach'].hidden === false);
 
-// --- 3) 사용자가 직접 배치한 뒤에는 탭을 옮겨도 그 배치를 유지한다 ---
-// (예시로 덮어쓰면 사용자가 방금 만든 상황이 사라진다)
-switchTo('five');
-// 좌표계는 앱에서 읽는다 — 여백(M)이나 캔버스 크기가 바뀌면 같이 따라간다
-const { play } = global.window.__hb3test;
+// --- 3) 같은 탭을 다시 누르면 꺼진다(토글) ---
+clickTab('five');
+check('같은 탭을 다시 누르면 시스템이 꺼진다', t.system() === null);
+check('  └ 안내가 다시 보이고 계산 패널이 숨는다',
+  disp('g3-noneHint') === '' && disp('g3-calcPanel') === 'none');
+
+// --- 4) 다른 시스템도 눌러 확인할 수 있다 ---
+clickTab('plus');
+check('플러스도 눌러 확인된다', /단-장-장/.test(strip('g3-result')));
+clickTab('ball');
+check('볼 시스템도 눌러 확인된다', /두께/.test(strip('g3-result')));
+
+// --- 5) 사용자가 배치하면 그 배치가 탭 전환 후에도 유지된다 ---
+clickTab('five');   // 볼 → 파이브 (선택 전환)
+const { play, balls } = t;
 const SPOT = { x: play.x0 + 300, y: play.y0 + 300 };
 handlers['g3-table:mousedown'][0](ev(SPOT.x, SPOT.y));   // 빈 곳 탭 = 배치
-// 탭 배치의 자동 계산은 debounce(160ms)라 즉시 반영되지 않는다 — 계산을 강제한다
 handlers['g3-calc:click'][0]();
 const afterPlace = strip('g3-nums');
-switchTo('plus');
-switchTo('five');
+t.setSystem('plus'); t.setSystem('five');
 check('사용자 배치는 탭 전환 후에도 유지된다', strip('g3-nums') === afterPlace);
 
-// --- 4) 초기화는 정식 초구로 되돌리고, 그 배치를 예시로 덮지 않는다 ---
-handlers['g3-reset:click'][0]();
-handlers['g3-calc:click'][0]();
-const afterReset = strip('g3-nums');
-switchTo('plus');
-switchTo('five');
-check('초기화 배치는 탭 전환 후에도 유지된다', strip('g3-nums') === afterReset);
-
-// --- 5) 예시 배치는 [물리 경로 제안]에도 답을 줘야 한다 ---
-// 회귀 대상: 시스템 숫자(1쿠션수 20~25·반듯한 값)만 보고 예시를 고르면 수구를
-// 코너에 붙이게 되는데, 그건 물리적으로 어려운 배치라 경로가 전부 걸러졌다.
-// 첫 화면에서 버튼을 눌렀더니 "경로를 찾지 못했습니다"가 나오면 1번은 반쪽이다.
+// --- 6) 예시 배치는 [물리 경로 제안]에도 답을 줘야 한다 ---
+// 회귀 대상: 예시 배치가 시스템 숫자만 맞고 물리적으로 어려우면 경로가 전부
+// 걸러져 "경로를 찾지 못했습니다"가 나온다 — 예시는 물리로도 답이 나와야 한다.
 (async () => {
-  // 예시 배치로 되돌린 뒤 계산 (위 4번에서 정식 초구로 바꿔 놨다)
-  handlers['g3-example:click'][0]();
-  const { balls } = global.window.__hb3test;
+  handlers['g3-reset:click'][0]();     // 기본 배치 + 시스템 미선택
+  handlers['g3-example:click'][0]();   // 예시(파이브 폴백) 배치
   const cueAt = { x: balls.cue.x, y: balls.cue.y };
   let got = 0;
   const TRIES = 3;

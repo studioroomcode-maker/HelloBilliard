@@ -74,7 +74,7 @@ function impossible(p) {
 
 // 세 팁(당점 보정으로 1쿠션 위치가 달라진다)을 모두 훑는다
 for (const sys of ['five', 'plus']) {
-  handlers['tab-' + sys + ':click'][0].call(tabBtns.find(b => b.dataset.sys === sys));
+  global.window.__hb3test.setSystem(sys);
   let total = 0, bad = 0, firstBad = null;
   for (const tip of [1, 2, 3]) {
     setTip(tip);
@@ -104,7 +104,7 @@ for (const sys of ['five', 'plus']) {
 }
 
 // 플러스가 거부하는 대표 배치에서 '왜 안 되는지'를 설명하는지
-handlers['tab-plus:click'][0].call(tabBtns.find(b => b.dataset.sys === 'plus'));
+global.window.__hb3test.setSystem('plus');
 setTip(2);
 balls.cue.x = play.x1 - DX * 0.4; balls.cue.y = play.y1 - DY * 1.8;
 balls.target.x = play.x1 - DX * 2.0; balls.target.y = play.y1 - DY * 0.3;
@@ -126,7 +126,7 @@ check('플러스 1쿠션수 40(코너 얹힘)은 유효로 그리지 않는다',
   !(sPlusCorner && sPlusCorner.valid && sPlusCorner.path));
 
 // 파이브: 수구가 상단 장쿠션에 바싹 붙으면 상단 쿠션에서 x가 뒤집히는 그림이 된다.
-handlers['tab-five:click'][0].call(tabBtns.find(b => b.dataset.sys === 'five'));
+global.window.__hb3test.setSystem('five');
 setTip(2);
 balls.cue.x = play.x1 - DX * 5.1; balls.cue.y = play.y1 - DY * 3.58;  // 상단에 붙음
 balls.target.x = play.x1 - DX * 1.1; balls.target.y = play.y1 - DY * 1.1;

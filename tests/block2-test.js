@@ -45,6 +45,8 @@ const ev = (x, y) => ({ clientX: x, clientY: y, preventDefault() {} });
 let fails = 0;
 const check = (name, cond) => { console.log(`${cond ? '✓' : '✗'} ${name}`); if (!cond) fails++; };
 
+// 기본은 시스템 미선택이므로 파이브앤하프를 켜고 검사한다.
+global.window.__hb3test.setSystem('five');
 // --- 1) 예시 배치는 실제로 칠 수 있는 배치여야 한다 ---
 // (예전 프리셋은 제2적구가 수구 바로 앞이라 쿠션 전에 먼저 맞는 배치였다)
 handlers['g3-example:click'][0]();

@@ -50,6 +50,8 @@ const c1 = () => {
   return m ? parseFloat(m[1]) : null;
 };
 
+// 기본은 시스템 미선택이므로 파이브앤하프를 켜고 검사한다.
+global.window.__hb3test.setSystem('five');
 // 수구를 하단 레일을 따라 옮기며 제1쿠션수를 훑는다 — 수구수가 커질수록 1쿠션수도 커진다
 // (좌표계는 앱에서 읽는다 — 여백·캔버스 크기가 바뀌어도 같은 지점을 가리키도록)
 const { play } = global.window.__hb3test;

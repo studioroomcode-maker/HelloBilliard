@@ -34,6 +34,8 @@ global.window = { addEventListener() {} };
 global.localStorage = { getItem: () => null, setItem() {} };
 eval(code);
 
+// 기본은 시스템 미선택(물리 우선)이므로 파이브앤하프를 켜고 검사한다.
+global.window.__hb3test.setSystem('five');
 // 예시 배치 로드 후 제1적구를 계산 경로 위로 드래그.
 // 경로 위 좌표는 하드코딩하지 않고 실제 계산 결과에서 가져온다 — 예시 배치를
 // 옮기면 경로도 바뀌므로, 좌표를 박아 두면 테스트가 의미 없이 깨진다.

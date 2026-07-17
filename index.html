@@ -920,6 +920,13 @@
   .coach-card{ background:var(--surface); border:1px solid var(--line-soft);
     border-radius:20px; box-shadow:var(--sh-1); padding:15px 16px; margin-bottom:12px; }
   .coach-card[hidden]{ display:none; }
+  /* 시스템 미선택 기본 안내 — 물리 경로 우선을 알리고 시스템은 opt-in임을 설명 */
+  .none-hint{ background:var(--surface); border:1px solid var(--line-soft);
+    border-left:3px solid var(--accent); border-radius:16px; box-shadow:var(--sh-1);
+    padding:15px 16px; margin-bottom:12px; }
+  .none-hint .nh-title{ font-weight:800; font-size:14px; color:var(--tx-1); margin-bottom:8px; }
+  .none-hint p{ font-size:12.5px; line-height:1.6; color:var(--tx-2); margin:6px 0 0; }
+  .none-hint .nh-sub{ color:var(--tx-3); }
   .coach-card .cc-title{ font-size:11px; letter-spacing:.07em; text-transform:uppercase;
     color:var(--accent); font-weight:800; margin-bottom:10px; }
   .coach-card .cc-row{ display:flex; align-items:center; gap:10px; padding:7px 6px;
@@ -1250,8 +1257,8 @@
 
   <div class="toolbar" id="g3-toolbar" style="margin-bottom:10px"></div>
 
-<div class="tabs" id="g3-tabs">
-    <button data-sys="five" class="on">파이브앤하프</button>
+<div class="tabs" id="g3-tabs" role="tablist" aria-label="3구 계산 시스템 — 궁금할 때 눌러 확인">
+    <button data-sys="five">파이브앤하프</button>
     <button data-sys="plus">플러스</button>
     <button data-sys="ball">볼 시스템</button>
   </div>
@@ -1303,7 +1310,16 @@
   <!-- AI 시스템 추천 카드 (자동 갱신) -->
   <div class="coach-card" id="g3-coach" hidden></div>
 
-  <div class="calc">
+  <!-- 시스템 미선택(기본) 안내 — 물리 경로 우선, 시스템은 궁금할 때 -->
+  <div class="none-hint" id="g3-noneHint">
+    <div class="nh-title">🎯 물리 경로 제안이 기본입니다</div>
+    <p>공을 배치하고 <b>[물리 경로 제안]</b>을 누르면 실제 시뮬레이션으로
+      득점 경로를 성공률과 함께 찾아 줍니다.</p>
+    <p class="nh-sub">파이브앤하프·플러스·볼 시스템은 각각 <b>특정 샷 패턴을 위한 조준
+      계산법</b>입니다. 그 방식이 궁금하면 <b>위 탭</b>을 눌러 확인하고, 다시 누르면 끕니다.</p>
+  </div>
+
+  <div class="calc" id="g3-calcPanel" style="display:none">
     <h2 id="g3-calcTitle">파이브앤하프 계산</h2>
     <div class="seg" id="g3-tipseg">
       <button data-tip="1">약회전 <span style="opacity:.6">(2팁)</span></button>
@@ -3572,7 +3588,10 @@ function syncUiScale(){
 if(typeof ResizeObserver!=='undefined')
   new ResizeObserver(()=>{ if(syncUiScale()) draw(); }).observe(cv);
 
-let system='five';   // five | plus | ball
+// system: null = 시스템 미선택(기본). 파이브앤하프·플러스·볼은 '특정 샷 패턴을
+// 위한 조준 계산법'이라, 하나를 켜 두는 게 아니라 궁금할 때 탭을 눌러 본다.
+// 기본은 물리 경로 우선 — 패턴을 가정하지 않고 실제 득점 경로를 찾는다.
+let system=null;     // null | five | plus | ball
 let tip=2, activeBall='cue', dragging=null, solution=null;
 // 사용자가 이 배치를 직접 만들었는가 (드래그·탭 배치·사진 인식·초기화).
 // false 인 동안은 화면에 있는 배치가 '앱이 고른 예시'라는 뜻이라,
@@ -3601,6 +3620,8 @@ const SYS_BALLS={
   plus:['cue','obj','target'],
   ball:['cue','obj','target'],
 };
+// 현재 표시할 공 — 시스템 미선택(null)이어도 세 공을 다 보여준다(물리용 배치).
+const curBalls=()=>SYS_BALLS[system]||['cue','obj','target'];
 
 // ---------- 기하 ----------
 const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
@@ -3707,7 +3728,8 @@ function fiveCueNumFrom(p1,cue){
 function compute(){
   if(system==='five') return computeFive();
   if(system==='plus') return computePlus();
-  return computeBall();
+  if(system==='ball') return computeBall();
+  return null;   // 시스템 미선택
 }
 
 // --- 파이브앤하프 ---
@@ -4135,7 +4157,7 @@ function draw(){
     ctx.restore();
   }
   // 물리 경로 모드에서는 시스템과 무관하게 3개 공을 모두 표시
-  const active=phyRoutes?['cue','obj','target']:SYS_BALLS[system];
+  const active=phyRoutes?['cue','obj','target']:curBalls();
   const AIDX3={cue:0,obj:2,target:4};
   for(const k of active){
     const b=anim3&&anim3.cur
@@ -4232,6 +4254,7 @@ function railRow(n){ const F=railF(); return 8+F*0.5+(n-1)*(F+4); }
 // 우측 단쿠션은 가로로 놓이므로 글자 '높이'가 아니라 '폭'만큼 띄워야 눈금과 안 겹친다
 function railSide(){ const F=railF(); return 8+F*0.8; }
 function drawCoords(){
+  if(!system) return;   // 시스템 미선택 — 레일 눈금 없이 깨끗한 당구대
   ctx.textAlign='center'; ctx.textBaseline='middle';
   const F=railF(), R1=railRow(1), R2=railRow(2), RS=railSide();
   ctx.font=`${F.toFixed(1)}px "Spline Sans Mono", monospace`;
@@ -5016,6 +5039,7 @@ function renderPhyCards(){
   const sa=document.getElementById('g3-showAll');
   if(sa) sa.style.display=(phyRoutes&&phyRoutes.length>1)?'':'none';
   syncShowAll();
+  updateSideUI();   // 물리 경로 유무에 따라 안내/계산 패널 표시 갱신
   // 샷 요약 — 선택한 경로의 당점·두께·경유 쿠션을 당구대 위에 한 줄로
   const brief=document.getElementById('g3-shotBrief');
   if(brief){
@@ -5533,7 +5557,7 @@ function clampB(p){return{
   x:Math.max(play.x0+BALL_R,Math.min(play.x1-BALL_R,p.x)),
   y:Math.max(play.y0+BALL_R,Math.min(play.y1-BALL_R,p.y))};}
 function hitB(p){
-  const keys=phyRoutes?['cue','obj','target']:SYS_BALLS[system];
+  const keys=phyRoutes?['cue','obj','target']:curBalls();
   for(const k of keys) if(len(sub(balls[k],p))<BALL_R+10) return k;
   return null;
 }
@@ -5574,7 +5598,7 @@ function buildToolbar(){
   const tb=document.getElementById('g3-toolbar');
   const labels={cue:'수구',obj:'제1적구',target:'제2적구(목표)'};
   const colors={cue:'#5fb8e8',obj:'#e85f9c',target:'#d9582b'};
-  tb.innerHTML=SYS_BALLS[system].map(k=>
+  tb.innerHTML=curBalls().map(k=>
     `<button class="tool ${k===activeBall?'active':''}" data-ball="${k}">`+
     `<span class="dot" style="background:${colors[k]}"></span>${labels[k]}</button>`
   ).join('');
@@ -5643,7 +5667,7 @@ const SYS_PRESET={
   },
 };
 function applyPreset(){
-  const p=SYS_PRESET[system];
+  const p=SYS_PRESET[system]||SYS_PRESET.five;   // 미선택이면 일반적인 파이브 예시
   for(const k in p){ balls[k].x=p[k].x; balls[k].y=p[k].y; }
 }
 
@@ -5665,12 +5689,36 @@ function applySystem(){
   phyRoutes=null; renderPhyCards();
   autoSystem(true);   // 시스템 전환·초기화 → 즉시 자동 계산
 }
+// 사이드 패널 표시 전환 — 시스템 미선택이고 물리 경로도 없으면 안내를 보이고
+// 계산 패널을 숨긴다. 시스템을 켜면 계산 패널, 물리 경로를 켜면 경로 카드가 우선.
+function updateSideUI(){
+  const panel=document.getElementById('g3-calcPanel');
+  const hint=document.getElementById('g3-noneHint');
+  const phys=phyRoutes&&phyRoutes.length;
+  if(panel) panel.style.display = system? '' : 'none';
+  if(hint) hint.style.display = (!system&&!phys)? '' : 'none';
+}
+// 시스템을 끈다(미선택 상태로) — 기본 물리 우선 화면으로 돌아간다
+function setSystemNone(){
+  system=null;
+  document.querySelectorAll('#g3-tabs button').forEach(x=>x.classList.remove('on'));
+  solution=null;
+  stopAnim3(false);
+  phyRoutes=null; renderPhyCards();   // 물리 경로도 접고
+  renderCoach();                      // 코치 숨김
+  buildToolbar();
+  updateSideUI();
+  draw(); drawP3();
+}
 document.querySelectorAll('#g3-tabs button').forEach(b=>
   b.addEventListener('click',()=>{
+    // 이미 켜진 시스템을 다시 누르면 끈다(토글) — 궁금해서 봤다가 접는 흐름
+    if(system===b.dataset.sys){ setSystemNone(); return; }
     system=b.dataset.sys;
     document.querySelectorAll('#g3-tabs button').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
     applySystem();
+    updateSideUI();
   }));
 document.querySelectorAll('#g3-tipseg button').forEach(b=>
   b.addEventListener('click',()=>{
@@ -5721,6 +5769,7 @@ function evalSystems(){ return ['five','plus','ball'].map(evalOneSystem); }
 function renderCoach(){
   const el=document.getElementById('g3-coach');
   if(!el) return;
+  if(!system){ el.hidden=true; return; }                       // 시스템 미선택 — 코치 숨김
   if(phyRoutes&&phyRoutes.length){ el.hidden=true; return; }   // 물리 경로 우선
   const ev=evalSystems();
   const sorted=ev.slice().sort((a,b)=> b.stars-a.stars);
@@ -5753,10 +5802,12 @@ function renderCoach(){
 }
 // 시스템 자동 계산 — 공 이동·회전·시스템 변경 시 debounce 후 갱신 (버튼 없이 동작)
 function runSystemCalc(){
+  if(!system) return;   // 시스템 미선택 — 계산 없음
   solution=compute(); showResult(solution); renderCoach(); draw(); drawP3();
 }
 let autoTimer=null;
 function autoSystem(immediate){
+  if(!system) return;                       // 시스템 미선택 — 자동 계산 없음
   if(phyRoutes&&phyRoutes.length) return;   // 물리 경로 표시 중엔 시스템 자동계산 보류
   if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
   if(immediate) runSystemCalc();
@@ -5768,22 +5819,23 @@ document.getElementById('g3-calc').addEventListener('click',()=>{
   runSystemCalc();
 });
 document.getElementById('g3-example').addEventListener('click',()=>{
-  // 현재 시스템이 잘 동작하는 예시 배치 불러오기
+  // 예시 배치 — 시스템이 켜져 있으면 그 시스템의 예시, 아니면 일반 파이브 예시
   applyPreset();
   phyRoutes=null; renderPhyCards();
-  solution=compute(); showResult(solution); draw();
+  if(system){ solution=compute(); showResult(solution); renderCoach(); }
+  else solution=null;
+  draw();
 });
 document.getElementById('g3-reset').addEventListener('click',()=>{
   stopAnim3(false);
-  // 정식 초구 배치로 복원 — 사용자가 명시적으로 고른 배치이므로 탭을 옮겨도
-  // 예시로 갈아끼우지 않는다 (예시로 돌아가려면 [예시 배치]).
+  // 정식 초구 배치로 복원 + 시스템 미선택 기본 상태로
   for(const k in defaults){ balls[k].x=defaults[k].x; balls[k].y=defaults[k].y; }
-  userPlaced=true;
-  phyRoutes=null; renderPhyCards();
-  autoSystem(true);   // 초기 배치 기준 자동 계산
+  userPlaced=false;
+  setSystemNone();
 });
 
-applySystem();
+// 초기 진입 — 시스템 미선택(물리 우선). 궁금하면 탭을 눌러 계산법을 본다.
+setSystemNone();
 
 // 4구 탭에서 테이블 보정을 바꿨을 때 호출된다 — 두 탭이 hb4_calib 를 공유하므로
 // 이미 그려둔 물리 경로는 옛 보정값으로 계산된 값이라 그대로 두면 거짓말이 된다.
@@ -5797,7 +5849,19 @@ if(typeof window!=='undefined')
 // 밖에서 읽을 수 있게 한다. 이게 없으면 테스트가 '경로 위의 점'을 좌표로
 // 하드코딩해야 하고, 예시 배치를 옮기는 순간 의미 없이 깨진다.
 if(typeof window!=='undefined')
-  window.__hb3test={balls, play, sol:()=>solution, routes:()=>phyRoutes, BALL_R};
+  // setSystem: 테스트가 토글 걱정 없이 특정 시스템을 켜거나(sys) 끄게(null) 한다.
+  window.__hb3test={balls, play, sol:()=>solution, routes:()=>phyRoutes, BALL_R,
+    system:()=>system,
+    setSystem:(sys)=>{
+      if(!sys){ setSystemNone(); return; }
+      if(system===sys) return;
+      system=sys;
+      document.querySelectorAll('#g3-tabs button').forEach(x=>{
+        x.classList&&x.classList.remove('on');
+        if(x.dataset&&x.dataset.sys===sys&&x.classList) x.classList.add('on');
+      });
+      applySystem(); updateSideUI();
+    }};
 
 })();
 
