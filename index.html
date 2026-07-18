@@ -1428,7 +1428,7 @@ window.hbSfx=(function(){
   var MASTER=0.8;
   // 소리별 보정 — 음원마다 녹음 레벨이 달라 귀로 맞춘 값. 최종 음량은
   // 세기 × MASTER × GAIN 이다. 특정 소리만 조절할 땐 여기를 만진다.
-  var GAIN={ cue:1, first:1, second:0.8, cushion:1 };
+  var GAIN={ cue:1, first:1, second:0.8, cushion:0.7 };   // 쿠션음은 30% 낮춤
   var ctx=null, muted=false, raw={}, buf={};
 
   for(var key in SRC)(function(k){          // 미리 받아만 둔다 (디코딩은 나중)
@@ -2277,34 +2277,68 @@ function stopAnim(redraw){
 // 20ms 프레임에선 접촉 순간이 건너뛰어질 수 있어, 두 공 거리의 '로컬 최소(최근접)'를
 // 감지해 그 최소가 지름 근처면 '딱'을 낸다.
 function sfxTick(anim){ sfxDetect(anim, 4); }
-function sfxDetect(anim, n){
-  const cur=anim.cur; if(!cur) return;
-  const R=BALL_R, sfx=window.hbSfx;
+// 키프레임 폴리라인을 임의 시각 t 에서 보간해 위치 배열을 돌려준다
+function posAt(fr,t){
+  if(t<=fr[0].t) return fr[0].p;
+  const last=fr[fr.length-1]; if(t>=last.t) return last.p;
+  let i=0; while(i<fr.length-1&&fr[i+1].t<=t) i++;
+  const a=fr[i], b=fr[Math.min(i+1,fr.length-1)];
+  const u=b.t>a.t?(t-a.t)/(b.t-a.t):0;
+  return a.p.map((v,j)=>v+(b.p[j]-v)*u);
+}
+// 위치 표본 하나에서 공-공 최근접·쿠션 접촉을 판정해 소리를 낸다
+function sfxSample(s,cur,n,R,sfx){
   const dist=(i,j)=>Math.hypot(cur[i*2]-cur[j*2], cur[i*2+1]-cur[j*2+1]);
-  const nearRail=(i)=>{ const x=cur[i*2],y=cur[i*2+1];
-    return x<=play.x0+R+3||x>=play.x1-R-3||y<=play.y0+R+3||y>=play.y1-R-3; };
-  if(!anim._sfx){   // 첫 프레임은 상태만 초기화
-    const s={pd:{},dec:{},rc:[],hit:{},seq:0};   // hit: 수구가 이미 맞힌 공 · seq: 몇 번째 공인지
-    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const k=i+'-'+j;s.pd[k]=dist(i,j);s.dec[k]=false;}
-    for(let i=0;i<n;i++) s.rc[i]=nearRail(i);
-    anim._sfx=s; return;
-  }
-  const s=anim._sfx;
   for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
     const k=i+'-'+j, dd=dist(i,j), dec=dd<s.pd[k]-0.01;
-    if(s.dec[k]&&!dec){                 // 최근접(로컬 최소) 통과
+    if(s.dec[k]&&!dec&&!s.fired[k]){    // 최근접(로컬 최소) 통과 — 쌍당 한 번만
       const mind=s.pd[k];
       if(mind<2*R*1.32){
         const inten=Math.max(0.3,Math.min(1,0.4+(2*R*1.32-mind)/(2*R)*0.7));
         sfx&&sfxBallHit(s,i,j,inten);
+        s.fired[k]=true;
       }
     }
+    if(dd>2*R*1.5) s.fired[k]=false;   // 충분히 멀어지면 다시 무장
     s.dec[k]=dec; s.pd[k]=dd;
   }
+  const nearRail=(i)=>{ const x=cur[i*2],y=cur[i*2+1];
+    return x<=play.x0+R+3||x>=play.x1-R-3||y<=play.y0+R+3||y>=play.y1-R-3; };
   for(let i=0;i<n;i++){
     const nr=nearRail(i);
     if(nr&&!s.rc[i]){ sfx&&sfx.cushion(0.35); s.rc[i]=true; }
     else if(!nr&&s.rc[i]){ s.rc[i]=false; }
+  }
+}
+function sfxDetect(anim, n){
+  const cur=anim.cur; if(!cur) return;
+  const R=BALL_R, sfx=window.hbSfx;
+  if(!anim._sfx){   // 첫 프레임은 상태만 초기화
+    const startT=(anim.frames&&anim.frames[0].t)||0;
+    const c0=anim.frames?posAt(anim.frames,startT):cur;
+    const s={pd:{},dec:{},rc:[],hit:{},fired:{},seq:0};  // hit: 이미 맞힌 공 · seq: 몇 번째 공인지
+    const dist=(i,j)=>Math.hypot(c0[i*2]-c0[j*2], c0[i*2+1]-c0[j*2+1]);
+    const nearRail=(i)=>{ const x=c0[i*2],y=c0[i*2+1];
+      return x<=play.x0+R+3||x>=play.x1-R-3||y<=play.y0+R+3||y>=play.y1-R-3; };
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const k=i+'-'+j;s.pd[k]=dist(i,j);s.dec[k]=false;}
+    for(let i=0;i<n;i++) s.rc[i]=nearRail(i);
+    anim._sfx=s; anim._sfxT=startT; return;
+  }
+  const s=anim._sfx;
+  // ── 프레임 사이를 잘게 나눠 표본을 훑는다 ──
+  // 첫 적구가 수구에 아주 가까우면 60fps 한 프레임(≈16ms) 사이에 접근→충돌→분리가
+  // 통째로 들어가, 로컬 최소를 놓쳐 첫 공 소리가 다음 충돌로 밀렸다. 놓친 구간을
+  // 2ms 간격으로 보간·판정해 충돌을 빠짐없이 잡는다.
+  const fr=anim.frames;
+  if(fr){
+    const tNow=(performance.now()-anim.t0)/1000, DT=0.002;
+    let tt=anim._sfxT||0;
+    if(tNow-tt>0.1) tt=tNow-0.1;       // 랙으로 크게 밀리면 과도한 루프 방지
+    for(tt+=DT; tt<tNow; tt+=DT) sfxSample(s, posAt(fr,tt), n, R, sfx);
+    sfxSample(s, posAt(fr,tNow), n, R, sfx);
+    anim._sfxT=tNow;
+  } else {
+    sfxSample(s, cur, n, R, sfx);
   }
 }
 // 공-공 충돌 소리 — 수구(0번)가 낀 충돌이면 '몇 번째로 맞힌 공인지'로 음원을 고른다.
@@ -4350,34 +4384,63 @@ function stopAnim3(redraw){
   if(redraw!==false) draw();
 }
 // 재생 중 충돌 감지 → 사운드 (3구: anim3.cur=[cue,obj,target]) — 로컬 최소 방식
-function sfxTick3(anim){
-  const cur=anim.cur; if(!cur) return;
-  const n=3, R=BALL_R, sfx=window.hbSfx;
+function posAt3(fr,t){
+  if(t<=fr[0].t) return fr[0].p;
+  const last=fr[fr.length-1]; if(t>=last.t) return last.p;
+  let i=0; while(i<fr.length-1&&fr[i+1].t<=t) i++;
+  const a=fr[i], b=fr[Math.min(i+1,fr.length-1)];
+  const u=b.t>a.t?(t-a.t)/(b.t-a.t):0;
+  return a.p.map((v,j)=>v+(b.p[j]-v)*u);
+}
+function sfxSample3(s,cur,n,R,sfx){
   const dist=(i,j)=>Math.hypot(cur[i*2]-cur[j*2], cur[i*2+1]-cur[j*2+1]);
-  const nearRail=(i)=>{ const x=cur[i*2],y=cur[i*2+1];
-    return x<=play.x0+R+3||x>=play.x1-R-3||y<=play.y0+R+3||y>=play.y1-R-3; };
-  if(!anim._sfx){
-    const s={pd:{},dec:{},rc:[],hit:{},seq:0};   // hit: 수구가 이미 맞힌 공 · seq: 몇 번째 공인지
-    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const k=i+'-'+j;s.pd[k]=dist(i,j);s.dec[k]=false;}
-    for(let i=0;i<n;i++) s.rc[i]=nearRail(i);
-    anim._sfx=s; return;
-  }
-  const s=anim._sfx;
   for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
     const k=i+'-'+j, dd=dist(i,j), dec=dd<s.pd[k]-0.01;
-    if(s.dec[k]&&!dec){
+    if(s.dec[k]&&!dec&&!s.fired[k]){    // 최근접(로컬 최소) 통과 — 쌍당 한 번만
       const mind=s.pd[k];
       if(mind<2*R*1.32){
         const inten=Math.max(0.3,Math.min(1,0.4+(2*R*1.32-mind)/(2*R)*0.7));
         sfx&&sfxBallHit3(s,i,j,inten);
+        s.fired[k]=true;
       }
     }
+    if(dd>2*R*1.5) s.fired[k]=false;   // 충분히 멀어지면 다시 무장
     s.dec[k]=dec; s.pd[k]=dd;
   }
+  const nearRail=(i)=>{ const x=cur[i*2],y=cur[i*2+1];
+    return x<=play.x0+R+3||x>=play.x1-R-3||y<=play.y0+R+3||y>=play.y1-R-3; };
   for(let i=0;i<n;i++){
     const nr=nearRail(i);
     if(nr&&!s.rc[i]){ sfx&&sfx.cushion(0.35); s.rc[i]=true; }
     else if(!nr&&s.rc[i]){ s.rc[i]=false; }
+  }
+}
+function sfxTick3(anim){
+  const cur=anim.cur; if(!cur) return;
+  const n=3, R=BALL_R, sfx=window.hbSfx;
+  if(!anim._sfx){
+    const startT=(anim.frames&&anim.frames[0].t)||0;
+    const c0=anim.frames?posAt3(anim.frames,startT):cur;
+    const s={pd:{},dec:{},rc:[],hit:{},fired:{},seq:0};  // hit: 이미 맞힌 공 · seq: 몇 번째 공인지
+    const dist=(i,j)=>Math.hypot(c0[i*2]-c0[j*2], c0[i*2+1]-c0[j*2+1]);
+    const nearRail=(i)=>{ const x=c0[i*2],y=c0[i*2+1];
+      return x<=play.x0+R+3||x>=play.x1-R-3||y<=play.y0+R+3||y>=play.y1-R-3; };
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const k=i+'-'+j;s.pd[k]=dist(i,j);s.dec[k]=false;}
+    for(let i=0;i<n;i++) s.rc[i]=nearRail(i);
+    anim._sfx=s; anim._sfxT=startT; return;
+  }
+  const s=anim._sfx;
+  // 4구와 같은 이유로 프레임 사이를 2ms 간격으로 잘게 훑어 충돌을 빠짐없이 잡는다
+  const fr=anim.frames;
+  if(fr){
+    const tNow=(performance.now()-anim.t0)/1000, DT=0.002;
+    let tt=anim._sfxT||0;
+    if(tNow-tt>0.1) tt=tNow-0.1;
+    for(tt+=DT; tt<tNow; tt+=DT) sfxSample3(s, posAt3(fr,tt), n, R, sfx);
+    sfxSample3(s, posAt3(fr,tNow), n, R, sfx);
+    anim._sfxT=tNow;
+  } else {
+    sfxSample3(s, cur, n, R, sfx);
   }
 }
 // 4구의 sfxBallHit과 같은 규칙 — 스코프가 갈려 있어 따로 둔다.
