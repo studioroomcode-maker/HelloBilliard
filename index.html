@@ -1857,7 +1857,9 @@ function saveCalib(){
 // tipScale: 당점 사용 폭 — 초급은 중심에서 반 팁 이상 못 벗어난다는 전제.
 // 시뮬레이션·몬테카를로·당점 그림이 전부 축소된 당점으로 일관 계산된다.
 const SKILLS={
-  beg:{label:'초급', aim:1.9, spin:1.8, spd:1.5, maxOff:0.72, tipScale:0.5, spinOK:s=>s.h===0},
+  // 초급: 무회전·밀어치기만(끌어치기=히끼 제외, 옆회전 제외) + 반공(1/2) 이상 두께(얇은 컷 제외).
+  // 히끼·얇은컷이 필요한 배치는 상위 실력으로 폴백되어 '중급 기술 필요'로 안내된다.
+  beg:{label:'초급', aim:1.9, spin:1.8, spd:1.5, maxOff:0.55, tipScale:0.5, spinOK:s=>s.h===0&&s.v>=0},
   mid:{label:'중급', aim:1.0, spin:1.0, spd:1.0, maxOff:0.85, tipScale:1.0, spinOK:s=>!(s.v!==0&&s.h!==0)},
   adv:{label:'상급', aim:0.6, spin:0.6, spd:0.8, maxOff:0.92, tipScale:1.0, spinOK:()=>true},
 };
