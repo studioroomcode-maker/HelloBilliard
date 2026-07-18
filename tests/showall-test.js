@@ -49,7 +49,8 @@ global.document = {
   },
 };
 global.window = { addEventListener() {} };
-global.localStorage = { getItem: () => null, setItem() {} };
+// 여러 경로 겹쳐보기(showAll)를 검증하므로 Pro(게이팅 해제)로 실행한다.
+global.localStorage = { getItem: (k) => k === 'hb_pro' ? '1' : null, setItem() {} };
 eval(code);
 
 let fails = 0;

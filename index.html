@@ -1028,6 +1028,7 @@
     <h1>Hello Billiard
       <span class="sub">당구 AI 코치 — 4구 경로 시뮬레이터 + 3구 시스템 계산기</span>
     </h1>
+    <button id="proTeaser" class="pro-chip" type="button" aria-label="Hello Billiard Pro 안내">✦ Pro</button>
     <button id="themeToggle" class="theme-toggle" type="button" aria-label="라이트/다크 테마 전환" title="라이트/다크 전환">🌙</button>
   </div>
 
@@ -1365,6 +1366,86 @@
   </footer>
 </div>
 
+<!-- ===== Pro 준비중 티저 (유료화 검증 0단계) ===== -->
+<style>
+  .pro-chip{ margin-left:auto; align-self:center; padding:5px 12px; border-radius:999px;
+    border:1px solid rgba(224,164,74,.55); background:rgba(224,164,74,.12); color:#e8b45f;
+    font-size:12px; font-weight:800; letter-spacing:.02em; cursor:pointer;
+    transition:background .15s, transform .1s; }
+  .pro-chip:hover{ background:rgba(224,164,74,.2); transform:translateY(-1px); }
+  .pro-chip:active{ transform:translateY(0); }
+  .pro-modal{ position:fixed; inset:0; z-index:1000; display:flex; align-items:center;
+    justify-content:center; padding:18px; }
+  .pro-modal[hidden]{ display:none; }
+  .pro-modal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.55);
+    backdrop-filter:blur(2px); }
+  .pro-card{ position:relative; width:min(420px,100%); max-height:90vh; overflow:auto;
+    background:var(--surface,#1b1712); border:1px solid var(--line-soft,#3a3327);
+    border-radius:20px; box-shadow:0 24px 70px -20px rgba(0,0,0,.7); padding:22px 22px 20px;
+    animation:proIn .18s ease; }
+  @keyframes proIn{ from{ opacity:0; transform:translateY(10px) scale(.98); } to{ opacity:1; } }
+  .pro-x{ position:absolute; top:12px; right:12px; width:30px; height:30px; border-radius:8px;
+    border:none; background:transparent; color:var(--tx-3,#8a8272); font-size:16px; cursor:pointer; }
+  .pro-x:hover{ background:rgba(255,255,255,.06); }
+  .pro-badge{ display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px;
+    font-weight:800; letter-spacing:.03em; color:#e8b45f; background:rgba(224,164,74,.16);
+    border:1px solid rgba(224,164,74,.5); }
+  .pro-card h2{ font-size:22px; font-weight:800; margin:10px 0 4px; color:var(--tx-1,#f4f1e8); }
+  .pro-card h2 b{ color:#e8b45f; }
+  .pro-lead{ font-size:13px; color:var(--tx-2,#c9c2b0); margin-bottom:14px; }
+  .pro-list{ list-style:none; padding:0; margin:0 0 18px; display:flex; flex-direction:column; gap:9px; }
+  .pro-list li{ font-size:13.5px; color:var(--tx-2,#c9c2b0); line-height:1.4; }
+  .pro-list li b{ color:var(--tx-1,#f4f1e8); }
+  .pro-actions{ display:flex; gap:9px; }
+  .pro-actions .tool{ flex:1; justify-content:center; }
+  .pro-redeem{ display:flex; gap:8px; margin-top:10px; }
+  .pro-redeem input{ flex:1; min-width:0; padding:9px 12px; border-radius:10px;
+    border:1px solid var(--line-soft,#3a3327); background:var(--surface-2,#241d15);
+    color:var(--tx-1,#f4f1e8); font-size:13px; }
+  .pro-redeem input::placeholder{ color:var(--tx-3,#8a8272); }
+  .pro-redeem .tool{ flex:0 0 auto; }
+  .pro-active{ margin:2px 0 4px; padding:10px 12px; border-radius:12px; font-size:13px;
+    font-weight:700; color:#5fd08a; background:rgba(95,208,138,.1);
+    border:1px solid rgba(95,208,138,.35); }
+  .pro-note{ margin-top:12px; font-size:12.5px; color:#5fd08a; text-align:center; font-weight:700; }
+  .pro-chip.is-pro{ border-color:rgba(95,208,138,.55); background:rgba(95,208,138,.14); color:#5fd08a; }
+  /* 3구 무료 업셀 카드 */
+  .pro-upsell{ margin-top:8px; padding:13px 15px; border-radius:16px; cursor:pointer;
+    border:1px dashed rgba(224,164,74,.5); background:rgba(224,164,74,.06);
+    color:var(--tx-2,#c9c2b0); font-size:13px; text-align:center; transition:background .15s; }
+  .pro-upsell:hover{ background:rgba(224,164,74,.11); }
+  .pro-upsell b{ color:#e8b45f; }
+  .pro-upsell span{ color:#e8b45f; font-weight:700; }
+</style>
+<div id="proModal" class="pro-modal" hidden>
+  <div class="pro-modal-backdrop" data-proclose></div>
+  <div class="pro-card" role="dialog" aria-modal="true" aria-labelledby="proTitle">
+    <button class="pro-x" type="button" data-proclose aria-label="닫기">✕</button>
+    <span class="pro-badge">준비 중</span>
+    <h2 id="proTitle">Hello Billiard <b>Pro</b></h2>
+    <p class="pro-lead" id="proLead">더 깊이 파고드는 분들을 위한 기능을 준비하고 있어요. 관심을 남겨 주시면 우선순위에 반영합니다.</p>
+    <ul class="pro-list">
+      <li>📷 <b>사진 인식 무제한</b> — 무료는 하루 3회</li>
+      <li>🎯 <b>3구 다중·고급 경로</b> — 무료는 대표 1개</li>
+      <li>🖼 <b>내보낸 이미지 워터마크 제거</b></li>
+    </ul>
+    <div id="proActive" class="pro-active" hidden>✓ Pro가 활성화되어 있어요 — 모든 기능이 열렸습니다.</div>
+    <div class="pro-actions" id="proBuyRow">
+      <button class="tool primary" id="proInterest" type="button">관심 있어요</button>
+      <button class="tool" id="proDonate" type="button">☕ 후원하기</button>
+    </div>
+    <div class="pro-redeem" id="proRedeemRow">
+      <input id="proCode" type="text" autocomplete="off" placeholder="언락 코드가 있으면 입력" aria-label="언락 코드">
+      <button class="tool" id="proRedeem" type="button">확인</button>
+    </div>
+    <p class="pro-note" id="proNote" hidden></p>
+  </div>
+</div>
+
+<!-- Vercel Web Analytics (같은 오리진·쿠키 없음). Vercel 대시보드에서 'Web Analytics'를
+     켜야 집계됨. 안 켜져 있으면 404로 조용히 무시되고 로컬 __hbStats() 만 동작. -->
+<script defer src="/_vercel/insights/script.js"></script>
+
 <script>
 // ===== 전역 에러 수집 — 실기기 문제 가시화 =====
 // 최근 오류 30건을 localStorage('hb_errlog')에 보관.
@@ -1403,6 +1484,53 @@
       catch(e){ return []; }
     };
   }catch(e){}
+})();
+
+// ===== 사용 계측 (인프라 0) =====
+// 유료화 검증 0단계 — '무엇이 얼마나 쓰이는지'를 측정한다. 두 경로로 남긴다:
+//   ① 로컬 카운터: 콘솔에서 __hbStats() 로 즉시 확인 (계정·서버 불필요)
+//   ② Vercel Web Analytics: Vercel 대시보드에서 'Web Analytics'를 켜면
+//      /_vercel/insights/script.js 가 window.va 를 붙여 커스텀 이벤트를 집계한다.
+//      (안 켜져 있으면 스크립트가 404 → window.va 없음 → ①만 동작, 조용히 무시)
+// 쿠키·외부 도메인 없음(같은 오리진 경로) — 기존 CSP(script-src 'self')와 충돌 없음.
+window.hbTrack=(function(){
+  var CKEY='hb_stats';
+  function bump(name){
+    try{ var s=JSON.parse(localStorage.getItem(CKEY)||'{}');
+      s[name]=(s[name]|0)+1; localStorage.setItem(CKEY,JSON.stringify(s)); }catch(e){}
+  }
+  window.__hbStats=function(){
+    try{ return JSON.parse(localStorage.getItem(CKEY)||'{}'); }catch(e){ return {}; }
+  };
+  return function(name,props){
+    if(!name) return;
+    bump(name);
+    try{ if(typeof window.va==='function') window.va('event',Object.assign({name:name},props||{})); }catch(e){}
+  };
+})();
+
+// ===== Pro 권한 / 무료 한도 (유료화 1단계) =====
+// 게이팅만 구현하고 결제는 나중에 붙인다(0단계 검증 후). 아래 한도 상수를 크게 잡거나
+// PRO_CODES 에 코드를 넣으면 즉시 조절/무력화된다. 콘솔 __hbSetPro(1) 로 소유자/테스트 언락.
+window.hbPro=(function(){
+  var FKEY='hb_pro', PKEY='hb_photo_day';
+  // ── 무료 한도 (여기만 바꾸면 조절·해제 가능) ──
+  var FREE_PHOTO_PER_DAY=3;   // 사진 인식: 무료 하루 3회 / Pro 무제한
+  var FREE_3GU_ROUTES=1;      // 3구 물리 경로: 무료 대표 1개 / Pro 전체
+  // ── 언락 코드 (결제 연동 전 수동 발급용) — 예: ['HB-PRO-XXXX'] ──
+  var PRO_CODES=[];
+  function is(){ try{ return localStorage.getItem(FKEY)==='1'; }catch(e){ return false; } }
+  function set(v){ try{ if(v) localStorage.setItem(FKEY,'1'); else localStorage.removeItem(FKEY); }catch(e){} }
+  window.__hbSetPro=function(v){ set(!!v); return is(); };   // 소유자·테스트용 콘솔 스위치
+  function today(){ try{ return new Date().toISOString().slice(0,10); }catch(e){ return ''; } }
+  function pstate(){ try{ var s=JSON.parse(localStorage.getItem(PKEY)||'{}');
+    if(s.d!==today()) s={d:today(),n:0}; return s; }catch(e){ return {d:today(),n:0}; } }
+  function photoLeft(){ if(is()) return Infinity; return Math.max(0, FREE_PHOTO_PER_DAY - (pstate().n|0)); }
+  function notePhoto(){ if(is()) return; try{ var s=pstate(); s.n=(s.n|0)+1;
+    localStorage.setItem(PKEY,JSON.stringify(s)); }catch(e){} }
+  function redeem(code){ code=(code||'').trim(); if(code&&PRO_CODES.indexOf(code)>=0){ set(true); return true; } return false; }
+  return { is:is, set:set, redeem:redeem, photoLeft:photoLeft, notePhoto:notePhoto,
+    FREE_PHOTO_PER_DAY:FREE_PHOTO_PER_DAY, FREE_3GU_ROUTES:FREE_3GU_ROUTES };
 })();
 
 // ===== 효과음 — sound/*.mp3 (같은 오리진 · 외부 요청 0건) =====
@@ -2790,6 +2918,7 @@ calcBtn.addEventListener('click',()=>{
     return;
   }
   calcTried=true;
+  window.hbTrack&&window.hbTrack('solve',{mode:'4gu'});
   calcBtn.disabled=true;
   calcBtn.textContent='계산 중…';
   const myGen=++solveGen;
@@ -2878,7 +3007,24 @@ document.getElementById('g4-play').addEventListener('click',()=>{
 // 현재 당구대(선택 경로 포함)를 PNG로 공유/저장 — 모바일은 시스템 공유 시트
 function shareCanvas(canvas,name){
   try{
-    canvas.toBlob(function(blob){
+    var out=canvas;
+    // 무료: 내보낸 이미지에 작은 워터마크를 넣는다(다운로드는 자유, Pro는 제거).
+    // 원본 캔버스는 안 건드리고 사본에만 그린다.
+    if(!(window.hbPro && window.hbPro.is())){
+      try{
+        var oc=document.createElement('canvas'); oc.width=canvas.width; oc.height=canvas.height;
+        var octx=oc.getContext('2d'); octx.drawImage(canvas,0,0);
+        var fs=Math.max(13,Math.round(canvas.height*0.045));
+        octx.font='800 '+fs+'px system-ui,-apple-system,sans-serif';
+        octx.textAlign='right'; octx.textBaseline='bottom';
+        octx.lineWidth=Math.max(2,fs*0.16); octx.strokeStyle='rgba(0,0,0,.35)';
+        octx.strokeText('Hello Billiard', canvas.width-14, canvas.height-11);
+        octx.fillStyle='rgba(255,255,255,.82)';
+        octx.fillText('Hello Billiard', canvas.width-14, canvas.height-11);
+        out=oc;
+      }catch(e){ out=canvas; }
+    }
+    out.toBlob(function(blob){
       if(!blob) return;
       try{
         const file=new File([blob],name,{type:'image/png'});
@@ -3457,6 +3603,14 @@ document.getElementById('g4-photo').addEventListener('click',()=>{
 document.getElementById('g4-file').addEventListener('change',e=>{
   const f=e.target.files&&e.target.files[0];
   if(!f) return;
+  window.hbTrack&&window.hbTrack('photo',{mode:'4gu'});
+  if(window.hbPro && window.hbPro.photoLeft()<=0){
+    e.target.value='';   // 같은 파일 다시 고를 수 있게 초기화
+    window.hbTrack&&window.hbTrack('gate_photo',{mode:'4gu'});
+    window.hbShowPaywall&&window.hbShowPaywall('photo');
+    return;
+  }
+  window.hbPro&&window.hbPro.notePhoto();
   const url=URL.createObjectURL(f);
   const im=new Image();
   im.onload=()=>{
@@ -5394,6 +5548,18 @@ function renderPhyCards(){
       </div>
     </div>`;
   }).join('');
+  // Pro 업셀 — 무료라 감춘 경로가 있으면 카드 밑에 안내
+  if(phyRoutes._proHidden){
+    box.innerHTML +=
+      `<div class="pro-upsell" id="g3-proUpsell" role="button" tabindex="0">`+
+      `🔒 <b>+${phyRoutes._proHidden}개 경로</b>가 더 있어요 — <span>Pro에서 전체 보기 →</span></div>`;
+    const up=document.getElementById('g3-proUpsell');
+    if(up){
+      const go=()=>{ window.hbTrack&&window.hbTrack('gate_3gu'); window.hbShowPaywall&&window.hbShowPaywall('routes3'); };
+      up.addEventListener('click',go);
+      up.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } });
+    }
+  }
   box.querySelectorAll('.rcard').forEach(c=>{
     c.addEventListener('click',()=>{
       stopAnim3(false);
@@ -5449,6 +5615,7 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
       '공을 서로 떨어뜨려 배치한 뒤 다시 계산해 주세요.</span></div>';
     return;
   }
+  window.hbTrack&&window.hbTrack('solve',{mode:'3gu'});
   btn.textContent='계산 중…'; btn.disabled=true;
   stopAnim3(false);
   const myGen=++solveGen3;
@@ -5470,6 +5637,13 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
   solve3WithFallback(p=>{ btn.textContent=`계산 중… ${p}%`; }).then(rs=>{
     if(myGen!==solveGen3) return;
     solution=null;
+    // Pro 게이트 — 무료는 대표 경로만, 나머지는 감춰 업셀. 정렬 재선발이 없어 배열을
+    // 잘라도 안전하고, 당구대 오버레이(forEach)도 자동으로 무료 범위만 그린다.
+    if(window.hbPro && !window.hbPro.is() && rs && rs.length>window.hbPro.FREE_3GU_ROUTES){
+      const hidden=rs.length-window.hbPro.FREE_3GU_ROUTES;
+      rs.length=window.hbPro.FREE_3GU_ROUTES;   // 커스텀 속성(dropped·skillFallback 등)은 유지됨
+      rs._proHidden=hidden;
+    }
     phyRoutes=rs; phySel=0;
     justSolved3=true; renderPhyCards(); justSolved3=false;   // 등장 애니메이션
     draw();
@@ -5534,6 +5708,14 @@ document.getElementById('g3-photo').addEventListener('click',()=>{
 document.getElementById('g3-file').addEventListener('change',e=>{
   const f=e.target.files&&e.target.files[0];
   if(!f) return;
+  window.hbTrack&&window.hbTrack('photo',{mode:'3gu'});
+  if(window.hbPro && window.hbPro.photoLeft()<=0){
+    e.target.value='';
+    window.hbTrack&&window.hbTrack('gate_photo',{mode:'3gu'});
+    window.hbShowPaywall&&window.hbShowPaywall('photo');
+    return;
+  }
+  window.hbPro&&window.hbPro.notePhoto();
   const V=window.__hbVision;
   const url=URL.createObjectURL(f);
   const im=new Image();
@@ -6224,6 +6406,7 @@ if(typeof window!=='undefined')
       b.classList.add('on');
       document.getElementById('panel-m4').classList.toggle('show', b.dataset.mode==='m4');
       document.getElementById('panel-m3').classList.toggle('show', b.dataset.mode==='m3');
+      window.hbTrack&&window.hbTrack('mode',{to:b.dataset.mode});
       // 보드 고정(sticky) 여부는 지금 보이는 탭의 사진 패널 기준으로 갱신
       var pp=document.getElementById(b.dataset.mode==='m4'?'g4-photoPanel':'g3-photoPanel');
       document.body.classList.toggle('photo-open', !!(pp&&pp.style.display==='block'));
@@ -6249,6 +6432,75 @@ if(typeof window!=='undefined')
     // 혹시 열려 있는 경로/사진 오버레이 갱신을 위해 리사이즈 이벤트를 흘려준다.
     try{ window.dispatchEvent(new Event('resize')); }catch(e){}
   });
+})();
+
+// ===== Pro 페이월 + 유료화 검증 (0·1단계) =====
+// 클릭 자체가 '지불의사 신호'다. 결제는 아직 config로 비워둔다(0단계 검증 후 연결).
+(function(){
+  // ↓↓↓ 이 URL들만 채우면 버튼이 실제 링크로 연결됩니다. 비워두면 클릭 신호만
+  //     계측하고 감사 문구를 띄웁니다(검증엔 그것으로 충분). 결제 붙일 땐 CHECKOUT_URL.
+  var PRO_INTEREST_URL='';   // 예: 구글폼 / Tally 관심 설문 링크
+  var DONATE_URL='';         // 예: 토스 / 카카오 / BuyMeACoffee 후원 링크
+  var CHECKOUT_URL='';       // (1단계 결제) 예: Lemon Squeezy / Gumroad 구매 링크
+  var modal=document.getElementById('proModal');
+  var chip=document.getElementById('proTeaser');
+  if(!modal||!chip) return;
+  var note=document.getElementById('proNote');
+  var lead=document.getElementById('proLead');
+  var LEADS={
+    photo:'무료 사진 인식은 하루 3회예요. Pro로 무제한으로 쓰거나 내일 다시 이용할 수 있어요.',
+    routes3:'무료는 3구 대표 경로 1개만 보여드려요. Pro에서 다중·고급 경로 전체를 볼 수 있어요.',
+    def:'더 깊이 파고드는 분들을 위한 기능이에요. 관심을 남겨 주시면 우선순위에 반영합니다.'
+  };
+  var lastFocus=null;
+  function pro(){ return !!(window.hbPro && window.hbPro.is()); }
+  function syncState(){
+    var p=pro();
+    var a=document.getElementById('proActive'); if(a) a.hidden=!p;
+    var buy=document.getElementById('proBuyRow'); if(buy) buy.style.display=p?'none':'';
+    var rr=document.getElementById('proRedeemRow'); if(rr) rr.style.display=p?'none':'';
+    chip.classList.toggle('is-pro',p);
+    chip.textContent=p?'✦ Pro ✓':'✦ Pro';
+  }
+  function open(ctx){
+    lastFocus=document.activeElement;
+    if(lead) lead.textContent=LEADS[ctx]||LEADS.def;
+    syncState();
+    modal.hidden=false; if(note){ note.hidden=true; note.textContent=''; }
+    var b=document.getElementById(pro()?'proRedeem':'proInterest');
+    if(b&&b.focus) try{ b.focus(); }catch(e){}
+    window.hbTrack&&window.hbTrack('pro_open',ctx?{ctx:ctx}:null);
+  }
+  function close(){
+    modal.hidden=true;
+    if(lastFocus&&lastFocus.focus) try{ lastFocus.focus(); }catch(e){}
+  }
+  function thanks(msg,bad){ if(note){ note.textContent=msg; note.style.color=bad?'#e0705a':'#5fd08a'; note.hidden=false; } }
+  window.hbShowPaywall=open;   // 게이트에서 호출
+  chip.addEventListener('click', function(){ open(); });
+  modal.querySelectorAll('[data-proclose]').forEach(function(el){ el.addEventListener('click', close); });
+  window.addEventListener('keydown', function(e){ if(!modal.hidden && e.key==='Escape') close(); });
+  document.getElementById('proInterest').addEventListener('click', function(){
+    window.hbTrack&&window.hbTrack('pro_interest');
+    var url=CHECKOUT_URL||PRO_INTEREST_URL;
+    if(url){ try{ window.open(url,'_blank','noopener'); }catch(e){} close(); }
+    else thanks('관심 감사합니다! 곧 준비해서 알려드릴게요.');
+  });
+  document.getElementById('proDonate').addEventListener('click', function(){
+    window.hbTrack&&window.hbTrack('donate_click');
+    if(DONATE_URL){ try{ window.open(DONATE_URL,'_blank','noopener'); }catch(e){} close(); }
+    else thanks('후원 준비 중이에요. 마음 감사합니다 🙏');
+  });
+  document.getElementById('proRedeem').addEventListener('click', function(){
+    var el=document.getElementById('proCode');
+    var ok=window.hbPro && window.hbPro.redeem(el?el.value:'');
+    if(ok){ window.hbTrack&&window.hbTrack('redeem_ok'); syncState();
+      thanks('Pro가 활성화되었습니다! 🎉 다음 계산부터 모든 경로가 열려요.');
+      try{ if(window.__hb3refresh) window.__hb3refresh(); }catch(e){} }
+    else { window.hbTrack&&window.hbTrack('redeem_fail'); thanks('코드가 올바르지 않아요. 다시 확인해 주세요.',true); }
+  });
+  syncState();   // 최초 로드 시 칩/버튼 상태 반영
+  window.hbTrack&&window.hbTrack('app_open');
 })();
 </script>
 </body>

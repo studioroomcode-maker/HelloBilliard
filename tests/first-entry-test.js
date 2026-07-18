@@ -38,7 +38,8 @@ global.document = {
   },
 };
 global.window = { addEventListener() {} };
-global.localStorage = { getItem: () => null, setItem() {} };
+// 이 테스트는 다중 경로 '엔진'을 검증하므로 Pro(게이팅 해제)로 실행한다.
+global.localStorage = { getItem: (k) => k === 'hb_pro' ? '1' : null, setItem() {} };
 eval(code);
 
 const strip = (id) => (els[id].innerHTML || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
