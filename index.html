@@ -1028,7 +1028,8 @@
     <h1>Hello Billiard
       <span class="sub">당구 AI 코치 — 4구 경로 시뮬레이터 + 3구 시스템 계산기</span>
     </h1>
-    <button id="proTeaser" class="pro-chip" type="button" aria-label="Hello Billiard Pro 안내">✦ Pro</button>
+    <button id="statsChip" class="pro-chip" type="button" style="margin-left:auto" aria-label="내 연습 기록">📈 기록</button>
+    <button id="proTeaser" class="pro-chip" type="button" style="margin-left:8px" aria-label="Hello Billiard Pro 안내">✦ Pro</button>
     <button id="themeToggle" class="theme-toggle" type="button" aria-label="라이트/다크 테마 전환" title="라이트/다크 전환">🌙</button>
   </div>
 
@@ -1136,6 +1137,13 @@
     <button class="tool mini play" id="g4-play" aria-label="경로 재생" title="경로 재생"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg></button>
     <button class="tool mini" id="g4-share">경로 저장</button>
   </div>
+  </div>
+
+  <div class="rec-row" id="g4-rec" hidden>
+    <span class="rec-q">이 샷, 실제로 쳐봤나요?</span>
+    <button class="tool rec-yes" id="g4-recYes" type="button">성공 ✓</button>
+    <button class="tool rec-no" id="g4-recNo" type="button">실패 ✗</button>
+    <span class="rec-msg" id="g4-recMsg" hidden></span>
   </div>
 
   <div class="actions">
@@ -1288,6 +1296,13 @@
   </div>
   </div>
 
+  <div class="rec-row" id="g3-rec" hidden>
+    <span class="rec-q">이 샷, 실제로 쳐봤나요?</span>
+    <button class="tool rec-yes" id="g3-recYes" type="button">성공 ✓</button>
+    <button class="tool rec-no" id="g3-recNo" type="button">실패 ✗</button>
+    <span class="rec-msg" id="g3-recMsg" hidden></span>
+  </div>
+
   <div class="actions">
     <button class="tool primary" id="g3-calc" style="display:none">시스템 계산</button>
     <button class="tool primary" id="g3-phys">경로 계산</button>
@@ -1416,6 +1431,30 @@
   .pro-upsell:hover{ background:rgba(224,164,74,.11); }
   .pro-upsell b{ color:#e8b45f; }
   .pro-upsell span{ color:#e8b45f; font-weight:700; }
+  /* 결과 기록 행 */
+  .rec-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:6px 0 2px;
+    padding:9px 12px; border-radius:14px; background:var(--surface-2,#241d15);
+    border:1px solid var(--line-soft,#3a3327); }
+  .rec-row .rec-q{ font-size:13px; color:var(--tx-2,#c9c2b0); margin-right:auto; }
+  .rec-row .rec-yes{ color:#5fd08a; border-color:rgba(95,208,138,.4); }
+  .rec-row .rec-no{ color:#e0705a; border-color:rgba(224,112,90,.4); }
+  .rec-row .rec-msg{ font-size:12.5px; font-weight:700; color:#5fd08a; width:100%; }
+  /* 기록(성장) 모달 통계 */
+  .hist-streak{ display:flex; align-items:baseline; gap:8px; margin:8px 0 14px; }
+  .hist-streak .n{ font-size:30px; font-weight:800; color:#e8b45f;
+    font-variant-numeric:tabular-nums; line-height:1; }
+  .hist-streak .u{ font-size:13px; color:var(--tx-2,#c9c2b0); }
+  .hist-grid{ display:flex; gap:9px; margin-bottom:16px; }
+  .hist-stat{ flex:1; text-align:center; padding:12px 8px; border-radius:14px;
+    background:var(--surface-2,#241d15); border:1px solid var(--line-soft,#3a3327); }
+  .hist-stat .v{ font-size:22px; font-weight:800; color:var(--tx-1,#f4f1e8);
+    font-variant-numeric:tabular-nums; line-height:1; }
+  .hist-stat .l{ margin-top:5px; font-size:11px; color:var(--tx-3,#8a8272); }
+  .hist-chart-t{ font-size:12px; color:var(--tx-3,#8a8272); margin:0 0 7px; letter-spacing:.03em; }
+  .hist-empty{ font-size:13px; color:var(--tx-2,#c9c2b0); line-height:1.6; text-align:center; padding:10px 0; }
+  .hist-clear{ margin-top:14px; text-align:center; }
+  .hist-clear button{ background:none; border:none; color:var(--tx-3,#8a8272);
+    font-size:12px; text-decoration:underline; cursor:pointer; }
 </style>
 <div id="proModal" class="pro-modal" hidden>
   <div class="pro-modal-backdrop" data-proclose></div>
@@ -1439,6 +1478,17 @@
       <button class="tool" id="proRedeem" type="button">확인</button>
     </div>
     <p class="pro-note" id="proNote" hidden></p>
+  </div>
+</div>
+
+<!-- ===== 내 기록(성장 추적) 모달 ===== -->
+<div id="histModal" class="pro-modal" hidden>
+  <div class="pro-modal-backdrop" data-histclose></div>
+  <div class="pro-card" role="dialog" aria-modal="true" aria-labelledby="histTitle">
+    <button class="pro-x" type="button" data-histclose aria-label="닫기">✕</button>
+    <h2 id="histTitle">📈 내 기록</h2>
+    <div id="histBody"></div>
+    <div class="hist-clear"><button type="button" id="histClear">기록 지우기</button></div>
   </div>
 </div>
 
@@ -1531,6 +1581,38 @@ window.hbPro=(function(){
   function redeem(code){ code=(code||'').trim(); if(code&&PRO_CODES.indexOf(code)>=0){ set(true); return true; } return false; }
   return { is:is, set:set, redeem:redeem, photoLeft:photoLeft, notePhoto:notePhoto,
     FREE_PHOTO_PER_DAY:FREE_PHOTO_PER_DAY, FREE_3GU_ROUTES:FREE_3GU_ROUTES };
+})();
+
+// ===== 연습 기록 / 성장 추적 (로컬, 백엔드 0) =====
+// 쳐보고 성공/실패를 남기면 성공률 추이·연속일이 쌓인다 — 구독(2단계)의 데이터 토대이자
+// 지금 유저에게 바로 쓸모. 콘솔 __hbHistory() 로 확인. 나중에 클라우드 동기화로 확장.
+window.hbHistory=(function(){
+  var KEY='hb_history', SKEY='hb_streak', CAP=2000;
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return []; } }
+  function save(a){ try{ localStorage.setItem(KEY,JSON.stringify(a.slice(-CAP))); }catch(e){} }
+  function today(){ try{ return new Date().toISOString().slice(0,10); }catch(e){ return ''; } }
+  function prevDay(d){ try{ return new Date(Date.parse(d)-86400000).toISOString().slice(0,10); }catch(e){ return ''; } }
+  function bumpStreak(){
+    try{ var s=JSON.parse(localStorage.getItem(SKEY)||'{}'), d=today();
+      if(s.last===d) return; s.n=(s.last===prevDay(d))?(s.n|0)+1:1; s.last=d;
+      localStorage.setItem(SKEY,JSON.stringify(s)); }catch(e){}
+  }
+  function streak(){ try{ var s=JSON.parse(localStorage.getItem(SKEY)||'{}'); if(!s.last) return 0;
+    var d=today(); return (s.last===d||s.last===prevDay(d))?(s.n|0):0; }catch(e){ return 0; } }
+  function log(entry){ var a=load(); a.push(Object.assign({t:Date.now(),d:today()},entry||{}));
+    save(a); bumpStreak();
+    window.hbTrack&&window.hbTrack('shot_logged',{mode:entry&&entry.mode,made:entry&&entry.made?1:0});
+    return stats(); }
+  function stats(){
+    var a=load(), makes=0; for(var i=0;i<a.length;i++) if(a[i].made) makes++;
+    var recent=a.slice(-20), rm=0; for(var j=0;j<recent.length;j++) if(recent[j].made) rm++;
+    var byDay={}; a.forEach(function(e){ var d=e.d||''; (byDay[d]=byDay[d]||{a:0,m:0}).a++; if(e.made) byDay[d].m++; });
+    return { attempts:a.length, makes:makes, rate:a.length?makes/a.length:0,
+      recentRate:recent.length?rm/recent.length:0, recentN:recent.length, streak:streak(), byDay:byDay };
+  }
+  window.__hbHistory=function(){ return { entries:load(), stats:stats() }; };
+  return { log:log, stats:stats, streak:streak,
+    clear:function(){ try{ localStorage.removeItem(KEY); localStorage.removeItem(SKEY); }catch(e){} } };
 })();
 
 // ===== 효과음 — sound/*.mp3 (같은 오리진 · 외부 요청 0건) =====
@@ -2639,6 +2721,8 @@ function renderCards(){
   const box=document.getElementById('g4-routes');
   const bar=document.getElementById('g4-stageBar');
   if(bar) bar.hidden=!routes.length;   // 재생·저장은 경로가 있을 때만 당구대 밑에 노출
+  const recRow=document.getElementById('g4-rec');   // 결과 기록 행도 경로 있을 때만
+  if(recRow){ recRow.hidden=!routes.length; const rm=document.getElementById('g4-recMsg'); if(rm&&!routes.length) rm.hidden=true; }
   // 샷 요약 — 선택한 경로의 당점·두께·파워를 당구대 위에 한 줄로
   const brief=document.getElementById('g4-shotBrief');
   if(brief){
@@ -3044,6 +3128,20 @@ function shareCanvas(canvas,name){
 document.getElementById('g4-share').addEventListener('click',()=>{
   draw(); shareCanvas(cv,'hello-billiard.png');
 });
+// 결과 기록 (4구) — 선택 경로의 성공/실패를 남겨 성장 추적에 쌓는다
+(function(){
+  const rm=document.getElementById('g4-recMsg');
+  function rec(made){
+    const r=routes[selected];
+    const st=window.hbHistory&&window.hbHistory.log({mode:'4gu', made:made,
+      prob:r?r.prob:null, cush:r?r.cushions:null});
+    if(rm&&st){ rm.hidden=false; rm.style.color=made?'#5fd08a':'#e0705a';
+      rm.textContent=`기록됨 · 최근 ${Math.round(st.recentRate*100)}%(${st.recentN}) · 누적 ${st.attempts}회 · 🔥${st.streak}일`; }
+  }
+  const y=document.getElementById('g4-recYes'), n=document.getElementById('g4-recNo');
+  if(y) y.addEventListener('click',()=>rec(true));
+  if(n) n.addEventListener('click',()=>rec(false));
+})();
 
 /* ===== 📷 사진 인식 =====
    사진 속 경기면 네 모서리(자동 감지 + 드래그 보정)로 호모그래피를 세워
@@ -5443,6 +5541,8 @@ function renderPhyCards(){
   if(coach && phyRoutes && phyRoutes.length) coach.hidden=true;
   const bar=document.getElementById('g3-stageBar');
   if(bar) bar.hidden=!(phyRoutes&&phyRoutes.length);   // 재생 버튼은 경로가 있을 때만
+  const recRow3=document.getElementById('g3-rec');   // 결과 기록 행
+  if(recRow3){ recRow3.hidden=!(phyRoutes&&phyRoutes.length); const rm3=document.getElementById('g3-recMsg'); if(rm3&&!(phyRoutes&&phyRoutes.length)) rm3.hidden=true; }
   // [겹쳐 보기]는 비교할 경로가 2개 이상일 때만 의미가 있다
   const sa=document.getElementById('g3-showAll');
   if(sa) sa.style.display=(phyRoutes&&phyRoutes.length>1)?'':'none';
@@ -5567,6 +5667,20 @@ function renderPhyCards(){
     });
   });
 }
+// 결과 기록 (3구)
+(function(){
+  const rm=document.getElementById('g3-recMsg');
+  function rec(made){
+    const r=phyRoutes&&phyRoutes[phySel];
+    const st=window.hbHistory&&window.hbHistory.log({mode:'3gu', made:made,
+      prob:r?r.prob:null, cush:r?r.cush:null});
+    if(rm&&st){ rm.hidden=false; rm.style.color=made?'#5fd08a':'#e0705a';
+      rm.textContent=`기록됨 · 최근 ${Math.round(st.recentRate*100)}%(${st.recentN}) · 누적 ${st.attempts}회 · 🔥${st.streak}일`; }
+  }
+  const y=document.getElementById('g3-recYes'), n=document.getElementById('g3-recNo');
+  if(y) y.addEventListener('click',()=>rec(true));
+  if(n) n.addEventListener('click',()=>rec(false));
+})();
 function drawPhyRoute(r,color,alpha){
   ctx.save(); ctx.globalAlpha=alpha;
   if(alpha>.9){ ctx.shadowColor=color; ctx.shadowBlur=10; }
@@ -6501,6 +6615,54 @@ if(typeof window!=='undefined')
   });
   syncState();   // 최초 로드 시 칩/버튼 상태 반영
   window.hbTrack&&window.hbTrack('app_open');
+})();
+
+// ===== 내 기록(성장 추적) 모달 =====
+(function(){
+  var modal=document.getElementById('histModal');
+  var chip=document.getElementById('statsChip');
+  if(!modal||!chip) return;
+  var lastFocus=null;
+  function pct(x){ return Math.round((x||0)*100); }
+  function render(){
+    var body=document.getElementById('histBody'); if(!body) return;
+    var s=window.hbHistory?window.hbHistory.stats():{attempts:0};
+    if(!s.attempts){
+      body.innerHTML='<div class="hist-empty">아직 기록이 없어요.<br>경로를 계산한 뒤 '+
+        '<b>성공/실패</b>를 남기면<br>성공률 추이와 연속일이 쌓입니다.</div>';
+      return;
+    }
+    var days=Object.keys(s.byDay).sort().slice(-14);
+    var H=64, bw=18, gap=8;
+    var bars=days.map(function(d,i){
+      var o=s.byDay[d], rate=o.a?o.m/o.a:0;
+      var h=Math.max(3, rate*(H-14)), x=i*(bw+gap), y=H-h;
+      var col=rate>=0.5?'#5fd08a':(rate>=0.25?'#e8b45f':'#e0705a');
+      return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h.toFixed(1)+'" rx="3" fill="'+col+'">'+
+        '<title>'+d+' · '+pct(rate)+'% ('+o.m+'/'+o.a+')</title></rect>';
+    }).join('');
+    var chart=days.length
+      ? '<p class="hist-chart-t">일자별 성공률 (최근 '+days.length+'일)</p>'+
+        '<div style="overflow-x:auto"><svg width="'+(days.length*(bw+gap))+'" height="'+H+'" '+
+        'role="img" aria-label="일자별 성공률 막대 그래프">'+bars+'</svg></div>' : '';
+    body.innerHTML=
+      '<div class="hist-streak"><span class="n">🔥 '+s.streak+'</span><span class="u">일 연속 기록</span></div>'+
+      '<div class="hist-grid">'+
+        '<div class="hist-stat"><div class="v">'+s.attempts+'</div><div class="l">누적 시도</div></div>'+
+        '<div class="hist-stat"><div class="v">'+pct(s.rate)+'%</div><div class="l">전체 성공률</div></div>'+
+        '<div class="hist-stat"><div class="v">'+pct(s.recentRate)+'%</div><div class="l">최근 '+s.recentN+'샷</div></div>'+
+      '</div>'+chart;
+  }
+  function open(){ lastFocus=document.activeElement; render(); modal.hidden=false;
+    window.hbTrack&&window.hbTrack('history_open'); }
+  function close(){ modal.hidden=true; if(lastFocus&&lastFocus.focus) try{ lastFocus.focus(); }catch(e){} }
+  chip.addEventListener('click', open);
+  modal.querySelectorAll('[data-histclose]').forEach(function(el){ el.addEventListener('click', close); });
+  window.addEventListener('keydown', function(e){ if(!modal.hidden && e.key==='Escape') close(); });
+  var clr=document.getElementById('histClear');
+  if(clr) clr.addEventListener('click', function(){
+    if(window.hbHistory){ window.hbHistory.clear(); render(); window.hbTrack&&window.hbTrack('history_clear'); }
+  });
 })();
 </script>
 </body>
