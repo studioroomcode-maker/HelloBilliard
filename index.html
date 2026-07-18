@@ -2189,6 +2189,42 @@ function draw(){
       :balls[k];
     drawBall(b,k===activeBall&&!anim);
   }
+  // 드래그 중이면 손가락에 가리는 공을 돋보기로 확대해 보여준다
+  if(dragging&&!anim) drawLoupe(balls[dragging].x,balls[dragging].y,balls[dragging].ring||'#f4f1e8');
+}
+// ── 돋보기(루페) — 드래그 중인 공 주변을 확대해 표시. 손가락은 보통 공 위에
+// 있으므로 공보다 위쪽(위가 좁으면 아래)에 띄워 가리지 않게 한다. 캔버스를
+// 자기 자신에 확대 blit 하는 방식이라 CSS 축소와 무관하게 화면에서 크게 보인다.
+function drawLoupe(bx,by,ring){
+  const Z=2.6, Rl=Math.min(120,(play.x1-play.x0)/3.2);   // 확대율 · 반지름
+  const half=Rl/Z;
+  // 손가락(공)의 반대쪽 옆에 띄워 가리지 않게 한다 — 공이 왼쪽 절반이면 오른쪽,
+  // 오른쪽 절반이면 왼쪽. 세로는 공을 따라간다.
+  const onRight=bx<(play.x0+play.x1)/2;
+  let lx=onRight? W-Rl-6 : Rl+6;
+  let ly=clamp(by, Rl+6, H-Rl-6);
+  // 소스 사각형(공 중심) — 캔버스 밖으로 나가면 클립하고 dest 보정
+  let sx=bx-half, sy=by-half, sw=2*half, sh=2*half, dx=lx-Rl, dy=ly-Rl;
+  if(sx<0){ dx-=sx*Z; sw+=sx; sx=0; }
+  if(sy<0){ dy-=sy*Z; sh+=sy; sy=0; }
+  if(sx+sw>W) sw=W-sx;
+  if(sy+sh>H) sh=H-sy;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl+4,0,7);
+  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();          // 그림자
+  ctx.save();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7); ctx.clip();
+  ctx.fillStyle='#1f6b4a'; ctx.fillRect(lx-Rl,ly-Rl,2*Rl,2*Rl);   // 소스 밖 대비 바탕
+  if(sw>0&&sh>0) ctx.drawImage(cv, sx,sy,sw,sh, dx,dy,sw*Z,sh*Z);
+  ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=1.5;  // 중심 십자선
+  ctx.beginPath(); ctx.moveTo(lx-Rl,ly); ctx.lineTo(lx+Rl,ly);
+  ctx.moveTo(lx,ly-Rl); ctx.lineTo(lx,ly+Rl); ctx.stroke();
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7);
+  ctx.strokeStyle=ring; ctx.lineWidth=3.5; ctx.stroke();           // 공 색 테두리
+  ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7);
+  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.restore();
 }
 
 // ===== ▶ 경로 재생 — 대표 시뮬레이션 프레임을 실시간 애니메이션 =====
@@ -4225,6 +4261,36 @@ function draw(){
       :balls[k];
     drawBall(b, k===activeBall&&!anim3);
   }
+  // 드래그 중 공을 손가락 위 돋보기로 확대 (4구와 동일)
+  if(dragging&&!anim3) drawLoupe3(balls[dragging].x,balls[dragging].y,balls[dragging].ring||'#f4f1e8');
+}
+function drawLoupe3(bx,by,ring){
+  const Z=2.6, Rl=Math.min(120,(play.x1-play.x0)/3.2);
+  const half=Rl/Z;
+  const onRight=bx<(play.x0+play.x1)/2;
+  let lx=onRight? W-Rl-6 : Rl+6;
+  let ly=clamp(by, Rl+6, H-Rl-6);
+  let sx=bx-half, sy=by-half, sw=2*half, sh=2*half, dx=lx-Rl, dy=ly-Rl;
+  if(sx<0){ dx-=sx*Z; sw+=sx; sx=0; }
+  if(sy<0){ dy-=sy*Z; sh+=sy; sy=0; }
+  if(sx+sw>W) sw=W-sx;
+  if(sy+sh>H) sh=H-sy;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl+4,0,7);
+  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7); ctx.clip();
+  ctx.fillStyle='#1f6b4a'; ctx.fillRect(lx-Rl,ly-Rl,2*Rl,2*Rl);
+  if(sw>0&&sh>0) ctx.drawImage(cv, sx,sy,sw,sh, dx,dy,sw*Z,sh*Z);
+  ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(lx-Rl,ly); ctx.lineTo(lx+Rl,ly);
+  ctx.moveTo(lx,ly-Rl); ctx.lineTo(lx,ly+Rl); ctx.stroke();
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7);
+  ctx.strokeStyle=ring; ctx.lineWidth=3.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7);
+  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.restore();
 }
 
 // ===== ▶ 경로 재생 (3구) =====
