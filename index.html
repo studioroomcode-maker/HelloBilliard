@@ -2570,12 +2570,14 @@ function onMove(e){
   routes=[];draw();
 }
 function onUp(){
+  const wasDragging=dragging;
   // 드래그로 위치가 실제로 바뀌었을 때만 히스토리에 기록
   if(dragging&&dragStart&&
      (balls[dragging].x!==dragStart.x||balls[dragging].y!==dragStart.y)){
     renderCards(); pushHist();
   }
   dragStart=null; dragging=null;
+  if(wasDragging) draw();   // 손 떼면 돋보기를 지운다 (dragging=null 상태로 다시 그림)
 }
 cv.addEventListener('mousedown',onDown);
 cv.addEventListener('mousemove',onMove);
@@ -5769,8 +5771,10 @@ function onMove(e){
   autoSystem();   // 드래그 중 debounce 자동 계산
 }
 function onUp(){
+  const wasDragging=dragging;
   if(dragging){ dragging=null; pushHist3(); }   // 드래그 끝 = 한 번의 배치 변경
   autoSystem();
+  if(wasDragging) draw();   // 손 떼면 돋보기를 지운다 (시스템 미선택이면 autoSystem이 draw를 안 하므로)
 }
 cv.addEventListener('mousedown',onDown);
 cv.addEventListener('mousemove',onMove);
