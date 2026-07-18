@@ -50,7 +50,7 @@ function runSys(sys) {
   const btn = tabBtns.find(b => b.dataset.sys === sys);
   handlers['tab-' + sys + ':click'][0].call(btn);
   // 예시 배치 + 계산
-  handlers['g3-example:click'][0]();
+  global.window.__hb3preset();
   console.log(`\n=== ${sys} (예시 배치) ===`);
   console.log('숫자:', strip(els['g3-nums'].innerHTML));
   console.log('결과:', strip(els['g3-result'].innerHTML).slice(0, 260));

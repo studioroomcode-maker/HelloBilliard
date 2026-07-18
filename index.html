@@ -1173,7 +1173,6 @@
   <div class="stage-bar" id="g4-stageBar" hidden>
     <div class="route-picks" id="g4-routePicks"></div>
     <button class="tool mini play" id="g4-play" aria-label="경로 재생" title="경로 재생"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg></button>
-    <button class="tool mini" id="g4-share">경로 저장</button>
   </div>
   </div>
 
@@ -1189,8 +1188,9 @@
     <button class="tool" id="g4-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
   </div>
   <div class="actions sub-actions">
-    <button class="tool" id="g4-reset">초기 배치</button>
-    <button class="tool" id="g4-clearRoute">경로 지우기</button>
+    <button class="tool" id="g4-reset">초기화</button>
+    <button class="tool" id="g4-share">이미지 저장</button>
+    <button class="tool" id="g4-example">예시 배치</button>
   </div>
 
   <input type="file" id="g4-file" accept="image/*" style="display:none">
@@ -1347,9 +1347,9 @@
     <button class="tool" id="g3-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
   </div>
   <div class="actions sub-actions">
-    <button class="tool" id="g3-example">예시 배치</button>
     <button class="tool" id="g3-reset">초기화</button>
     <button class="tool" id="g3-share">이미지 저장</button>
+    <button class="tool" id="g3-example">예시 배치</button>
   </div>
 
   <input type="file" id="g3-file" accept="image/*" style="display:none">
@@ -3177,9 +3177,22 @@ document.getElementById('g4-reset').addEventListener('click',()=>{
   routes=[];calcTried=false;renderCards();draw();drawPhoto();
   pushHist();   // 초기 배치도 히스토리 기록
 });
-document.getElementById('g4-clearRoute').addEventListener('click',()=>{
+// 예시 배치 — 공들을 매번 랜덤 위치로(겹치지 않게) 놓는다
+function randomLayout(){
+  const R=BALL_R, x0=play.x0+R+3, x1=play.x1-R-3, y0=play.y0+R+3, y1=play.y1-R-3, pts=[];
+  for(const k in balls){
+    let x,y,t=0;
+    do{ x=x0+Math.random()*(x1-x0); y=y0+Math.random()*(y1-y0); t++; }
+    while(t<300 && pts.some(p=>Math.hypot(p.x-x,p.y-y)<2*R+4));
+    pts.push({x,y}); balls[k].x=x; balls[k].y=y;
+  }
+}
+document.getElementById('g4-example').addEventListener('click',()=>{
   stopAnim(false);
-  routes=[];calcTried=false;renderCards();draw();drawPhoto();
+  randomLayout();
+  routes=[]; calcTried=false; renderCards(); draw(); drawPhoto();
+  pushHist();
+  window.hbTrack&&window.hbTrack('example',{mode:'4gu'});
 });
 document.getElementById('g4-play').addEventListener('click',()=>{
   if(!routes.length){ return; }
@@ -6545,14 +6558,32 @@ document.getElementById('g3-calc').addEventListener('click',()=>{
   phyRoutes=null; renderPhyCards();
   runSystemCalc();
 });
-document.getElementById('g3-example').addEventListener('click',()=>{
-  // 예시 배치 — 시스템이 켜져 있으면 그 시스템의 예시, 아니면 일반 파이브 예시
+// 고정 예시 프리셋 — 사용자 '예시 배치'는 랜덤이지만, 테스트/내부용으로 고정 예시를 노출
+function loadExamplePreset(){
   applyPreset();
   pushHist3();
   phyRoutes=null; renderPhyCards();
   if(system){ solution=compute(); showResult(solution); renderCoach(); }
   else solution=null;
   draw();
+}
+if(typeof window!=='undefined') window.__hb3preset=loadExamplePreset;
+document.getElementById('g3-example').addEventListener('click',()=>{
+  // 예시 배치 — 공 3개를 매번 랜덤 위치로(겹치지 않게) 놓는다
+  stopAnim3(false);
+  const R=BALL_R, x0=play.x0+R+3, x1=play.x1-R-3, y0=play.y0+R+3, y1=play.y1-R-3, pts=[];
+  for(const k of ['cue','obj','target']){
+    let x,y,t=0;
+    do{ x=x0+Math.random()*(x1-x0); y=y0+Math.random()*(y1-y0); t++; }
+    while(t<300 && pts.some(p=>Math.hypot(p.x-x,p.y-y)<2*R+4));
+    pts.push({x,y}); balls[k].x=x; balls[k].y=y;
+  }
+  userPlaced=true;
+  setSystemNone();
+  solution=null; phyRoutes=null; renderPhyCards();
+  pushHist3();
+  draw();
+  window.hbTrack&&window.hbTrack('example',{mode:'3gu'});
 });
 document.getElementById('g3-reset').addEventListener('click',()=>{
   stopAnim3(false);

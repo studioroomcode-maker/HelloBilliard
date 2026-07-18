@@ -49,7 +49,7 @@ const check = (name, cond) => { console.log(`${cond ? '✓' : '✗'} ${name}`); 
 global.window.__hb3test.setSystem('five');
 // --- 1) 예시 배치는 실제로 칠 수 있는 배치여야 한다 ---
 // (예전 프리셋은 제2적구가 수구 바로 앞이라 쿠션 전에 먼저 맞는 배치였다)
-handlers['g3-example:click'][0]();
+global.window.__hb3preset();
 const out1 = strip();
 check('예시 배치가 득점 라인을 낸다', /득점 라인/.test(out1));
 check('  └ 예시 배치에 출발-경로 차단 경고가 없다', !/제2적구.*출발 경로/.test(out1));

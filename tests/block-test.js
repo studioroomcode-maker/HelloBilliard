@@ -39,7 +39,7 @@ global.window.__hb3test.setSystem('five');
 // 예시 배치 로드 후 제1적구를 계산 경로 위로 드래그.
 // 경로 위 좌표는 하드코딩하지 않고 실제 계산 결과에서 가져온다 — 예시 배치를
 // 옮기면 경로도 바뀌므로, 좌표를 박아 두면 테스트가 의미 없이 깨진다.
-handlers['g3-example:click'][0]();
+global.window.__hb3preset();
 const { balls, sol } = global.window.__hb3test;
 const path = sol().path;                              // [수구, 1쿠션, 2쿠션, ...]
 const onPath = { x: (path[0].x + path[1].x) / 2, y: (path[0].y + path[1].y) / 2 };
