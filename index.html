@@ -239,6 +239,11 @@
     border-color: var(--accent);
     color: var(--ink);
   }
+  /* 실력 버튼의 점수(다마) 범위 — 이름 아래 작게 */
+  .tune-options button small{
+    display:block; font-size:10px; font-weight:600; opacity:.72;
+    margin-top:2px; letter-spacing:-.02em;
+  }
   .tune-options button.cal-val {
     flex: 0 0 52px;
     background: #2c2419;
@@ -1102,9 +1107,9 @@
     <div class="tune-row">
       <span class="tune-label">내 실력</span>
       <div class="tune-options">
-        <button data-skill="beg">초급</button>
-        <button data-skill="mid" class="on">중급</button>
-        <button data-skill="adv">상급</button>
+        <button data-skill="beg">초급<small>~100점</small></button>
+        <button data-skill="mid" class="on">중급<small>~250점</small></button>
+        <button data-skill="adv">상급<small>250점~</small></button>
       </div>
     </div>
     <details class="venue">
