@@ -1464,17 +1464,17 @@
     <h2 id="proTitle">Hello Billiard <b>Pro</b></h2>
     <p class="pro-lead" id="proLead">더 깊이 파고드는 분들을 위한 기능을 준비하고 있어요. 관심을 남겨 주시면 우선순위에 반영합니다.</p>
     <ul class="pro-list">
-      <li>📷 <b>사진 인식 무제한</b> — 무료는 하루 3회</li>
+      <li>📷 <b>사진 인식 무제한</b> — 무료는 하루 5회</li>
       <li>🎯 <b>3구 다중·고급 경로</b> — 무료는 대표 1개</li>
       <li>🖼 <b>내보낸 이미지 워터마크 제거</b></li>
     </ul>
     <div id="proActive" class="pro-active" hidden>✓ Pro가 활성화되어 있어요 — 모든 기능이 열렸습니다.</div>
     <div class="pro-actions" id="proBuyRow">
-      <button class="tool primary" id="proInterest" type="button">관심 있어요</button>
+      <button class="tool primary" id="proBuy" type="button">Pro 구매하기</button>
       <button class="tool" id="proDonate" type="button">☕ 후원하기</button>
     </div>
     <div class="pro-redeem" id="proRedeemRow">
-      <input id="proCode" type="text" autocomplete="off" placeholder="언락 코드가 있으면 입력" aria-label="언락 코드">
+      <input id="proCode" type="text" autocomplete="off" placeholder="구매 후 받은 코드 입력" aria-label="언락 코드">
       <button class="tool" id="proRedeem" type="button">확인</button>
     </div>
     <p class="pro-note" id="proNote" hidden></p>
@@ -1565,7 +1565,7 @@ window.hbTrack=(function(){
 window.hbPro=(function(){
   var FKEY='hb_pro', PKEY='hb_photo_day';
   // ── 무료 한도 (여기만 바꾸면 조절·해제 가능) ──
-  var FREE_PHOTO_PER_DAY=3;   // 사진 인식: 무료 하루 3회 / Pro 무제한
+  var FREE_PHOTO_PER_DAY=5;   // 사진 인식: 무료 하루 5회 / Pro 무제한
   var FREE_3GU_ROUTES=1;      // 3구 물리 경로: 무료 대표 1개 / Pro 전체
   // ── 언락 코드 (결제 연동 전 수동 발급용) — 예: ['HB-PRO-XXXX'] ──
   var PRO_CODES=[];
@@ -6551,18 +6551,23 @@ if(typeof window!=='undefined')
 // ===== Pro 페이월 + 유료화 검증 (0·1단계) =====
 // 클릭 자체가 '지불의사 신호'다. 결제는 아직 config로 비워둔다(0단계 검증 후 연결).
 (function(){
-  // ↓↓↓ 이 URL들만 채우면 버튼이 실제 링크로 연결됩니다. 비워두면 클릭 신호만
-  //     계측하고 감사 문구를 띄웁니다(검증엔 그것으로 충분). 결제 붙일 땐 CHECKOUT_URL.
-  var PRO_INTEREST_URL='';   // 예: 구글폼 / Tally 관심 설문 링크
+  // ── 결제 연결 (외부 링크 + 수동 코드) ──
+  //  ① CHECKOUT_URL 에 판매 페이지(Gumroad/토스/폼 등)를 넣으면 'Pro 구매하기'가 그리로 열림
+  //  ② 구매자에게 코드를 발급하고, 그 코드를 hbPro 모듈의 PRO_CODES 배열에 추가
+  //  ③ 구매자가 '구매 후 받은 코드 입력'에 넣으면 Pro 언락
+  //  PRICE 를 채우면 구매 버튼에 가격 표시. 비워두면 링크만 '준비 중'으로 뜸(클릭은 계측).
+  var CHECKOUT_URL='';       // 예: 'https://gumroad.com/l/xxxx' (판매/체크아웃 페이지)
+  var PRICE='';              // 예: '₩4,900'
   var DONATE_URL='';         // 예: 토스 / 카카오 / BuyMeACoffee 후원 링크
-  var CHECKOUT_URL='';       // (1단계 결제) 예: Lemon Squeezy / Gumroad 구매 링크
+  var PRO_INTEREST_URL='';   // (CHECKOUT_URL 비었을 때의 폴백 — 관심 설문 등)
   var modal=document.getElementById('proModal');
   var chip=document.getElementById('proTeaser');
   if(!modal||!chip) return;
+  if(PRICE){ var _bb=document.getElementById('proBuy'); if(_bb) _bb.textContent='Pro 구매하기 · '+PRICE; }
   var note=document.getElementById('proNote');
   var lead=document.getElementById('proLead');
   var LEADS={
-    photo:'무료 사진 인식은 하루 3회예요. Pro로 무제한으로 쓰거나 내일 다시 이용할 수 있어요.',
+    photo:'무료 사진 인식은 하루 5회예요. Pro로 무제한으로 쓰거나 내일 다시 이용할 수 있어요.',
     routes3:'무료는 3구 대표 경로 1개만 보여드려요. Pro에서 다중·고급 경로 전체를 볼 수 있어요.',
     def:'더 깊이 파고드는 분들을 위한 기능이에요. 관심을 남겨 주시면 우선순위에 반영합니다.'
   };
@@ -6581,7 +6586,7 @@ if(typeof window!=='undefined')
     if(lead) lead.textContent=LEADS[ctx]||LEADS.def;
     syncState();
     modal.hidden=false; if(note){ note.hidden=true; note.textContent=''; }
-    var b=document.getElementById(pro()?'proRedeem':'proInterest');
+    var b=document.getElementById(pro()?'proRedeem':'proBuy');
     if(b&&b.focus) try{ b.focus(); }catch(e){}
     window.hbTrack&&window.hbTrack('pro_open',ctx?{ctx:ctx}:null);
   }
@@ -6594,11 +6599,11 @@ if(typeof window!=='undefined')
   chip.addEventListener('click', function(){ open(); });
   modal.querySelectorAll('[data-proclose]').forEach(function(el){ el.addEventListener('click', close); });
   window.addEventListener('keydown', function(e){ if(!modal.hidden && e.key==='Escape') close(); });
-  document.getElementById('proInterest').addEventListener('click', function(){
-    window.hbTrack&&window.hbTrack('pro_interest');
+  document.getElementById('proBuy').addEventListener('click', function(){
+    window.hbTrack&&window.hbTrack('buy_click');
     var url=CHECKOUT_URL||PRO_INTEREST_URL;
     if(url){ try{ window.open(url,'_blank','noopener'); }catch(e){} close(); }
-    else thanks('관심 감사합니다! 곧 준비해서 알려드릴게요.');
+    else thanks('구매 링크 준비 중이에요 — 곧 열립니다. (관심 감사합니다!)');
   });
   document.getElementById('proDonate').addEventListener('click', function(){
     window.hbTrack&&window.hbTrack('donate_click');
