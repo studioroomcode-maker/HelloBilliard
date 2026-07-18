@@ -53,9 +53,9 @@ if (typeof fn === 'function') {
 
 // ── 2) 통합: 적구1을 수구 위로 드래그 → 계산 차단 ──
 const ev = (x, y) => ({ clientX: x, clientY: y, touches: null, preventDefault() {} });
-// 기본 배치: 수구(228,268) / 적구1(228,196). 적구1을 잡아 수구 위로 이동.
-handlers['g4-table:mousedown'][0](ev(228, 196));   // 적구1 잡기
-handlers['g4-table:mousemove'][0](ev(228, 268));   // 수구 위로 (겹침)
+// 기본 배치: 적구1(228,230) / 수구(216,252). 적구1을 잡아 수구 위로 이동.
+handlers['g4-table:mousedown'][0](ev(228, 230));   // 적구1 잡기
+handlers['g4-table:mousemove'][0](ev(216, 252));   // 수구 위로 (겹침)
 handlers['g4-calc:click'][0]();                    // 계산 시도
 const box = (els['g4-routes'].innerHTML || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 check('겹침 시 계산 차단·경고 표시', /겹쳐 있습니다/.test(box));

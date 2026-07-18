@@ -1782,12 +1782,12 @@ const G_PX = 9800*MM;                 // 중력가속도 9.8m/s² → px/s²
 
 const balls = {
   // 4구 정식 초구 배치 (헤드 스폿 x≈228 / 풋 스폿 x≈612, 중심선 y≈230)
-  // 내 수구: 헤드 스폿 약간 아래 / 적구1: 헤드 스폿 약간 위
-  // 적구2: 풋 스폿 / 상대 수구: 풋 스폿 오른쪽 끝
-  cue:  { x: 228, y: 268, color:'#f7f4ea', ring:'#cfc8b4' },
-  r1:   { x: 228, y: 196, color:'#d23b2b', ring:'#9c281c' },
+  // 표준: 적구1=헤드 스폿 위, 내 수구=헤드 스폿 바로 아래-왼쪽(선공),
+  //       적구2=풋 스폿, 상대 수구=풋 스폿 오른쪽 옆
+  r1:   { x: 228, y: 230, color:'#d23b2b', ring:'#9c281c' },
+  cue:  { x: 216, y: 252, color:'#f7f4ea', ring:'#cfc8b4' },
   r2:   { x: 612, y: 230, color:'#d23b2b', ring:'#9c281c' },
-  cue2: { x: 720, y: 230, color:'#f0c542', ring:'#b89220' },
+  cue2: { x: 645, y: 230, color:'#f0c542', ring:'#b89220' },
 };
 const defaults = JSON.parse(JSON.stringify(
   Object.fromEntries(Object.entries(balls).map(([k,v])=>[k,{x:v.x,y:v.y}]))
@@ -4115,11 +4115,11 @@ let tip=2, activeBall='cue', dragging=null, solution=null;
 let userPlaced=false;
 
 // ---------- 공 ----------
-// 3구 정식 초구 배치 — 수구: 헤드 스폿 아래 왼쪽 / 제1적구: 헤드 스폿 /
-// 제2적구: 풋 스폿. 경기면(play) 기준 비율로 적는다 — 절대 픽셀로 박아 두면
-// 여백(M)을 조정하는 순간 배치가 당구대에서 통째로 미끄러진다.
+// 3구 정식 초구 배치 — 제1적구(상대 수구)=헤드 스폿 / 제2적구(적구)=풋 스폿 /
+// 내 수구=헤드 스트링 위, 헤드 스폿 바로 아래(선공). 경기면(play) 기준 비율로 적는다 —
+// 절대 픽셀로 박아 두면 여백(M)을 조정하는 순간 배치가 당구대에서 통째로 미끄러진다.
 const balls={
-  cue:    {x:play.x0+PW*0.202, y:play.y0+PH*0.648, color:'#5fb8e8', ring:'#3a8cb8', name:'수구'},
+  cue:    {x:play.x0+PW*0.24,  y:play.y0+PH*0.648, color:'#5fb8e8', ring:'#3a8cb8', name:'수구'},
   obj:    {x:play.x0+PW*0.25,  y:play.y0+PH*0.5,   color:'#e85f9c', ring:'#b03c70', name:'제1적구'},
   target: {x:play.x0+PW*0.75,  y:play.y0+PH*0.5,   color:'#d9582b', ring:'#a23d1c', name:'제2적구'},
 };
