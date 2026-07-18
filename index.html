@@ -1028,8 +1028,19 @@
     <h1>Hello Billiard
       <span class="sub">당구 AI 코치 — 4구 경로 시뮬레이터 + 3구 시스템 계산기</span>
     </h1>
-    <button id="statsChip" class="pro-chip" type="button" style="margin-left:auto" aria-label="내 연습 기록">📈 기록</button>
-    <button id="proTeaser" class="pro-chip" type="button" style="margin-left:8px" aria-label="Hello Billiard Pro 안내">✦ Pro</button>
+    <div class="hctl">
+      <select id="langSel" class="hsel" aria-label="당구 용어 언어">
+        <option value="ko1">🇰🇷 일상 용어</option>
+        <option value="ko2">🇰🇷 표준 용어</option>
+        <option value="en">🇺🇸 English</option>
+      </select>
+      <select id="feltSel" class="hsel" aria-label="당구대 색">
+        <option value="green">🟩 녹색 대</option>
+        <option value="blue">🟦 파란 대</option>
+      </select>
+      <button id="statsChip" class="pro-chip" type="button" aria-label="내 연습 기록">📈 기록</button>
+      <button id="proTeaser" class="pro-chip" type="button" aria-label="Hello Billiard Pro 안내">✦ Pro</button>
+    </div>
     <button id="themeToggle" class="theme-toggle" type="button" aria-label="라이트/다크 테마 전환" title="라이트/다크 전환">🌙</button>
   </div>
 
@@ -1383,12 +1394,19 @@
 
 <!-- ===== Pro 준비중 티저 (유료화 검증 0단계) ===== -->
 <style>
-  .pro-chip{ margin-left:auto; align-self:center; padding:5px 12px; border-radius:999px;
-    border:1px solid rgba(224,164,74,.55); background:rgba(224,164,74,.12); color:#e8b45f;
-    font-size:12px; font-weight:800; letter-spacing:.02em; cursor:pointer;
-    transition:background .15s, transform .1s; }
-  .pro-chip:hover{ background:rgba(224,164,74,.2); transform:translateY(-1px); }
-  .pro-chip:active{ transform:translateY(0); }
+  /* 헤더 우상단 컨트롤 묶음 — 테마 토글과 같은 톤으로 통일 */
+  .hctl{ margin-left:auto; align-self:center; display:flex; align-items:center; gap:7px;
+    flex-wrap:wrap; justify-content:flex-end; }
+  .hsel{ background:var(--surface-2,#241d15); border:1px solid var(--line,#3a3327);
+    color:var(--tx-1,#f4f1e8); border-radius:10px; padding:6px 8px; font:inherit;
+    font-size:12px; font-weight:700; cursor:pointer; }
+  .hsel:hover{ border-color:var(--accent-line,#b8863a); }
+  .pro-chip{ align-self:center; padding:6px 11px; border-radius:10px;
+    border:1px solid var(--line,#3a3327); background:var(--surface-2,#241d15); color:var(--tx-1,#f4f1e8);
+    font-size:12px; font-weight:700; cursor:pointer; transition:background .15s, border-color .15s; }
+  .pro-chip:hover{ background:var(--surface,#1b1712); border-color:var(--accent-line,#b8863a); }
+  #proTeaser{ color:#e8b45f; border-color:rgba(224,164,74,.42); }
+  #proTeaser:hover{ border-color:rgba(224,164,74,.75); background:rgba(224,164,74,.08); }
   .pro-modal{ position:fixed; inset:0; z-index:1000; display:flex; align-items:center;
     justify-content:center; padding:18px; }
   .pro-modal[hidden]{ display:none; }
@@ -1613,6 +1631,56 @@ window.hbHistory=(function(){
   window.__hbHistory=function(){ return { entries:load(), stats:stats() }; };
   return { log:log, stats:stats, streak:streak,
     clear:function(){ try{ localStorage.removeItem(KEY); localStorage.removeItem(SKEY); }catch(e){} } };
+})();
+
+// ===== 당구대 천 색 (녹색/파란색) =====
+window.hbFelt=(function(){
+  var C={ green:{base:'#1f6b4a', line:'#16573b'}, blue:{base:'#1e5f86', line:'#164a66'} };
+  var cur='green';
+  try{ if(localStorage.getItem('hb_felt')==='blue') cur='blue'; }catch(e){}
+  return { colors:function(){ return C[cur]; }, get:function(){ return cur; },
+    set:function(v){ cur=(v==='blue'?'blue':'green'); try{ localStorage.setItem('hb_felt',cur); }catch(e){} } };
+})();
+
+// ===== 언어 / 당구 용어 (한글1 일상 · 한글2 표준 · 영어) =====
+// ko1=일상(히끼·오시·시네루), ko2=표준(끌어치기·밀어치기·좌/우회전), en=English.
+// 4구·3구 경로 카드의 샷 용어에 적용. (앱 뼈대 전체 번역은 별도 작업)
+window.hbLang=(function(){
+  var cur='ko2';
+  try{ var v=localStorage.getItem('hb_lang'); if(v==='ko1'||v==='en') cur=v; }catch(e){}
+  var SPIN={
+    none:  {ko1:'무회전',   ko2:'무회전',   en:'No spin'},
+    draw:  {ko1:'히끼',     ko2:'끌어치기', en:'Draw'},
+    follow:{ko1:'오시',     ko2:'밀어치기', en:'Follow'},
+    left:  {ko1:'왼 시네루', ko2:'좌회전',  en:'Left english'},
+    right: {ko1:'오른 시네루',ko2:'우회전', en:'Right english'},
+    drawL: {ko1:'히끼+왼',  ko2:'끌어+좌', en:'Draw + left'},
+    drawR: {ko1:'히끼+오른',ko2:'끌어+우', en:'Draw + right'},
+    follL: {ko1:'오시+왼',  ko2:'밀어+좌', en:'Follow + left'},
+    follR: {ko1:'오시+오른',ko2:'밀어+우', en:'Follow + right'}
+  };
+  var TAG={ none:'기본 경로', draw:'각을 크게', follow:'적구 따라붙기',
+    left:'쿠션 각 조절', right:'쿠션 각 조절', drawL:'각 확대+쿠션', drawR:'각 확대+쿠션',
+    follL:'각 축소+쿠션', follR:'각 축소+쿠션' };
+  var POWER={ 1:{ko1:'살살',ko2:'아주 약하게',en:'Very soft'}, 2:{ko1:'약하게',ko2:'약하게',en:'Soft'},
+    3:{ko1:'보통',ko2:'보통',en:'Medium'}, 4:{ko1:'세게',ko2:'강하게',en:'Hard'},
+    5:{ko1:'빡세게',ko2:'아주 강하게',en:'Very hard'} };
+  var LBL={ tip:{ko1:'당점',ko2:'권장 당점',en:'English'},
+    thick:{ko1:'두께',ko2:'맞히는 두께',en:'Thickness'},
+    power:{ko1:'파워',ko2:'추천 파워',en:'Power'},
+    face:{ko1:'정면',ko2:'정면',en:'Face'} };
+  var SIDE={ R:{ko1:'오른',ko2:'오른쪽',en:'Right'}, L:{ko1:'왼',ko2:'왼쪽',en:'Left'} };
+  function pick(d){ return d?(d[cur]||d.ko2||d.ko1||''):''; }
+  return {
+    get:function(){ return cur; },
+    set:function(v){ cur=(v==='ko1'||v==='en')?v:'ko2'; try{ localStorage.setItem('hb_lang',cur); }catch(e){} },
+    isEn:function(){ return cur==='en'; },
+    spin:function(k){ return pick(SPIN[k])||k; },
+    spinTitle:function(k){ var n=pick(SPIN[k])||k; if(cur==='en') return n; var t=TAG[k]; return t?n+' — '+t:n; },
+    power:function(p){ return pick(POWER[p]); },
+    label:function(k){ return pick(LBL[k]); },
+    side:function(x){ return pick(SIDE[x]); }
+  };
 })();
 
 // ===== 효과음 — sound/*.mp3 (같은 오리진 · 외부 요청 0건) =====
@@ -2408,11 +2476,11 @@ function similar(a,b){
 
 // ---------- 그리기 ----------
 function draw(){
-  ctx.fillStyle='#1f6b4a'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=(window.hbFelt&&window.hbFelt.colors().base)||'#1f6b4a'; ctx.fillRect(0,0,W,H);
   const g=ctx.createRadialGradient(W/2,H/2,60,W/2,H/2,W/1.4);
   g.addColorStop(0,'rgba(255,255,255,.05)'); g.addColorStop(1,'rgba(0,0,0,.28)');
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='#16573b'; ctx.lineWidth=2;
+  ctx.strokeStyle=(window.hbFelt&&window.hbFelt.colors().line)||'#16573b'; ctx.lineWidth=2;
   ctx.strokeRect(play.x0,play.y0,play.x1-play.x0,play.y1-play.y0);
   ctx.fillStyle='rgba(244,241,232,.4)';
   for(let i=1;i<8;i++){const x=play.x0+(play.x1-play.x0)*i/8;
@@ -2468,7 +2536,7 @@ function drawLoupe(bx,by,ring){
   ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();          // 그림자
   ctx.save();
   ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7); ctx.clip();
-  ctx.fillStyle='#1f6b4a'; ctx.fillRect(lx-Rl,ly-Rl,2*Rl,2*Rl);   // 소스 밖 대비 바탕
+  ctx.fillStyle=(window.hbFelt&&window.hbFelt.colors().base)||'#1f6b4a'; ctx.fillRect(lx-Rl,ly-Rl,2*Rl,2*Rl);   // 소스 밖 대비 바탕
   if(sw>0&&sh>0) ctx.drawImage(cv, sx,sy,sw,sh, dx,dy,sw*Z,sh*Z);
   ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=1.5;  // 중심 십자선
   ctx.beginPath(); ctx.moveTo(lx-Rl,ly); ctx.lineTo(lx+Rl,ly);
@@ -2730,14 +2798,14 @@ function renderCards(){
     if(routes.length){
       const r=routes[selected];
       const eighths=Math.round(r.thickness*8);
-      const thickLabel=eighths>=8?'정면 8/8'
-        :`${r.aimSide==='R'?'오른쪽':'왼쪽'} ${Math.max(1,eighths)}/8`;
+      const thickLabel=eighths>=8?`${window.hbLang.label('face')} 8/8`
+        :`${window.hbLang.side(r.aimSide)} ${Math.max(1,eighths)}/8`;
       const pw=powerLevel(r);
       brief.innerHTML=
         `<span class="swatch" style="background:${routeColor(selected)}"></span>`+
-        `<span class="sbi" title="권장 당점">${tipSVG(r.spin)}${r.spin.label}</span>`+
-        `<span class="sbi" title="맞히는 두께">${thicknessSVG(eighths,r.aimSide)}${thickLabel}</span>`+
-        `<span class="sbi" title="추천 파워">${powerSVG(pw)}${POWER_LABEL[pw]}</span>`;
+        `<span class="sbi" title="${window.hbLang.label('tip')}">${tipSVG(r.spin)}${window.hbLang.spin(r.spin.key)}</span>`+
+        `<span class="sbi" title="${window.hbLang.label('thick')}">${thicknessSVG(eighths,r.aimSide)}${thickLabel}</span>`+
+        `<span class="sbi" title="${window.hbLang.label('power')}">${powerSVG(pw)}${window.hbLang.power(pw)}</span>`;
     }
   }
   // 경로 1·2·3 선택 버튼 — 카드 선택과 동일하게 동작
@@ -2787,7 +2855,7 @@ function renderCards(){
     const s=r.second==='r1'?'적구 1':'적구 2';
     // 두께를 8분의 N 으로 표기 (4구 표준)
     const eighths=Math.round(r.thickness*8);
-    const thickLabel=eighths>=8?'8/8(정면)':eighths<=1?'1/8(얇게)':`${eighths}/8`;
+    const thickLabel=eighths>=8?`8/8(${window.hbLang.label('face')})`:eighths<=1?`1/8(${window.hbLang.isEn()?'thin':'얇게'})`:`${eighths}/8`;
     const defl=Math.round(r.cueDeflect);
     const pw=powerLevel(r);   // 경로 길이·쿠션·회전 기반 추천 파워
     const isRef=!!r.reference;   // 참고용 '다른 순서' 경로
@@ -2801,7 +2869,7 @@ function renderCards(){
         <div class="rc-title">
           <div class="rtitle">${isRef
             ?`<span class="ref-badge">참고</span> 다른 순서 — ${f} 먼저`
-            :`${r.cushBefore>0?'뱅크샷 · ':''}${STRAT[r.spin.key]||r.spin.label}`}</div>
+            :`${r.cushBefore>0?(window.hbLang.isEn()?'Bank · ':'뱅크샷 · '):''}${window.hbLang.spinTitle(r.spin.key)}`}</div>
           ${isRef?`<div class="rc-sub ref">${pctRaw<5?'성공률 낮음 · ':''}순서 비교용 참고 경로</div>`
             :r.gather!=null?`<div class="rc-sub">공 모임 ${r.gather}%</div>`:''}
         </div>
@@ -2820,20 +2888,20 @@ function renderCards(){
         + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${Math.round(r.gatherAvg/MM/10)}cm</b> 기준`:''}</div></details></div>
       <div class="metrics">
         <div class="metric">
-          <div class="mlabel">권장 당점</div>
+          <div class="mlabel">${window.hbLang.label('tip')}</div>
           <div class="mvis">${tipSVG(r.spin)}</div>
-          <div class="mval">${r.spin.label}</div>
+          <div class="mval">${window.hbLang.spin(r.spin.key)}</div>
         </div>
         <div class="metric">
-          <div class="mlabel">맞히는 두께</div>
+          <div class="mlabel">${window.hbLang.label('thick')}</div>
           <div class="mvis">${thicknessSVG(eighths,r.aimSide)}</div>
           <div class="mval">${eighths>=8?thickLabel:
-            `${r.aimSide==='R'?'오른쪽':'왼쪽'} ${thickLabel}`}</div>
+            `${window.hbLang.side(r.aimSide)} ${thickLabel}`}</div>
         </div>
         <div class="metric">
-          <div class="mlabel">추천 파워</div>
+          <div class="mlabel">${window.hbLang.label('power')}</div>
           <div class="mvis">${powerSVG(pw)}</div>
-          <div class="mval">${POWER_LABEL[pw]}</div>
+          <div class="mval">${window.hbLang.power(pw)}</div>
         </div>
       </div>
     </div>`;
@@ -3142,6 +3210,9 @@ document.getElementById('g4-share').addEventListener('click',()=>{
   if(y) y.addEventListener('click',()=>rec(true));
   if(n) n.addEventListener('click',()=>rec(false));
 })();
+// 헤더 컨트롤(언어·당구대 색) 변경 시 4구 갱신
+window.addEventListener('hblang', function(){ try{ renderCards(); }catch(e){} });
+window.addEventListener('hbfelt', function(){ try{ draw(); if(typeof drawPhoto==='function') drawPhoto(); }catch(e){} });
 
 /* ===== 📷 사진 인식 =====
    사진 속 경기면 네 모서리(자동 감지 + 드래그 보정)로 호모그래피를 세워
@@ -4572,11 +4643,11 @@ const r1=v=>Number.isInteger(v)?v:v.toFixed(1);
 
 // ===== 그리기 =====
 function draw(){
-  ctx.fillStyle='#1f6b4a'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=(window.hbFelt&&window.hbFelt.colors().base)||'#1f6b4a'; ctx.fillRect(0,0,W,H);
   const g=ctx.createRadialGradient(W/2,H/2,60,W/2,H/2,W/1.4);
   g.addColorStop(0,'rgba(255,255,255,.05)'); g.addColorStop(1,'rgba(0,0,0,.28)');
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='#16573b'; ctx.lineWidth=2;
+  ctx.strokeStyle=(window.hbFelt&&window.hbFelt.colors().line)||'#16573b'; ctx.lineWidth=2;
   ctx.strokeRect(play.x0,play.y0,PW,PH);
   drawCoords();
   if(solution) drawSolution(solution);
@@ -4627,7 +4698,7 @@ function drawLoupe3(bx,by,ring){
   ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();
   ctx.save();
   ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7); ctx.clip();
-  ctx.fillStyle='#1f6b4a'; ctx.fillRect(lx-Rl,ly-Rl,2*Rl,2*Rl);
+  ctx.fillStyle=(window.hbFelt&&window.hbFelt.colors().base)||'#1f6b4a'; ctx.fillRect(lx-Rl,ly-Rl,2*Rl,2*Rl);
   if(sw>0&&sh>0) ctx.drawImage(cv, sx,sy,sw,sh, dx,dy,sw*Z,sh*Z);
   ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.moveTo(lx-Rl,ly); ctx.lineTo(lx+Rl,ly);
@@ -5555,14 +5626,14 @@ function renderPhyCards(){
     if(phyRoutes&&phyRoutes.length){
       const r=phyRoutes[phySel];
       const eighths=Math.max(1,Math.min(8,Math.round(r.thickness*8)));
-      const thickLabel=eighths>=8?'정면 8/8'
-        :`${r.aimSide==='R'?'오른쪽':'왼쪽'} ${eighths}/8`;
+      const thickLabel=eighths>=8?`${window.hbLang.label('face')} 8/8`
+        :`${window.hbLang.side(r.aimSide)} ${eighths}/8`;
       brief.innerHTML=
         `<span class="swatch" style="background:${PHY_COLORS[phySel]}"></span>`+
-        `<span class="sbi" title="권장 당점">${tipSVG3(r.spin)}${r.spin.label}</span>`+
-        `<span class="sbi" title="맞히는 두께">${thicknessSVG3(eighths,r.aimSide)}${thickLabel}</span>`+
+        `<span class="sbi" title="${window.hbLang.label('tip')}">${tipSVG3(r.spin)}${window.hbLang.spin(r.spin.key)}</span>`+
+        `<span class="sbi" title="${window.hbLang.label('thick')}">${thicknessSVG3(eighths,r.aimSide)}${thickLabel}</span>`+
         `<span class="sbi" title="경유 쿠션"><b>쿠션 ${r.cush}회</b></span>`+
-        `<span class="sbi" title="추천 파워"><b>파워 ${r.power}</b></span>`;
+        `<span class="sbi" title="${window.hbLang.label('power')}"><b>파워 ${r.power}</b></span>`;
     }
   }
   // 경로 1·2·3 선택 버튼 — 카드 선택과 동일하게 동작
@@ -5599,13 +5670,13 @@ function renderPhyCards(){
   box.classList.toggle('just', !!justSolved3);   // 새 계산 결과일 때만 등장 애니메이션
   box.innerHTML=fb3Banner+phyRoutes.map((r,i)=>{
     const eighths=Math.max(1,Math.min(8,Math.round(r.thickness*8)));
-    const thickLabel=eighths>=8?'8/8(정면)'
-      :`${r.aimSide==='R'?'오른쪽':'왼쪽'} ${eighths}/8`;
+    const thickLabel=eighths>=8?`8/8(${window.hbLang.label('face')})`
+      :`${window.hbLang.side(r.aimSide)} ${eighths}/8`;
     return `<div class="rcard ${i===phySel?'sel':''}" data-i="${i}" style="--d:${i*70}ms">
       <div class="rc-top">
         <span class="swatch" style="background:${PHY_COLORS[i]}"></span>
         <div class="rc-title">
-          <div class="rtitle">${r.spin.label}</div>
+          <div class="rtitle">${window.hbLang.spin(r.spin.key)}</div>
           ${r.gather!=null?`<div class="rc-sub">공 모임 ${r.gather}%</div>`:''}
         </div>
         <div class="rc-hero">
@@ -5631,14 +5702,14 @@ function renderPhyCards(){
       ${r.kiss?`<div class="miss" style="margin-top:6px;font-size:12px">⚠ 키스 경로 — 제1적구가 제2적구를 건드립니다 (선이 제2적구를 빗나가 보임)</div>`:''}
       <div class="metrics">
         <div class="metric">
-          <div class="mlabel">권장 당점</div>
+          <div class="mlabel">${window.hbLang.label('tip')}</div>
           <div class="mvis">${tipSVG3(r.spin)}</div>
-          <div class="mval">${r.spin.label}</div>
+          <div class="mval">${window.hbLang.spin(r.spin.key)}</div>
         </div>
         <div class="metric">
-          <div class="mlabel">맞히는 두께</div>
+          <div class="mlabel">${window.hbLang.label('thick')}</div>
           <div class="mvis">${thicknessSVG3(eighths,r.aimSide)}</div>
-          <div class="mval">${eighths>=8?'정면 8/8':`${r.aimSide==='R'?'오른쪽':'왼쪽'} ${eighths}/8`}</div>
+          <div class="mval">${eighths>=8?`${window.hbLang.label('face')} 8/8`:`${window.hbLang.side(r.aimSide)} ${eighths}/8`}</div>
         </div>
         <div class="metric">
           <div class="mlabel">경유 쿠션</div>
@@ -5681,6 +5752,9 @@ function renderPhyCards(){
   if(y) y.addEventListener('click',()=>rec(true));
   if(n) n.addEventListener('click',()=>rec(false));
 })();
+// 헤더 컨트롤(언어·당구대 색) 변경 시 3구 갱신
+window.addEventListener('hblang', function(){ try{ renderPhyCards(); }catch(e){} });
+window.addEventListener('hbfelt', function(){ try{ draw(); if(typeof drawP3==='function') drawP3(); }catch(e){} });
 function drawPhyRoute(r,color,alpha){
   ctx.save(); ctx.globalAlpha=alpha;
   if(alpha>.9){ ctx.shadowColor=color; ctx.shadowBlur=10; }
@@ -6668,6 +6742,27 @@ if(typeof window!=='undefined')
   if(clr) clr.addEventListener('click', function(){
     if(window.hbHistory){ window.hbHistory.clear(); render(); window.hbTrack&&window.hbTrack('history_clear'); }
   });
+})();
+
+// ===== 헤더 컨트롤: 언어 / 당구대 색 =====
+(function(){
+  var lang=document.getElementById('langSel'), felt=document.getElementById('feltSel');
+  if(lang){
+    if(window.hbLang) lang.value=window.hbLang.get();
+    lang.addEventListener('change', function(){
+      if(window.hbLang) window.hbLang.set(lang.value);
+      try{ window.dispatchEvent(new Event('hblang')); }catch(e){}
+      window.hbTrack&&window.hbTrack('lang',{v:lang.value});
+    });
+  }
+  if(felt){
+    if(window.hbFelt) felt.value=window.hbFelt.get();
+    felt.addEventListener('change', function(){
+      if(window.hbFelt) window.hbFelt.set(felt.value);
+      try{ window.dispatchEvent(new Event('hbfelt')); }catch(e){}
+      window.hbTrack&&window.hbTrack('felt',{v:felt.value});
+    });
+  }
 })();
 </script>
 </body>
