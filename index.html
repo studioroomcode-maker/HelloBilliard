@@ -673,8 +673,8 @@
       background: var(--bg);   /* 뒤로 지나가는 콘텐츠 가림 (테마 대응) */
       padding: calc(6px + env(safe-area-inset-top)) 0 6px;
     }
-    /* 사진 모서리를 맞추는 동안은 고정 해제 — 작업 공간 확보 */
-    body.photo-open .board { position: static; }
+    /* 사진 인식 중에도 당구대(다이)는 상단에 계속 고정 — 인식 결과를 바로 비교할 수 있게.
+       (예전엔 body.photo-open 에서 고정을 풀었으나, 다이가 사라지는 문제로 제거) */
   }
 
   /* === 넓은 화면: 보드(왼쪽) 고정 + 결과(오른쪽) 스크롤 === */
