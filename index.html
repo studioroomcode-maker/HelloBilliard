@@ -2532,6 +2532,10 @@ function renderCards(){
     const defl=Math.round(r.cueDeflect);
     const pw=powerLevel(r);   // 경로 길이·쿠션·회전 기반 추천 파워
     const isRef=!!r.reference;   // 참고용 '다른 순서' 경로
+    const pctRaw=Math.round(r.prob*20)*5;   // 5% 단위 버킷
+    // 실제 샷은 천·구름·미스큐 등 모델이 못 담는 변수가 있어 '확실한 100%'는 없다 —
+    // 상한 95%로 두어 과신을 막는다 (정렬은 원본 prob 사용, 순위엔 영향 없음).
+    const pctShown=Math.min(95,pctRaw);
     return `<div class="rcard ${i===selected?'sel':''} ${isRef?'ref':''}" data-i="${i}" style="--d:${i*70}ms">
       <div class="rc-top">
         <span class="swatch" style="background:${routeColor(i)}"></span>
@@ -2539,11 +2543,11 @@ function renderCards(){
           <div class="rtitle">${isRef
             ?`<span class="ref-badge">참고</span> 다른 순서 — ${f} 먼저`
             :`${r.cushBefore>0?'뱅크샷 · ':''}${STRAT[r.spin.key]||r.spin.label}`}</div>
-          ${isRef?`<div class="rc-sub ref">${Math.round(r.prob*20)*5<5?'성공률 낮음 · ':''}순서 비교용 참고 경로</div>`
+          ${isRef?`<div class="rc-sub ref">${pctRaw<5?'성공률 낮음 · ':''}순서 비교용 참고 경로</div>`
             :r.gather!=null?`<div class="rc-sub">공 모임 ${r.gather}%</div>`:''}
         </div>
         <div class="rc-hero">
-          <div class="rc-pct">${isRef&&Math.round(r.prob*20)*5<5?'&lt;5':Math.round(r.prob*20)*5}<span class="u">%</span></div>
+          <div class="rc-pct">${isRef&&pctRaw<5?'&lt;5':pctShown}<span class="u">%</span></div>
           <div class="rc-herolabel">${isRef?'참고 성공률':'성공률'}</div>
         </div>
       </div>
@@ -5274,7 +5278,7 @@ function renderPhyCards(){
           ${r.gather!=null?`<div class="rc-sub">공 모임 ${r.gather}%</div>`:''}
         </div>
         <div class="rc-hero">
-          <div class="rc-pct">${Math.round(r.prob*20)*5}<span class="u">%</span></div>
+          <div class="rc-pct">${Math.min(95,Math.round(r.prob*20)*5)}<span class="u">%</span></div>
           <div class="rc-herolabel">성공률</div>
         </div>
       </div>
