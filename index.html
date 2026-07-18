@@ -1781,13 +1781,13 @@ const BALL_R = 32.75*MM;              // ≈8.8px
 const G_PX = 9800*MM;                 // 중력가속도 9.8m/s² → px/s²
 
 const balls = {
-  // 4구 정식 초구 배치 (헤드 스폿 x≈228 / 풋 스폿 x≈612, 중심선 y≈230)
-  // 표준: 적구1=헤드 스폿 위, 내 수구=헤드 스폿 바로 아래-왼쪽(선공),
-  //       적구2=풋 스폿, 상대 수구=풋 스폿 오른쪽 옆
+  // 4구 정식 초구 배치 (툭billiards 초구 이미지 기준)
+  // 적구1=헤드 스폿(2/8, x228) · 적구2=풋 스폿(6/8, x612) · 중심선 y230
+  // 내 수구(선공)=적구2 바로 위(우측) · 상대 수구=적구1 왼쪽(1/8 라인, 중심선)
   r1:   { x: 228, y: 230, color:'#d23b2b', ring:'#9c281c' },
-  cue:  { x: 216, y: 252, color:'#f7f4ea', ring:'#cfc8b4' },
   r2:   { x: 612, y: 230, color:'#d23b2b', ring:'#9c281c' },
-  cue2: { x: 645, y: 230, color:'#f0c542', ring:'#b89220' },
+  cue:  { x: 616, y: 184, color:'#f7f4ea', ring:'#cfc8b4' },
+  cue2: { x: 132, y: 230, color:'#f0c542', ring:'#b89220' },
 };
 const defaults = JSON.parse(JSON.stringify(
   Object.fromEntries(Object.entries(balls).map(([k,v])=>[k,{x:v.x,y:v.y}]))
@@ -4115,13 +4115,14 @@ let tip=2, activeBall='cue', dragging=null, solution=null;
 let userPlaced=false;
 
 // ---------- 공 ----------
-// 3구 정식 초구 배치 — 제1적구(상대 수구)=헤드 스폿 / 제2적구(적구)=풋 스폿 /
-// 내 수구=헤드 스트링 위, 헤드 스폿 바로 아래(선공). 경기면(play) 기준 비율로 적는다 —
-// 절대 픽셀로 박아 두면 여백(M)을 조정하는 순간 배치가 당구대에서 통째로 미끄러진다.
+// 3구 정식 초구 배치 (japong 규격도 기준) — 제1적구(상대 수구)=헤드 스폿(0.25,0.5) /
+// 제2적구(적구)=풋 스폿(0.75,0.5) / 내 수구=헤드 스트링 위, 상대 수구와 같은 긴축(0.25)에서
+// 폭으로 +0.125 오프셋(선공). 색은 실물(수구=흰·상대=노랑·적구=빨강).
+// 경기면(play) 비율로 적는다 — 절대 픽셀은 여백 조정 시 배치가 통째로 미끄러진다.
 const balls={
-  cue:    {x:play.x0+PW*0.24,  y:play.y0+PH*0.648, color:'#5fb8e8', ring:'#3a8cb8', name:'수구'},
-  obj:    {x:play.x0+PW*0.25,  y:play.y0+PH*0.5,   color:'#e85f9c', ring:'#b03c70', name:'제1적구'},
-  target: {x:play.x0+PW*0.75,  y:play.y0+PH*0.5,   color:'#d9582b', ring:'#a23d1c', name:'제2적구'},
+  cue:    {x:play.x0+PW*0.25,  y:play.y0+PH*0.625, color:'#f7f4ea', ring:'#cfc8b4', name:'수구'},
+  obj:    {x:play.x0+PW*0.25,  y:play.y0+PH*0.5,   color:'#f0c542', ring:'#b89220', name:'제1적구'},
+  target: {x:play.x0+PW*0.75,  y:play.y0+PH*0.5,   color:'#d23b2b', ring:'#9c281c', name:'제2적구'},
 };
 const defaults=JSON.parse(JSON.stringify(
   Object.fromEntries(Object.entries(balls).map(([k,v])=>[k,{x:v.x,y:v.y}]))));
@@ -4871,11 +4872,11 @@ function drawCoords(){
     }
     legend(['출발·도착수(하단):#5fb8e8','1쿠션수(우측):#e8b53e']);
   } else {
-    ctx.fillStyle='#e85f9c';
+    ctx.fillStyle='#f0c542';
     for(let n=1;n<=7;n++){ const x=play.x0+(n-1)/6*PW; tick2(x,play.y0,'u'); ctx.fillText(n,x,play.y0-R1); }
     ctx.fillStyle='#d9582b';
     for(let n=1;n<=8;n++){ const y=play.y0+(n-1)/7*PH; tick(play.x1,y,'r'); ctx.fillText(n,play.x1+RS,y); }
-    legend(['제1적구수(상단):#e85f9c','제3쿠션수(우측):#d9582b']);
+    legend(['제1적구수(상단):#f0c542','제3쿠션수(우측):#d9582b']);
   }
 }
 function legend(items){
@@ -6284,7 +6285,7 @@ function syncTb(){
 function buildToolbar(){
   const tb=document.getElementById('g3-toolbar');
   const labels={cue:'수구',obj:'제1적구',target:'제2적구(목표)'};
-  const colors={cue:'#5fb8e8',obj:'#e85f9c',target:'#d9582b'};
+  const colors={cue:'#f7f4ea',obj:'#f0c542',target:'#d23b2b'};   // 실물 색(흰·노랑·빨강)
   // 맨 앞에 undo/redo — 4구 툴바와 같은 배치·아이콘. 툴바를 다시 그릴 때마다
   // 버튼도 다시 만들어지므로 핸들러·활성 상태를 매번 함께 붙인다.
   tb.innerHTML=
