@@ -33,7 +33,8 @@ eval(code);
 handlers['g4-calc:click'][0]();
 setTimeout(() => {
   const out = els['g4-routes'].innerHTML;
-  const sides = [...out.matchAll(/mval">((?:왼쪽|오른쪽) \d\/8[^<]*|8\/8[^<]*)</g)].map(m => m[1]);
+  // 용어(일상 ko1 '왼/오른' · 표준 ko2 '왼쪽/오른쪽')와 무관하게 좌/우 계산을 확인
+  const sides = [...out.matchAll(/mval">((?:왼쪽|왼|오른쪽|오른) \d\/8[^<]*|8\/8[^<]*)</g)].map(m => m[1]);
   console.log('두께 표기:', sides);
   const svgR = [...out.matchAll(/fill="#f7f4ea" stroke="#cfc8b4"/g)].length;
   console.log('두께 SVG 수:', svgR, '· 좌/우 라벨 포함 여부:', sides.length > 0 ? 'OK' : 'FAIL');

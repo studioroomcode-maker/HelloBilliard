@@ -1053,7 +1053,7 @@
   <div class="app-header">
     <h1 class="brand">
       <img class="brand-logo" src="design/logo/Hellobilliard_Logo2.png" alt="Hello Billiard" width="1024" height="164">
-      <span class="sub">당구 AI 코치 — 4구 경로 시뮬레이터 + 3구 시스템 계산기</span>
+      <span class="sub" data-en="Billiards AI Coach — 4-Ball path simulator + 3-Cushion system calculator">당구 AI 코치 — 4구 경로 시뮬레이터 + 3구 시스템 계산기</span>
     </h1>
     <div class="hctl">
       <select id="langSel" class="hsel" aria-label="당구 용어 언어">
@@ -1073,78 +1073,78 @@
 
   <div class="sport-tabs" id="sportTabs">
     <button data-mode="m4" class="on">
-      <span class="big">4구</span>
-      <span class="small">실측 분리각 · 회전 · 다중 경로</span>
+      <span class="big" data-en="4-Ball">4구</span>
+      <span class="small" data-en="Measured angle · English · multi-path">실측 분리각 · 회전 · 다중 경로</span>
     </button>
     <button data-mode="m3">
-      <span class="big">3구 (쓰리쿠션)</span>
-      <span class="small">파이브앤하프 · 플러스 · 볼 시스템</span>
+      <span class="big" data-en="3-Cushion">3구 (쓰리쿠션)</span>
+      <span class="small" data-en="Five &amp; a half · Plus · Ball system">파이브앤하프 · 플러스 · 볼 시스템</span>
     </button>
   </div>
 
   <div class="mode-panel show" id="panel-m4">
   <div class="col-board">
   <details class="venue autofold" style="margin:0 0 12px">
-  <summary>샷 · 개인 설정 <span class="venue-sub">파워 · 쿠션 수 · 실력 · 구장 조건</span></summary>
+  <summary data-en-html="Shot &amp; Personal <span class=&quot;venue-sub&quot;>Power · Cushions · Skill · Table</span>">샷 · 개인 설정 <span class="venue-sub">파워 · 쿠션 수 · 실력 · 구장 조건</span></summary>
   <div class="tune-controls" id="g4-tuning" style="margin-top:8px">
     <div class="tune-row">
-      <span class="tune-label">샷 파워</span>
+      <span class="tune-label" data-en="Power">샷 파워</span>
       <div class="tune-options">
-        <button data-tune="power" data-value="soft">약</button>
-        <button data-tune="power" data-value="normal" class="on">보통</button>
-        <button data-tune="power" data-value="hard">강</button>
+        <button data-tune="power" data-value="soft" data-en="Soft">약</button>
+        <button data-tune="power" data-value="normal" class="on" data-en="Normal">보통</button>
+        <button data-tune="power" data-value="hard" data-en="Hard">강</button>
       </div>
     </div>
     <div class="tune-row">
-      <span class="tune-label">쿠션 수</span>
+      <span class="tune-label" data-en="Cushions">쿠션 수</span>
       <div class="tune-options">
-        <button data-crule="any" class="on">추천</button>
-        <button data-crule="1">1쿠션</button>
-        <button data-crule="2">2쿠션</button>
-        <button data-crule="3">3쿠션↑</button>
+        <button data-crule="any" class="on" data-en="Auto">추천</button>
+        <button data-crule="1" data-en="1 cush">1쿠션</button>
+        <button data-crule="2" data-en="2 cush">2쿠션</button>
+        <button data-crule="3" data-en="3 cush+">3쿠션↑</button>
       </div>
     </div>
     <div class="tune-row">
-      <span class="tune-label">내 실력</span>
+      <span class="tune-label" data-en="Skill">내 실력</span>
       <div class="tune-options">
-        <button data-skill="beg">초급<small>~100점</small></button>
-        <button data-skill="mid" class="on">중급<small>~250점</small></button>
-        <button data-skill="adv">상급<small>250점~</small></button>
+        <button data-skill="beg" data-en-html="Beginner<small>~100 pt</small>">초급<small>~100점</small></button>
+        <button data-skill="mid" class="on" data-en-html="Intermediate<small>~250 pt</small>">중급<small>~250점</small></button>
+        <button data-skill="adv" data-en-html="Advanced<small>250 pt~</small>">상급<small>250점~</small></button>
       </div>
     </div>
     <details class="venue">
-      <summary>구장 조건 <span class="venue-sub">천 상태 · 쿠션 · 테이블 보정</span></summary>
+      <summary data-en-html="Table condition <span class=&quot;venue-sub&quot;>Cloth · Cushion · Calibration</span>">구장 조건 <span class="venue-sub">천 상태 · 쿠션 · 테이블 보정</span></summary>
       <div class="tune-controls" style="margin:8px 0 0">
         <div class="tune-row">
-          <span class="tune-label">천 상태</span>
+          <span class="tune-label" data-en="Cloth">천 상태</span>
           <div class="tune-options">
-            <button data-tune="cloth" data-value="slow">느림</button>
-            <button data-tune="cloth" data-value="normal" class="on">보통</button>
-            <button data-tune="cloth" data-value="fast">빠름</button>
+            <button data-tune="cloth" data-value="slow" data-en="Slow">느림</button>
+            <button data-tune="cloth" data-value="normal" class="on" data-en="Normal">보통</button>
+            <button data-tune="cloth" data-value="fast" data-en="Fast">빠름</button>
           </div>
         </div>
         <div class="tune-row">
-          <span class="tune-label">쿠션</span>
+          <span class="tune-label" data-en="Cushion">쿠션</span>
           <div class="tune-options">
-            <button data-tune="cushion" data-value="short">짧음</button>
-            <button data-tune="cushion" data-value="normal" class="on">보통</button>
-            <button data-tune="cushion" data-value="long">김</button>
+            <button data-tune="cushion" data-value="short" data-en="Short">짧음</button>
+            <button data-tune="cushion" data-value="normal" class="on" data-en="Normal">보통</button>
+            <button data-tune="cushion" data-value="long" data-en="Long">김</button>
           </div>
         </div>
         <div class="tune-row">
-          <span class="tune-label">쿠션 보정</span>
+          <span class="tune-label" data-en="Cushion cal.">쿠션 보정</span>
           <div class="tune-options">
-            <button data-cal="cush" data-d="-1">− 짧게</button>
+            <button data-cal="cush" data-d="-1" data-en="− shorter">− 짧게</button>
             <button class="cal-val" data-cal-val="cush" disabled>0</button>
-            <button data-cal="cush" data-d="1">+ 길게</button>
+            <button data-cal="cush" data-d="1" data-en="+ longer">+ 길게</button>
           </div>
         </div>
         <div class="tune-row">
-          <span class="tune-label">구름 보정</span>
+          <span class="tune-label" data-en="Roll cal.">구름 보정</span>
           <div class="tune-options">
-            <button data-cal="roll" data-d="-1">− 짧게</button>
+            <button data-cal="roll" data-d="-1" data-en="− shorter">− 짧게</button>
             <button class="cal-val" data-cal-val="roll" disabled>0</button>
-            <button data-cal="roll" data-d="1">+ 길게</button>
+            <button data-cal="roll" data-d="1" data-en="+ longer">+ 길게</button>
           </div>
         </div>
       </div>
@@ -1153,17 +1153,17 @@
   </details>
 
   <div class="myball-row">
-    <span class="myball-lbl">내 수구 색</span>
-    <button data-myball="white" class="on"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f7f4ea" stroke="#8b8574"/></svg> 흰공</button>
-    <button data-myball="yellow"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f0c542" stroke="#b89220"/></svg> 노란공</button>
+    <span class="myball-lbl" data-en="My ball">내 수구 색</span>
+    <button data-myball="white" class="on"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f7f4ea" stroke="#8b8574"/></svg> <span data-en="White">흰공</span></button>
+    <button data-myball="yellow"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f0c542" stroke="#b89220"/></svg> <span data-en="Yellow">노란공</span></button>
   </div>
   <div class="toolbar" id="g4-toolbar">
     <button class="tool histbtn" id="g4-undo" aria-label="공 이동 되돌리기" title="되돌리기" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
     <button class="tool histbtn" id="g4-redo" aria-label="공 이동 다시하기" title="다시하기" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
-    <button class="tool active" data-ball="cue"><span class="dot" style="background:#f7f4ea"></span>내 수구</button>
-    <button class="tool" data-ball="cue2"><span class="dot" style="background:#f0c542"></span>상대 수구</button>
-    <button class="tool" data-ball="r1"><span class="dot" style="background:#d23b2b"></span>적구 1</button>
-    <button class="tool" data-ball="r2"><span class="dot" style="background:#d23b2b"></span>적구 2</button>
+    <button class="tool active" data-ball="cue"><span class="dot" style="background:#f7f4ea"></span><span data-en="My cue">내 수구</span></button>
+    <button class="tool" data-ball="cue2"><span class="dot" style="background:#f0c542"></span><span data-en="Opp. cue">상대 수구</span></button>
+    <button class="tool" data-ball="r1"><span class="dot" style="background:#d23b2b"></span><span data-en="Red 1">적구 1</span></button>
+    <button class="tool" data-ball="r2"><span class="dot" style="background:#d23b2b"></span><span data-en="Red 2">적구 2</span></button>
   </div>
 <div class="board">
   <div class="shot-brief" id="g4-shotBrief" hidden></div>
@@ -1177,32 +1177,32 @@
   </div>
 
   <div class="rec-row" id="g4-rec" hidden>
-    <span class="rec-q">이 샷, 실제로 쳐봤나요?</span>
-    <button class="tool rec-yes" id="g4-recYes" type="button">성공 ✓</button>
-    <button class="tool rec-no" id="g4-recNo" type="button">실패 ✗</button>
+    <span class="rec-q" data-en="Did you actually try this shot?">이 샷, 실제로 쳐봤나요?</span>
+    <button class="tool rec-yes" id="g4-recYes" type="button" data-en="Made ✓">성공 ✓</button>
+    <button class="tool rec-no" id="g4-recNo" type="button" data-en="Missed ✗">실패 ✗</button>
     <span class="rec-msg" id="g4-recMsg" hidden></span>
   </div>
 
   <div class="actions">
-    <button class="tool primary" id="g4-calc">경로 계산</button>
-    <button class="tool" id="g4-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
+    <button class="tool primary" id="g4-calc" data-en="Calculate">경로 계산</button>
+    <button class="tool" id="g4-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> <span data-en="Photo Scan">사진 인식</span></button>
   </div>
   <div class="actions sub-actions">
-    <button class="tool" id="g4-reset">초기화</button>
-    <button class="tool" id="g4-share">이미지 저장</button>
-    <button class="tool" id="g4-example">예시 배치</button>
+    <button class="tool" id="g4-reset" data-en="Reset">초기화</button>
+    <button class="tool" id="g4-share" data-en="Save image">이미지 저장</button>
+    <button class="tool" id="g4-example" data-en="Random">랜덤 배치</button>
   </div>
 
   <input type="file" id="g4-file" accept="image/*" style="display:none">
   <div class="panel" id="g4-photoPanel" style="display:none">
-    <h3 style="font-size:12px;color:var(--accent);letter-spacing:.05em;margin-bottom:8px">
-      📷 사진 인식 — 모서리 맞추기</h3>
+    <h3 style="font-size:12px;color:var(--accent);letter-spacing:.05em;margin-bottom:8px"
+      data-en="📷 Photo scan — align corners">📷 사진 인식 — 모서리 맞추기</h3>
     <canvas id="g4-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
       style="width:100%;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
     <div class="actions" style="margin-top:10px">
-      <button class="tool primary" id="g4-detect">공 인식 → 경로 계산</button>
-      <button class="tool" id="g4-swapCue">수구 ⇄ 상대</button>
-      <button class="tool" id="g4-photoCancel">닫기</button>
+      <button class="tool primary" id="g4-detect" data-en="Detect → Calculate">공 인식 → 경로 계산</button>
+      <button class="tool" id="g4-swapCue" data-en="Cue ⇄ Opp.">수구 ⇄ 상대</button>
+      <button class="tool" id="g4-photoCancel" data-en="Close">닫기</button>
     </div>
     <p class="hint" id="g4-photoMsg" style="margin-top:8px"></p>
   </div>
@@ -1210,12 +1210,12 @@
 
   <div class="col-side">
   <div class="routes-head">
-    <div class="section-label">제안 경로</div>
+    <div class="section-label" data-en="Suggested paths">제안 경로</div>
     <div class="seg" id="g4-sortseg">
-      <button data-sort="best" class="on">추천순</button>
-      <button data-sort="cush">쿠션수순</button>
-      <button data-sort="prob">성공률순</button>
-      <button data-sort="gather">공모임순</button>
+      <button data-sort="best" class="on" data-en="Best">추천순</button>
+      <button data-sort="cush" data-en="Cushions">쿠션수순</button>
+      <button data-sort="prob" data-en="Success %">성공률순</button>
+      <button data-sort="gather" data-en="Gather">공모임순</button>
     </div>
   </div>
 
@@ -1329,27 +1329,27 @@
   <div class="stage-bar" id="g3-stageBar" hidden>
     <div class="route-picks" id="g3-routePicks"></div>
     <button class="tool mini" id="g3-showAll" aria-pressed="false"
-      title="다른 제안 경로도 흐리게 함께 표시">겹쳐 보기</button>
+      title="다른 제안 경로도 흐리게 함께 표시" data-en="Overlay">겹쳐 보기</button>
     <button class="tool mini play" id="g3-play" aria-label="경로 재생" title="경로 재생"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg></button>
   </div>
   </div>
 
   <div class="rec-row" id="g3-rec" hidden>
-    <span class="rec-q">이 샷, 실제로 쳐봤나요?</span>
-    <button class="tool rec-yes" id="g3-recYes" type="button">성공 ✓</button>
-    <button class="tool rec-no" id="g3-recNo" type="button">실패 ✗</button>
+    <span class="rec-q" data-en="Did you actually try this shot?">이 샷, 실제로 쳐봤나요?</span>
+    <button class="tool rec-yes" id="g3-recYes" type="button" data-en="Made ✓">성공 ✓</button>
+    <button class="tool rec-no" id="g3-recNo" type="button" data-en="Missed ✗">실패 ✗</button>
     <span class="rec-msg" id="g3-recMsg" hidden></span>
   </div>
 
   <div class="actions">
-    <button class="tool primary" id="g3-calc" style="display:none">시스템 계산</button>
-    <button class="tool primary" id="g3-phys">경로 계산</button>
-    <button class="tool" id="g3-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> 사진 인식</button>
+    <button class="tool primary" id="g3-calc" style="display:none" data-en="System calc">시스템 계산</button>
+    <button class="tool primary" id="g3-phys" data-en="Calculate">경로 계산</button>
+    <button class="tool" id="g3-photo"><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> <span data-en="Photo Scan">사진 인식</span></button>
   </div>
   <div class="actions sub-actions">
-    <button class="tool" id="g3-reset">초기화</button>
-    <button class="tool" id="g3-share">이미지 저장</button>
-    <button class="tool" id="g3-example">예시 배치</button>
+    <button class="tool" id="g3-reset" data-en="Reset">초기화</button>
+    <button class="tool" id="g3-share" data-en="Save image">이미지 저장</button>
+    <button class="tool" id="g3-example" data-en="Random">랜덤 배치</button>
   </div>
 
   <input type="file" id="g3-file" accept="image/*" style="display:none">
@@ -1359,8 +1359,8 @@
     <canvas id="g3-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
       style="width:100%;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
     <div class="actions" style="margin-top:10px">
-      <button class="tool primary" id="g3-detect">공 인식</button>
-      <button class="tool" id="g3-photoCancel">닫기</button>
+      <button class="tool primary" id="g3-detect" data-en="Detect">공 인식</button>
+      <button class="tool" id="g3-photoCancel" data-en="Close">닫기</button>
     </div>
     <p class="hint" id="g3-photoMsg" style="margin-top:8px"></p>
   </div>
@@ -1368,7 +1368,7 @@
 
   <div class="col-side">
   <div class="routes-head" id="g3-routesHead" style="display:none">
-    <div class="section-label">제안 경로</div>
+    <div class="section-label" data-en="Suggested paths">제안 경로</div>
   </div>
   <div class="routes" id="g3-phyRoutes"></div>
 
@@ -1673,8 +1673,8 @@ window.hbFelt=(function(){
 // ko1=일상(히끼·오시·시네루), ko2=표준(끌어치기·밀어치기·좌/우회전), en=English.
 // 4구·3구 경로 카드의 샷 용어에 적용. (앱 뼈대 전체 번역은 별도 작업)
 window.hbLang=(function(){
-  var cur='ko2';
-  try{ var v=localStorage.getItem('hb_lang'); if(v==='ko1'||v==='en') cur=v; }catch(e){}
+  var cur='ko1';   // 디폴트: 일상 용어(히끼·오시·시네루)
+  try{ var v=localStorage.getItem('hb_lang'); if(v==='ko2'||v==='en') cur=v; }catch(e){}
   var SPIN={
     none:  {ko1:'무회전',   ko2:'무회전',   en:'No spin'},
     draw:  {ko1:'히끼',     ko2:'끌어치기', en:'Draw'},
@@ -1700,7 +1700,7 @@ window.hbLang=(function(){
   function pick(d){ return d?(d[cur]||d.ko2||d.ko1||''):''; }
   return {
     get:function(){ return cur; },
-    set:function(v){ cur=(v==='ko1'||v==='en')?v:'ko2'; try{ localStorage.setItem('hb_lang',cur); }catch(e){} },
+    set:function(v){ cur=(v==='ko2'||v==='en')?v:'ko1'; try{ localStorage.setItem('hb_lang',cur); }catch(e){} },
     isEn:function(){ return cur==='en'; },
     spin:function(k){ return pick(SPIN[k])||k; },
     spinTitle:function(k){ var n=pick(SPIN[k])||k; if(cur==='en') return n; var t=TAG[k]; return t?n+' — '+t:n; },
@@ -1709,6 +1709,21 @@ window.hbLang=(function(){
     side:function(x){ return pick(SIDE[x]); }
   };
 })();
+
+// 정적 UI 문자열 영어화 — [data-en](텍스트)·[data-en-html](자식 포함) 요소를 언어에 맞게 스왑.
+// 원본 한국어는 최초 1회 보존해 되돌릴 수 있게 한다. English 외 언어는 항상 한국어 원본.
+function applyI18n(){
+  var en = !!(window.hbLang && window.hbLang.isEn());
+  var a=document.querySelectorAll('[data-en]');
+  for(var i=0;i<a.length;i++){ var el=a[i];
+    if(el._ko==null) el._ko=el.textContent;
+    el.textContent = en ? el.getAttribute('data-en') : el._ko; }
+  var h=document.querySelectorAll('[data-en-html]');
+  for(var j=0;j<h.length;j++){ var e2=h[j];
+    if(e2._koh==null) e2._koh=e2.innerHTML;
+    e2.innerHTML = en ? e2.getAttribute('data-en-html') : e2._koh; }
+}
+if(typeof window!=='undefined') window.hbApplyI18n=applyI18n;
 
 // ===== 효과음 — sound/*.mp3 (같은 오리진 · 외부 요청 0건) =====
 // 예전엔 Web Audio로 '딱/툭'을 합성했지만, 실제 녹음 음원으로 바꿨다.
@@ -1819,13 +1834,14 @@ const balls = {
 const defaults = JSON.parse(JSON.stringify(
   Object.fromEntries(Object.entries(balls).map(([k,v])=>[k,{x:v.x,y:v.y}]))
 ));
-const ROUTE_COLORS = ['#f4f1e8','#5fb8e8','#c98ce0'];
+const ROUTE_COLORS = ['#f4f1e8','#5fb8e8','#c98ce0','#6fce9a','#e88fa8'];
 const REF_COLOR = '#e0a44a';   // 참고용 '다른 순서' 경로 색 (호박색 — 정식 경로와 구분)
 // 경로 색: 참고 경로는 항상 호박색, 그 외는 순번색(넘치면 호박색으로 폴백)
 const routeColor = i => (routes[i]&&routes[i].reference) ? REF_COLOR : (ROUTE_COLORS[i]||REF_COLOR);
 
 let activeBall='cue', dragging=null, routes=[], selected=0;
 let sortMode='best', allRoutes=[];   // 정렬 필터 — 계산된 전체 후보를 보관해 재정렬
+let shownRoutes=[];   // 고정 선발된 표시 경로(최대 5) — 정렬 탭은 이걸 순서만 바꾼다
 let allRoutesLow=[];   // 성공률 3% 미만 후보 — '다른 순서' 참고 경로로만 쓰려고 따로 보관
 const tuneState={power:'normal', cloth:'normal', cushion:'normal'};
 // 쿠션 수 규칙 — 'any'=추천(무관), 1/2=정확히 그 횟수, 3=3회 이상 (쓰리쿠션 룰).
@@ -2227,8 +2243,7 @@ async function solve(onProgress){
   // (2~3쿠션을 돌려면 보통 파워로는 에너지가 부족하다)
   // 쿠션수순 정렬일 때도 다쿠션 후보가 존재하도록 속도를 올려 탐색한다.
   const effSpeed=cushRule===3?Math.max(P.speed,1350)
-                :cushRule===2?Math.max(P.speed,1050)
-                :sortMode==='cush'?Math.max(P.speed,1150):P.speed;
+                :cushRule===2?Math.max(P.speed,1050):P.speed;
   // 3쿠션 룰은 혼합 당점(밀어/끌어+옆)이 사실상 필수 — 룰을 선택했다는 건
   // 그 기술을 치겠다는 뜻이므로 중급 이상에서는 제한을 푼다 (초급은 유지)
   const spinAllowed=(cushRule===3&&skill!==SKILLS.beg)?SKILLS.adv.spinOK:skill.spinOK;
@@ -2338,8 +2353,8 @@ async function solve(onProgress){
   // ④ 상위 후보 + 쿠션수 상위 후보(쿠션수순 정렬용)를 몬테카를로로 실측
   const byCush=[...cands].sort((a,b)=>
     (b.cushBefore+b.cush)-(a.cushBefore+a.cush)||b.pre-a.pre);
-  const pool=sortMode==='cush'?byCush.slice(0,16):cands.slice(0,16);
-  const extra=sortMode==='cush'?cands.slice(0,8):byCush.slice(0,8);
+  const pool=cands.slice(0,16);        // 정렬 무관 — 상위 후보 + 쿠션수 상위 후보를 함께 담아
+  const extra=byCush.slice(0,8);       // 5개 선발이 다양한 쿠션수를 포함하도록
   for(const c of extra) if(!pool.includes(c)) pool.push(c);
   const routesOut=[];
   const routesLow=[];   // 성공률 3% 미만 — 정식 제안엔 안 쓰고 '다른 순서' 참고용으로만 보관
@@ -2401,7 +2416,8 @@ async function solve(onProgress){
     const p2=await monteCarlo(r,P,60,r.speed,bump);
     r.prob=(r.prob*30+p2*60)/90;
   }
-  return shown;
+  shownRoutes=shown;                 // 정렬 스위치용 고정 목록 저장
+  return applySort(shown, sortMode); // 현재 정렬 기준으로 순서만 맞춰 반환
 }
 
 // 정렬 필터 — 재계산 없이 보관된 후보에서 상위 3개를 다시 추린다
@@ -2415,17 +2431,21 @@ function pickTop(list,key){
   }
   return picked;
 }
+// 표시 경로 선발 — 정렬 모드와 무관하게 '다양한 최대 5개'를 고정 선발한다.
+// 정렬 탭은 이 고정 목록의 순서만 바꾼다(applySort). 같은 결과를 어떤 순으로 볼지 = 필터.
 function sortedRoutes(){
   if(!allRoutes.length) return [];
-  let main;
-  if(sortMode==='cush')
-    main=pickTop(allRoutes,r=>(r.cushBefore+r.cushions)*1e4+r.prob*100+(r.gather||0)*0.01);
-  else if(sortMode==='prob')
-    main=pickTop(allRoutes,r=>r.prob*1e4+(r.gather||0));
-  else if(sortMode==='gather')
-    main=pickTop(allRoutes,r=>(r.gather==null?-1:r.gather)*1e4+r.prob*100);
-  else main=pickDiverse(allRoutes);
-  return withReference(main);
+  return withReference(pickDiverse(allRoutes));
+}
+// 고정 선발된 경로를 선택한 정렬 기준으로 재정렬 (참고 경로는 항상 맨 뒤)
+function applySort(rs, mode){
+  const refs=rs.filter(r=>r.reference), main=rs.filter(r=>!r.reference);
+  const key = mode==='cush' ? (r=>(r.cushBefore+r.cushions)*1e6+r.prob)
+    : mode==='prob' ? (r=>r.prob)
+    : mode==='gather' ? (r=>(r.gather==null?-1:r.gather)*1e6+r.prob)
+    : (r=>r.score);            // best/추천
+  main.sort((x,y)=>key(y)-key(x));
+  return main.concat(refs);
 }
 // 표시 경로가 전부 같은 적구를 먼저 친다면 '다른 순서(가까운 적구 먼저 등)' 경로를
 // 참고용으로 1개 덧붙인다. 어려운 배치라 한 방향만 나올 때 "왜 다른 순서는 안 보여주나"
@@ -2433,14 +2453,13 @@ function sortedRoutes(){
 // 빈약할 때만(≤2개) 저성공률 후보(allRoutesLow)에서 성공률이 가장 높은 것을 참고로 붙인다.
 function withReference(main){
   main.forEach(r=>{ r.reference=false; });   // 이전 호출의 참고 표식 초기화
-  if(!main.length) return main;
+  if(main.length===0 || main.length>=5) return main;      // 최대 5개
   if(new Set(main.map(r=>r.first)).size>1) return main;   // 이미 순서가 다양함
   const want=main[0].first==='r1'?'r2':'r1';
   const notIn=r=>!main.includes(r);
   const byProb=(a,b)=>b.prob-a.prob;
-  let alt=allRoutes.filter(r=>r.first===want&&notIn(r)).sort(byProb)[0];
-  if(!alt&&main.length<3)
-    alt=allRoutesLow.filter(r=>r.first===want).sort(byProb)[0];
+  const alt=allRoutes.filter(r=>r.first===want&&notIn(r)).sort(byProb)[0]
+          || allRoutesLow.filter(r=>r.first===want).sort(byProb)[0];
   if(!alt) return main;
   alt.reference=true;
   return [...main,alt];
@@ -2482,7 +2501,7 @@ function pickDiverse(found){
   if(!found.length) return [];
   found.sort((a,b)=>b.score-a.score);
   const picked=[found[0]];   // 1순위는 최고점 — 기준 경로
-  while(picked.length<3){
+  while(picked.length<5 && picked.length<found.length){
     let best=null, bestVal=-Infinity;
     for(const f of found){
       if(picked.includes(f)) continue;
@@ -3054,17 +3073,13 @@ document.querySelectorAll('#g4-tuning [data-crule]').forEach(b=>
 // 쿠션수순은 다쿠션 후보 탐색이 필요해 재계산한다
 document.querySelectorAll('#g4-sortseg button').forEach(b=>
   b.addEventListener('click',()=>{
-    const prev=sortMode;
     sortMode=b.dataset.sort;
     document.querySelectorAll('#g4-sortseg button').forEach(x=>
       x.classList.toggle('on',x===b));
-    if(!routes.length) return;
-    if((sortMode==='cush')!==(prev==='cush')){
-      requestRecalc();          // 탐색 조건이 달라짐 — 재계산 (계산 중이면 끝난 뒤)
-    } else if(allRoutes.length){
-      routes=sortedRoutes(); selected=0;
-      renderCards(); draw(); drawPhoto();
-    }
+    if(!shownRoutes.length) return;
+    // 같은 결과(고정 5개)를 선택한 기준으로 순서만 재정렬 — 재계산 없음
+    routes=applySort(shownRoutes, sortMode); selected=0;
+    renderCards(); draw(); drawPhoto();
   }));
 const calcBtn=document.getElementById('g4-calc');
 let solveGen=0;   // 계산 중 공이 움직이면 낡은 결과를 버리기 위한 세대 토큰
@@ -3177,7 +3192,7 @@ document.getElementById('g4-reset').addEventListener('click',()=>{
   routes=[];calcTried=false;renderCards();draw();drawPhoto();
   pushHist();   // 초기 배치도 히스토리 기록
 });
-// 예시 배치 — 공들을 매번 랜덤 위치로(겹치지 않게) 놓는다
+// 랜덤 배치 — 공들을 매번 랜덤 위치로(겹치지 않게) 놓는다
 function randomLayout(){
   const R=BALL_R, x0=play.x0+R+3, x1=play.x1-R-3, y0=play.y0+R+3, y1=play.y1-R-3, pts=[];
   for(const k in balls){
@@ -4151,7 +4166,7 @@ let system=null;     // null | five | plus | ball
 let tip=2, activeBall='cue', dragging=null, solution=null;
 // 사용자가 이 배치를 직접 만들었는가 (드래그·탭 배치·사진 인식·초기화).
 // false 인 동안은 화면에 있는 배치가 '앱이 고른 예시'라는 뜻이라,
-// 탭을 옮기면 그 시스템의 예시 배치로 갈아끼운다 — 첫 화면이 '유효 범위 밖'으로
+// 탭을 옮기면 그 시스템의 랜덤 배치로 갈아끼운다 — 첫 화면이 '유효 범위 밖'으로
 // 시작하면 처음 쓰는 사람은 기능이 고장 난 줄 안다. 한 번이라도 사용자가
 // 공을 놓으면 그 배치는 사용자의 것이므로 다시는 건드리지 않는다.
 let userPlaced=false;
@@ -5568,6 +5583,7 @@ async function solve3(onProgress){
     kept.push(best);
   }
   kept.sort((a,b)=>b.prob-a.prob);
+  if(kept.length>5) kept.length=5;   // 최대 5개
   // 경로를 찾긴 했으나 전부 재현성이 없어 버린 경우를 빈 결과와 구분한다
   kept.dropped=picked.length-kept.length;
   return kept;
@@ -5578,7 +5594,7 @@ let phyRoutes=null, phySel=0;
 // 제안 경로를 전부 겹쳐 그릴지 — 기본은 끄고 선택한 경로만 보여준다
 let phyShowAll=false;
 let justSolved3=false;   // 방금 새 계산 결과인지 — 등장 애니메이션 트리거용
-const PHY_COLORS=['#f4f1e8','#5fb8e8','#c98ce0'];
+const PHY_COLORS=['#f4f1e8','#5fb8e8','#c98ce0','#6fce9a','#e88fa8'];
 // 두께 '양'만 보여주는 그림 — 볼 시스템 전용.
 // 볼 시스템은 두께와 팁수의 '크기'만 낼 뿐 어느 쪽인지는 계산하지 않는다.
 // 그래서 겹침 그림(thicknessSVG3)처럼 한쪽을 고르면 없는 정보를 지어내는 셈이
@@ -6418,7 +6434,7 @@ function applySystem(){
   document.getElementById('g3-panelText').textContent=info.panelText;
   document.getElementById('g3-tipseg').style.display = system==='ball'?'none':'flex';
   if(!SYS_BALLS[system].includes(activeBall)) activeBall=SYS_BALLS[system][0];
-  // 사용자가 직접 배치한 적 없으면 이 시스템의 예시 배치로 시작한다 —
+  // 사용자가 직접 배치한 적 없으면 이 시스템의 랜덤 배치로 시작한다 —
   // 각 시스템은 저마다 다른 출발 형태를 가정하므로, 하나의 배치가 세 탭에서
   // 모두 유효할 수는 없다. 사용자 배치는 시스템을 바꿔도 그대로 둔다.
   if(!userPlaced) applyPreset();
@@ -6558,7 +6574,7 @@ document.getElementById('g3-calc').addEventListener('click',()=>{
   phyRoutes=null; renderPhyCards();
   runSystemCalc();
 });
-// 고정 예시 프리셋 — 사용자 '예시 배치'는 랜덤이지만, 테스트/내부용으로 고정 예시를 노출
+// 고정 예시 프리셋 — 사용자 '랜덤 배치'는 랜덤이지만, 테스트/내부용으로 고정 예시를 노출
 function loadExamplePreset(){
   applyPreset();
   pushHist3();
@@ -6569,7 +6585,7 @@ function loadExamplePreset(){
 }
 if(typeof window!=='undefined') window.__hb3preset=loadExamplePreset;
 document.getElementById('g3-example').addEventListener('click',()=>{
-  // 예시 배치 — 공 3개를 매번 랜덤 위치로(겹치지 않게) 놓는다
+  // 랜덤 배치 — 공 3개를 매번 랜덤 위치로(겹치지 않게) 놓는다
   stopAnim3(false);
   const R=BALL_R, x0=play.x0+R+3, x1=play.x1-R-3, y0=play.y0+R+3, y1=play.y1-R-3, pts=[];
   for(const k of ['cue','obj','target']){
@@ -6608,7 +6624,7 @@ if(typeof window!=='undefined')
 
 // 테스트용 노출 (window.__hbVision·__hbOverlap 과 같은 용도) — 배치·계산 경로를
 // 밖에서 읽을 수 있게 한다. 이게 없으면 테스트가 '경로 위의 점'을 좌표로
-// 하드코딩해야 하고, 예시 배치를 옮기는 순간 의미 없이 깨진다.
+// 하드코딩해야 하고, 랜덤 배치를 옮기는 순간 의미 없이 깨진다.
 if(typeof window!=='undefined')
   // setSystem: 테스트가 토글 걱정 없이 특정 시스템을 켜거나(sys) 끄게(null) 한다.
   window.__hb3test={balls, play, sol:()=>solution, routes:()=>phyRoutes, BALL_R,
@@ -6812,10 +6828,12 @@ if(typeof window!=='undefined')
     if(window.hbLang) lang.value=window.hbLang.get();
     lang.addEventListener('change', function(){
       if(window.hbLang) window.hbLang.set(lang.value);
-      try{ window.dispatchEvent(new Event('hblang')); }catch(e){}
+      window.hbApplyI18n&&window.hbApplyI18n();   // 정적 UI 문자열 스왑
+      try{ window.dispatchEvent(new Event('hblang')); }catch(e){}   // 카드 등 동적 재렌더
       window.hbTrack&&window.hbTrack('lang',{v:lang.value});
     });
   }
+  window.hbApplyI18n&&window.hbApplyI18n();   // 최초 로드 시 반영(저장된 언어가 en이면)
   if(felt){
     if(window.hbFelt) felt.value=window.hbFelt.get();
     felt.addEventListener('change', function(){
