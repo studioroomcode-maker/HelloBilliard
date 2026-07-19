@@ -1201,12 +1201,14 @@
   <div class="panel" id="g4-photoPanel" style="display:none">
     <h3 style="font-size:12px;color:var(--accent);letter-spacing:.05em;margin-bottom:8px"
       data-en="📷 Photo scan — align corners">📷 사진 인식 — 모서리 맞추기</h3>
-    <canvas id="g4-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
-      style="width:100%;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
-    <div class="actions" style="margin-top:10px">
-      <button class="tool primary" id="g4-detect" data-en="Detect → Calculate">공 인식 → 경로 계산</button>
-      <button class="tool" id="g4-swapCue" data-en="Cue ⇄ Opp.">수구 ⇄ 상대</button>
-      <button class="tool" id="g4-photoCancel" data-en="Close">닫기</button>
+    <div class="photo-wrap">
+      <canvas id="g4-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
+        style="width:100%;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
+      <div class="actions photo-float">
+        <button class="tool primary" id="g4-detect" data-en="Detect → Calculate">공 인식 → 경로 계산</button>
+        <button class="tool" id="g4-swapCue" data-en="Cue ⇄ Opp.">수구 ⇄ 상대</button>
+        <button class="tool" id="g4-photoCancel" data-en="Close">닫기</button>
+      </div>
     </div>
     <p class="hint" id="g4-photoMsg" style="margin-top:8px"></p>
   </div>
@@ -1365,11 +1367,13 @@
   <div class="panel" id="g3-photoPanel" style="display:none">
     <h3 style="font-size:12px;color:var(--accent);letter-spacing:.05em;margin-bottom:8px">
       사진 인식 — 모서리 맞추기</h3>
-    <canvas id="g3-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
-      style="width:100%;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
-    <div class="actions" style="margin-top:10px">
-      <button class="tool primary" id="g3-detect" data-en="Detect">공 인식</button>
-      <button class="tool" id="g3-photoCancel" data-en="Close">닫기</button>
+    <div class="photo-wrap">
+      <canvas id="g3-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
+        style="width:100%;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
+      <div class="actions photo-float">
+        <button class="tool primary" id="g3-detect" data-en="Detect">공 인식</button>
+        <button class="tool" id="g3-photoCancel" data-en="Close">닫기</button>
+      </div>
     </div>
     <p class="hint" id="g3-photoMsg" style="margin-top:8px"></p>
   </div>
@@ -1510,6 +1514,27 @@
   .hist-clear button{ background:none; border:none; color:var(--tx-3,#8a8272);
     font-size:12px; text-decoration:underline; cursor:pointer; }
 
+  /* ===== 사진 인식 — 버튼을 사진 위에 띄운다 =====
+     사진이 길면 버튼이 화면 밖으로 밀려 '다음에 뭘 눌러야 하는지' 안 보였다.
+     사진 하단에 글래스 칩으로 고정해 항상 눈에 들어오게 한다. */
+  .photo-wrap { position: relative; }
+  .photo-wrap > canvas { display: block; }
+  .actions.photo-float {
+    position: absolute; z-index: 6;
+    left: 50%; transform: translateX(-50%);
+    bottom: 10px; margin: 0; width: auto; max-width: calc(100% - 16px);
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
+    padding: 6px; border-radius: 12px;
+    background: rgba(16,14,10,.68);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    border: 1px solid rgba(244,241,232,.16);
+    box-shadow: 0 6px 18px rgba(0,0,0,.5);
+  }
+  .actions.photo-float .tool {
+    flex: 0 0 auto; min-width: 0; min-height: 34px;
+    padding: 7px 12px; font-size: 12px;
+  }
+
   /* ===== 폰 가로모드 — 다이를 화면 가득, 컨트롤은 다이 위에 띄운다 =====
      짧은 가로 화면(폰)에서만 적용. 다이를 맨 위로 끌어올리고(order:-1) 화면 높이에
      맞춰 키운 뒤, [경로 계산]과 [경로 선택·재생]을 다이 위 글래스 칩으로 띄운다.
@@ -1556,8 +1581,39 @@
       max-width: 100%; max-height: 100dvh;
       border-radius: 0;
     }
-    /* 샷 요약은 경로 카드에 그대로 있으니, 큰 화면에선 감춰 깔끔하게 */
-    .board > .shot-brief { display: none; }
+    /* 샷 요약(당점·두께·파워) — 상단 중앙에 반투명으로. 경로가 있을 때만 뜬다 */
+    .board > .shot-brief {
+      position: absolute; z-index: 12;
+      top: 8px; left: 50%; transform: translateX(-50%);
+      margin: 0; width: auto; max-width: calc(100% - 360px);
+      padding: 5px 11px; border-radius: 12px;
+      background: rgba(16,14,10,.55);
+      -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+      border: 1px solid rgba(244,241,232,.14);
+      box-shadow: 0 6px 18px rgba(0,0,0,.4);
+      font-size: 11px; gap: 10px;
+      white-space: nowrap; overflow: hidden;
+    }
+    .board > .shot-brief .sbi svg { height: 16px; }
+    .board > .shot-brief .sbi { gap: 5px; }
+
+    /* 내 수구 색(흰/노랑) — 재생 버튼 오른쪽, 우하단에 항상 띄운다 */
+    .board > .myball-row {
+      position: absolute; z-index: 12;
+      bottom: 8px; right: 8px;
+      margin: 0; width: auto; gap: 4px;
+      display: flex; align-items: center;
+      padding: 6px; border-radius: 12px;
+      background: rgba(16,14,10,.62);
+      -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+      border: 1px solid rgba(244,241,232,.14);
+      box-shadow: 0 6px 18px rgba(0,0,0,.45);
+    }
+    .board > .myball-row .myball-lbl { display: none; }   /* 공 아이콘으로 충분 */
+    .board > .myball-row button {
+      flex: 0 0 auto; min-width: 0; min-height: 34px;
+      padding: 7px 10px; font-size: 12px;
+    }
 
     /* --- 다이 위에 뜨는 컨트롤 (글래스 칩) --- */
     .board > .actions,
@@ -1687,6 +1743,15 @@ window.hbTrack=(function(){
 
 // ===== Pro 권한 / 무료 한도 (유료화 1단계) =====
 // 게이팅만 구현하고 결제는 나중에 붙인다(0단계 검증 후). 아래 한도 상수를 크게 잡거나
+// 사진 인식이 끝나면 결과(경로)를 바로 볼 수 있게 위쪽 당구대로 부드럽게 이동한다.
+// 사진이 길면 다이가 화면 밖에 있어 '계산이 됐는지' 알 수 없었다.
+window.hbScrollToBoard=function(){
+  try{
+    var b=document.querySelector('.mode-panel.show .board');
+    if(b&&b.scrollIntoView) b.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){}
+};
+
 // ===== 스토어 빌드 감지 =====
 // 플레이스토어(TWA)·앱스토어(iOS 래퍼)로 감싼 빌드에서는 '앱 안에서 디지털 상품을
 // 외부 링크로 판매'하는 것이 스토어 정책 위반이다(Google Play 결제정책 / Apple 3.1.1).
@@ -4236,6 +4301,7 @@ document.getElementById('g4-detect').addEventListener('click',()=>{
   routes=[]; selected=0; solveGen++; draw(); renderCards();
   pushHist();               // 사진 인식 배치도 히스토리 기록
   requestRecalc();          // 최적 경로 자동 계산 (계산 중이면 끝난 뒤)
+  window.hbScrollToBoard&&window.hbScrollToBoard();   // 결과를 볼 수 있게 위 다이로
 });
 
 // 비전 코어를 3구 탭에서 재사용할 수 있게 노출
@@ -6462,6 +6528,7 @@ document.getElementById('g3-detect').addEventListener('click',()=>{
   p3Msg.textContent=`인식 완료: ${got.join(' · ')} — 제1적구는 수구에서 가까운 공으로 배정했습니다. `+
     '아래 당구대에서 드래그로 수정할 수 있습니다. 물리 경로를 계산합니다.';
   document.getElementById('g3-phys').click();
+  window.hbScrollToBoard&&window.hbScrollToBoard();   // 결과를 볼 수 있게 위 다이로
 });
 
 // 실력 단계 (4구와 공유 — 양쪽 버튼 모두 동기화)
@@ -6911,15 +6978,19 @@ if(typeof window!=='undefined')
           for(var i=0;i<cbs.length;i++){
             var cb=cbs[i], board=cb.querySelector&&cb.querySelector('.board');
             if(!board) continue;
-            var kids=cb.children||[], act=null;
+            // [경로 계산] 줄과 [내 수구 색] 줄을 다이 안으로 (원위치는 기억해 둔다)
+            var kids=cb.children||[], picks=[];
             for(var j=0;j<kids.length;j++){
-              var k=kids[j];
-              if(k.classList&&k.classList.contains('actions')&&
-                 !k.classList.contains('sub-actions')){ act=k; break; }
+              var k=kids[j], cl=k.classList;
+              if(!cl) continue;
+              if((cl.contains('actions')&&!cl.contains('sub-actions'))||cl.contains('myball-row'))
+                picks.push(k);
             }
-            if(!act) continue;
-            moved.push({el:act,parent:act.parentNode,next:act.nextSibling});
-            board.appendChild(act);
+            for(var q=0;q<picks.length;q++){
+              var el=picks[q];
+              moved.push({el:el,parent:el.parentNode,next:el.nextSibling});
+              board.appendChild(el);
+            }
           }
         } else {
           for(var m=0;m<moved.length;m++){
