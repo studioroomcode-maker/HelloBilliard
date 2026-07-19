@@ -5366,7 +5366,7 @@ function simulate3(dir,speed,spin,P,rec){
       const cvx=cueIsA?c.pre.ax:c.pre.bx, cvy=cueIsA?c.pre.ay:c.pre.by;
       const ox=cueIsA?c.nx:-c.nx, oy=cueIsA?c.ny:-c.ny;
       c.aimSide=(cvx*oy-cvy*ox)>=0?'L':'R';
-      if(!res.first){ res.first=other; res.firstInfo=c; }
+      if(!res.first){ res.first=other; res.firstInfo=c; res.cushBeforeFirst=res.cush; }
       else if(other!==res.first&&!res.second){
         res.second=other; res.cushAtSecond=res.cush; res.secondInfo=c;
         // 키스 감지 — 두 번째 적구가 수구에 맞기 전 이미 (제1적구에 밀려) 움직였는가.
@@ -5644,6 +5644,7 @@ async function solve3(onProgress){
     best.aimSide=sim.firstInfo.aimSide||'L';
     best.hits=[sim.firstInfo,sim.secondInfo].filter(Boolean);
     best.cush=sim.cushAtSecond;
+    best.cushBefore=sim.cushBeforeFirst||0;   // 첫 적구 전 쿠션(와리가리 선행 쿠션)
     // 키스 — 제2적구가 수구에 맞기 전 제1적구에 밀려났으면, 그림의 선이 (시작
     // 위치에 그려진) 제2적구를 빗나가 보인다. 물리는 실제지만 그림이 오해를 준다.
     best.kiss=(sim.secondMoved||0) > 1.5*BALL_R;
@@ -5808,6 +5809,10 @@ function renderPhyCards(){
     const eighths=Math.max(1,Math.min(8,Math.round(r.thickness*8)));
     const thickLabel=eighths>=8?`8/8(${L.label('face')})`:`${L.side(r.aimSide)} ${eighths}/8`;
     const rail=(r.travel/PW).toFixed(1), railcm=Math.round(PW/MMS/10);
+    // 쿠션을 '첫 적구 전(와리가리 선행)'과 '두 적구 사이'로 나눠 설명한다.
+    // r.cush 는 둘째 적구 접촉 전 총 쿠션 수(득점 규칙 3회의 기준)라, 전부 두
+    // 적구 사이에 몰아 적으면 선행 쿠션이 있는 되돌려치기 경로가 틀리게 읽힌다.
+    const cushBefore=r.cushBefore||0, cushBetween=Math.max(0,(r.cush||0)-cushBefore);
     const cm=(r.gather!=null&&r.gatherAvg)?Math.round(r.gatherAvg/MMS/10):0;
     const gKO=(r.gather!=null&&r.gatherAvg)?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b> + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${cm}cm</b> 기준`:'';
     const gEN=(r.gather!=null&&r.gatherAvg)?`<br>Gather ${r.gather}% = post-shot <b>gap between reds (50%)</b> + cue→each red (25% each), weighted avg ~<b>${cm}cm</b>`:'';
@@ -5826,8 +5831,8 @@ function renderPhyCards(){
         </div>
       </div>
       <div class="desc">${L.t(
-        `수구 → ${NAME[r.fk]} <b>${thickLabel} 두께</b> → 쿠션 <b>${r.cush}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점 · 추천 파워 <b>${r.power}</b>(수구 ${rail}레일 구름)`,
-        `Cue → ${NAME[r.fk]} <b>${thickLabel} thick</b> → <b>${r.cush} cush</b> → score ${NAME[r.fk==='obj'?'target':'obj']} · power <b>${({'약하게':'Soft','보통':'Medium','강하게':'Hard','아주 약하게':'Very soft','아주 강하게':'Very hard','세게':'Hard','살살':'Very soft','빡세게':'Very hard'}[r.power]||r.power)}</b> (cue rolls ${rail} rails)`
+        `수구 → ${cushBefore>0?`쿠션 <b>${cushBefore}회</b> → `:''}${NAME[r.fk]} <b>${thickLabel} 두께</b> → 쿠션 <b>${cushBetween}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점 · 추천 파워 <b>${r.power}</b>(수구 ${rail}레일 구름)`,
+        `Cue → ${cushBefore>0?`<b>${cushBefore} cush</b> → `:''}${NAME[r.fk]} <b>${thickLabel} thick</b> → <b>${cushBetween} cush</b> → score ${NAME[r.fk==='obj'?'target':'obj']} · power <b>${({'약하게':'Soft','보통':'Medium','강하게':'Hard','아주 약하게':'Very soft','아주 강하게':'Very hard','세게':'Hard','살살':'Very soft','빡세게':'Very hard'}[r.power]||r.power)}</b> (cue rolls ${rail} rails)`
       )}
         <details class="rdetail"><summary>${L.t('기술 상세','Details')}</summary><div>${L.t(
         `추천 파워는 약·중·강 세 속도를 각각 24회씩 시뮬레이션해 <b>이 경로에서 성공률이 가장 높았던 속도</b>입니다 — 수구가 실제로 구른 거리는 <b>${rail}레일</b>(장쿠션 ${railcm}cm 기준)입니다. 테이블 반응에 따라 달라지는 <b>근삿값</b>이니 첫 샷으로 감을 잡고 조절하세요.<br>성공률은 이 속도에서 실전 오차 몬테카를로 <b>48회</b> 시뮬레이션한 예상치 (5% 단위 표시) — 실제 사용자 통계가 아닙니다${gKO}${kKO}`,
