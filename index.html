@@ -1316,9 +1316,9 @@
   <div class="toolbar" id="g3-toolbar" style="margin-bottom:10px"></div>
 
 <div class="tabs" id="g3-tabs" role="tablist" aria-label="3구 계산 시스템 — 궁금할 때 눌러 확인">
-    <button data-sys="five">파이브앤하프</button>
-    <button data-sys="plus">플러스</button>
-    <button data-sys="ball">볼 시스템</button>
+    <button data-sys="five" data-en="Five &amp; a half">파이브앤하프</button>
+    <button data-sys="plus" data-en="Plus">플러스</button>
+    <button data-sys="ball" data-en="Ball system">볼 시스템</button>
   </div>
 
   <div class="board">
@@ -1387,17 +1387,17 @@
   <div class="calc" id="g3-calcPanel" style="display:none">
     <h2 id="g3-calcTitle">파이브앤하프 계산</h2>
     <div class="seg" id="g3-tipseg">
-      <button data-tip="1">약회전 <span style="opacity:.6">(2팁)</span></button>
-      <button data-tip="2" class="on">표준 <span style="opacity:.6">(3팁)</span></button>
-      <button data-tip="3">강회전 <span style="opacity:.6">(맥시멈)</span></button>
+      <button data-tip="1" data-en-html="Soft <span style=&quot;opacity:.6&quot;>(2 tip)</span>">약회전 <span style="opacity:.6">(2팁)</span></button>
+      <button data-tip="2" class="on" data-en-html="Standard <span style=&quot;opacity:.6&quot;>(3 tip)</span>">표준 <span style="opacity:.6">(3팁)</span></button>
+      <button data-tip="3" data-en-html="Strong <span style=&quot;opacity:.6&quot;>(max)</span>">강회전 <span style="opacity:.6">(맥시멈)</span></button>
     </div>
     <div class="formula" id="g3-formula"></div>
     <div class="nums" id="g3-nums"></div>
-    <div class="result" id="g3-result">공을 배치하고 ‘시스템 계산’을 누르세요.</div>
+    <div class="result" id="g3-result" data-en="Place the balls and press "System calc".">공을 배치하고 ‘시스템 계산’을 누르세요.</div>
   </div>
 
   <details class="venue guide" style="margin-top:14px">
-  <summary>시스템 설명 <span class="venue-sub">계산 원리 · 이용 팁</span></summary>
+  <summary data-en-html="System guide <span class=&quot;venue-sub&quot;>How it works · tips</span>">시스템 설명 <span class="venue-sub">계산 원리 · 이용 팁</span></summary>
   <div class="panel" style="margin-top:8px">
     <h3 id="g3-panelTitle">시스템 설명</h3>
     <p class="hint" id="g3-panelText"></p>
@@ -1505,22 +1505,22 @@
   <div class="pro-modal-backdrop" data-proclose></div>
   <div class="pro-card" role="dialog" aria-modal="true" aria-labelledby="proTitle">
     <button class="pro-x" type="button" data-proclose aria-label="닫기">✕</button>
-    <span class="pro-badge">준비 중</span>
+    <span class="pro-badge" data-en="Coming soon">준비 중</span>
     <h2 id="proTitle">Hello Billiard <b>Pro</b></h2>
     <p class="pro-lead" id="proLead">더 깊이 파고드는 분들을 위한 기능을 준비하고 있어요. 관심을 남겨 주시면 우선순위에 반영합니다.</p>
     <ul class="pro-list">
-      <li>📷 <b>사진 인식 무제한</b> — 무료는 하루 5회</li>
-      <li>🎯 <b>3구 다중·고급 경로</b> — 무료는 대표 1개</li>
-      <li>🖼 <b>내보낸 이미지 워터마크 제거</b></li>
+      <li data-en-html="📷 <b>Unlimited photo scan</b> — free is 5/day">📷 <b>사진 인식 무제한</b> — 무료는 하루 5회</li>
+      <li data-en-html="🎯 <b>3-cushion multi/advanced paths</b> — free shows 1">🎯 <b>3구 다중·고급 경로</b> — 무료는 대표 1개</li>
+      <li data-en-html="🖼 <b>No watermark on exported images</b>">🖼 <b>내보낸 이미지 워터마크 제거</b></li>
     </ul>
-    <div id="proActive" class="pro-active" hidden>✓ Pro가 활성화되어 있어요 — 모든 기능이 열렸습니다.</div>
+    <div id="proActive" class="pro-active" hidden data-en="✓ Pro is active — all features unlocked.">✓ Pro가 활성화되어 있어요 — 모든 기능이 열렸습니다.</div>
     <div class="pro-actions" id="proBuyRow">
-      <button class="tool primary" id="proBuy" type="button">Pro 구매하기</button>
-      <button class="tool" id="proDonate" type="button">☕ 후원하기</button>
+      <button class="tool primary" id="proBuy" type="button" data-en="Buy Pro">Pro 구매하기</button>
+      <button class="tool" id="proDonate" type="button" data-en="☕ Support">☕ 후원하기</button>
     </div>
     <div class="pro-redeem" id="proRedeemRow">
-      <input id="proCode" type="text" autocomplete="off" placeholder="구매 후 받은 코드 입력" aria-label="언락 코드">
-      <button class="tool" id="proRedeem" type="button">확인</button>
+      <input id="proCode" type="text" autocomplete="off" placeholder="구매 후 받은 코드 입력" data-en-ph="Enter the code you received" aria-label="언락 코드">
+      <button class="tool" id="proRedeem" type="button" data-en="OK">확인</button>
     </div>
     <p class="pro-note" id="proNote" hidden></p>
   </div>
@@ -1531,9 +1531,9 @@
   <div class="pro-modal-backdrop" data-histclose></div>
   <div class="pro-card" role="dialog" aria-modal="true" aria-labelledby="histTitle">
     <button class="pro-x" type="button" data-histclose aria-label="닫기">✕</button>
-    <h2 id="histTitle">📈 내 기록</h2>
+    <h2 id="histTitle" data-en="📈 My record">📈 내 기록</h2>
     <div id="histBody"></div>
-    <div class="hist-clear"><button type="button" id="histClear">기록 지우기</button></div>
+    <div class="hist-clear"><button type="button" id="histClear" data-en="Clear record">기록 지우기</button></div>
   </div>
 </div>
 
@@ -1723,6 +1723,10 @@ function applyI18n(){
   for(var j=0;j<h.length;j++){ var e2=h[j];
     if(e2._koh==null) e2._koh=e2.innerHTML;
     e2.innerHTML = en ? e2.getAttribute('data-en-html') : e2._koh; }
+  var p=document.querySelectorAll('[data-en-ph]');   // placeholder 스왑
+  for(var m=0;m<p.length;m++){ var e3=p[m];
+    if(e3._kph==null) e3._kph=e3.getAttribute('placeholder')||'';
+    e3.setAttribute('placeholder', en?e3.getAttribute('data-en-ph'):e3._kph); }
 }
 if(typeof window!=='undefined') window.hbApplyI18n=applyI18n;
 
@@ -3272,7 +3276,7 @@ document.getElementById('g4-share').addEventListener('click',()=>{
     const st=window.hbHistory&&window.hbHistory.log({mode:'4gu', made:made,
       prob:r?r.prob:null, cush:r?r.cushions:null});
     if(rm&&st){ rm.hidden=false; rm.style.color=made?'#5fd08a':'#e0705a';
-      rm.textContent=`기록됨 · 최근 ${Math.round(st.recentRate*100)}%(${st.recentN}) · 누적 ${st.attempts}회 · 🔥${st.streak}일`; }
+      rm.textContent=window.hbLang.t(`기록됨 · 최근 ${Math.round(st.recentRate*100)}%(${st.recentN}) · 누적 ${st.attempts}회 · 🔥${st.streak}일`,`Logged · recent ${Math.round(st.recentRate*100)}%(${st.recentN}) · total ${st.attempts} · 🔥${st.streak}d`); }
   }
   const y=document.getElementById('g4-recYes'), n=document.getElementById('g4-recNo');
   if(y) y.addEventListener('click',()=>rec(true));
@@ -3863,14 +3867,14 @@ document.getElementById('g4-file').addEventListener('change',e=>{
       photoMarks=null; photoH=null; photoHinv=null; photoMissing=[]; camW=null;
       photoPanel.style.display='block';
       document.body.classList.add('photo-open');   // 사진 작업 중엔 보드 고정 해제
-      photoMsg.textContent='모서리를 쿠션 안쪽 경계 근처로 자동 보정했습니다. 노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인·조정한 뒤 "공 인식"을 누르세요. 벽 높이·공 높이 시차는 자동 보정됩니다.';
+      photoMsg.textContent=window.hbLang.t('모서리를 쿠션 안쪽 경계 근처로 자동 보정했습니다. 노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인·조정한 뒤 "공 인식"을 누르세요. 벽 높이·공 높이 시차는 자동 보정됩니다.','Corners auto-set near the inner cushion edge. Adjust the 4 yellow dots to the inner corners where cushion meets cloth, then press "Detect". Wall/ball-height parallax is auto-corrected.');
       drawPhoto();
       if(photoPanel.scrollIntoView) photoPanel.scrollIntoView({behavior:'smooth'});
     }catch(err){
       photoImgData=null; photoCorners=null;
       photoPanel.style.display='block';
       document.body.classList.add('photo-open');
-      photoMsg.textContent='사진을 처리하는 중 오류가 발생했습니다. 사진이 너무 크면 실패할 수 있습니다 — 다른 사진으로 다시 시도해 주세요.';
+      photoMsg.textContent=window.hbLang.t('사진을 처리하는 중 오류가 발생했습니다. 사진이 너무 크면 실패할 수 있습니다 — 다른 사진으로 다시 시도해 주세요.','An error occurred processing the photo. Very large photos can fail — try another photo.');
       try{ window.__hbReport&&window.__hbReport('photo/g4 onload',err); }catch(_){}
     }
   };
@@ -3984,7 +3988,7 @@ function pDown(e){
         photoMsg.textContent=`${BALL_NAMES[k]} 지정 완료 — 다음: 사진에서 `+
           `${BALL_NAMES[photoMissing[0]]} 위치를 탭하세요.`;
       } else {
-        photoMsg.textContent='모든 공 지정 완료 — 최적 경로를 계산합니다.';
+        photoMsg.textContent=window.hbLang.t('모든 공 지정 완료 — 최적 경로를 계산합니다.','All balls set — calculating the best path.');
         solveGen++; requestRecalc();
       }
     }
@@ -5819,7 +5823,7 @@ function renderPhyCards(){
     const st=window.hbHistory&&window.hbHistory.log({mode:'3gu', made:made,
       prob:r?r.prob:null, cush:r?r.cush:null});
     if(rm&&st){ rm.hidden=false; rm.style.color=made?'#5fd08a':'#e0705a';
-      rm.textContent=`기록됨 · 최근 ${Math.round(st.recentRate*100)}%(${st.recentN}) · 누적 ${st.attempts}회 · 🔥${st.streak}일`; }
+      rm.textContent=window.hbLang.t(`기록됨 · 최근 ${Math.round(st.recentRate*100)}%(${st.recentN}) · 누적 ${st.attempts}회 · 🔥${st.streak}일`,`Logged · recent ${Math.round(st.recentRate*100)}%(${st.recentN}) · total ${st.attempts} · 🔥${st.streak}d`); }
   }
   const y=document.getElementById('g3-recYes'), n=document.getElementById('g3-recNo');
   if(y) y.addEventListener('click',()=>rec(true));
@@ -6729,14 +6733,13 @@ if(typeof window!=='undefined')
   var modal=document.getElementById('proModal');
   var chip=document.getElementById('proTeaser');
   if(!modal||!chip) return;
-  if(PRICE){ var _bb=document.getElementById('proBuy'); if(_bb) _bb.textContent='Pro 구매하기 · '+PRICE; }
+  if(PRICE){ var _bb=document.getElementById('proBuy'); if(_bb) _bb.textContent=window.hbLang.t('Pro 구매하기','Buy Pro')+' · '+PRICE; }
   var note=document.getElementById('proNote');
   var lead=document.getElementById('proLead');
-  var LEADS={
-    photo:'무료 사진 인식은 하루 5회예요. Pro로 무제한으로 쓰거나 내일 다시 이용할 수 있어요.',
-    routes3:'무료는 3구 대표 경로 1개만 보여드려요. Pro에서 다중·고급 경로 전체를 볼 수 있어요.',
-    def:'더 깊이 파고드는 분들을 위한 기능이에요. 관심을 남겨 주시면 우선순위에 반영합니다.'
-  };
+  function leadText(ctx){ var L=window.hbLang;
+    if(ctx==='photo') return L.t('무료 사진 인식은 하루 5회예요. Pro로 무제한으로 쓰거나 내일 다시 이용할 수 있어요.','Free photo scan is 5/day. Go Pro for unlimited, or use it again tomorrow.');
+    if(ctx==='routes3') return L.t('무료는 3구 대표 경로 1개만 보여드려요. Pro에서 다중·고급 경로 전체를 볼 수 있어요.','Free shows only 1 three-cushion path; Pro shows all multi/advanced paths.');
+    return L.t('더 깊이 파고드는 분들을 위한 기능이에요. 관심을 남겨 주시면 우선순위에 반영합니다.','Features for those who want to go deeper. Leave your interest to shape our priorities.'); }
   var lastFocus=null;
   function pro(){ return !!(window.hbPro && window.hbPro.is()); }
   function syncState(){
@@ -6749,7 +6752,7 @@ if(typeof window!=='undefined')
   }
   function open(ctx){
     lastFocus=document.activeElement;
-    if(lead) lead.textContent=LEADS[ctx]||LEADS.def;
+    if(lead) lead.textContent=leadText(ctx);
     syncState();
     modal.hidden=false; if(note){ note.hidden=true; note.textContent=''; }
     var b=document.getElementById(pro()?'proRedeem':'proBuy');
@@ -6769,20 +6772,20 @@ if(typeof window!=='undefined')
     window.hbTrack&&window.hbTrack('buy_click');
     var url=CHECKOUT_URL||PRO_INTEREST_URL;
     if(url){ try{ window.open(url,'_blank','noopener'); }catch(e){} close(); }
-    else thanks('구매 링크 준비 중이에요 — 곧 열립니다. (관심 감사합니다!)');
+    else thanks(window.hbLang.t('구매 링크 준비 중이에요 — 곧 열립니다. (관심 감사합니다!)','Purchase link coming soon — thanks for your interest!'));
   });
   document.getElementById('proDonate').addEventListener('click', function(){
     window.hbTrack&&window.hbTrack('donate_click');
     if(DONATE_URL){ try{ window.open(DONATE_URL,'_blank','noopener'); }catch(e){} close(); }
-    else thanks('후원 준비 중이에요. 마음 감사합니다 🙏');
+    else thanks(window.hbLang.t('후원 준비 중이에요. 마음 감사합니다 🙏','Support is coming soon — thank you 🙏'));
   });
   document.getElementById('proRedeem').addEventListener('click', function(){
     var el=document.getElementById('proCode');
     var ok=window.hbPro && window.hbPro.redeem(el?el.value:'');
     if(ok){ window.hbTrack&&window.hbTrack('redeem_ok'); syncState();
-      thanks('Pro가 활성화되었습니다! 🎉 다음 계산부터 모든 경로가 열려요.');
+      thanks(window.hbLang.t('Pro가 활성화되었습니다! 🎉 다음 계산부터 모든 경로가 열려요.','Pro activated! 🎉 All paths unlock from the next calculation.'));
       try{ if(window.__hb3refresh) window.__hb3refresh(); }catch(e){} }
-    else { window.hbTrack&&window.hbTrack('redeem_fail'); thanks('코드가 올바르지 않아요. 다시 확인해 주세요.',true); }
+    else { window.hbTrack&&window.hbTrack('redeem_fail'); thanks(window.hbLang.t('코드가 올바르지 않아요. 다시 확인해 주세요.','Invalid code. Please check and try again.'),true); }
   });
   syncState();   // 최초 로드 시 칩/버튼 상태 반영
   window.hbTrack&&window.hbTrack('app_open');
@@ -6798,9 +6801,10 @@ if(typeof window!=='undefined')
   function render(){
     var body=document.getElementById('histBody'); if(!body) return;
     var s=window.hbHistory?window.hbHistory.stats():{attempts:0};
+    var L=window.hbLang;
     if(!s.attempts){
-      body.innerHTML='<div class="hist-empty">아직 기록이 없어요.<br>경로를 계산한 뒤 '+
-        '<b>성공/실패</b>를 남기면<br>성공률 추이와 연속일이 쌓입니다.</div>';
+      body.innerHTML='<div class="hist-empty">'+L.t('아직 기록이 없어요.<br>경로를 계산한 뒤 <b>성공/실패</b>를 남기면<br>성공률 추이와 연속일이 쌓입니다.',
+        'No record yet.<br>Calculate a path, then log <b>Made/Missed</b><br>to build your success trend & streak.')+'</div>';
       return;
     }
     var days=Object.keys(s.byDay).sort().slice(-14);
@@ -6813,15 +6817,15 @@ if(typeof window!=='undefined')
         '<title>'+d+' · '+pct(rate)+'% ('+o.m+'/'+o.a+')</title></rect>';
     }).join('');
     var chart=days.length
-      ? '<p class="hist-chart-t">일자별 성공률 (최근 '+days.length+'일)</p>'+
+      ? '<p class="hist-chart-t">'+L.t('일자별 성공률 (최근 '+days.length+'일)','Success by day (last '+days.length+')')+'</p>'+
         '<div style="overflow-x:auto"><svg width="'+(days.length*(bw+gap))+'" height="'+H+'" '+
-        'role="img" aria-label="일자별 성공률 막대 그래프">'+bars+'</svg></div>' : '';
+        'role="img" aria-label="'+L.t('일자별 성공률 막대 그래프','Success rate by day')+'">'+bars+'</svg></div>' : '';
     body.innerHTML=
-      '<div class="hist-streak"><span class="n">🔥 '+s.streak+'</span><span class="u">일 연속 기록</span></div>'+
+      '<div class="hist-streak"><span class="n">🔥 '+s.streak+'</span><span class="u">'+L.t('일 연속 기록','day streak')+'</span></div>'+
       '<div class="hist-grid">'+
-        '<div class="hist-stat"><div class="v">'+s.attempts+'</div><div class="l">누적 시도</div></div>'+
-        '<div class="hist-stat"><div class="v">'+pct(s.rate)+'%</div><div class="l">전체 성공률</div></div>'+
-        '<div class="hist-stat"><div class="v">'+pct(s.recentRate)+'%</div><div class="l">최근 '+s.recentN+'샷</div></div>'+
+        '<div class="hist-stat"><div class="v">'+s.attempts+'</div><div class="l">'+L.t('누적 시도','Attempts')+'</div></div>'+
+        '<div class="hist-stat"><div class="v">'+pct(s.rate)+'%</div><div class="l">'+L.t('전체 성공률','Overall')+'</div></div>'+
+        '<div class="hist-stat"><div class="v">'+pct(s.recentRate)+'%</div><div class="l">'+L.t('최근 '+s.recentN+'샷','Last '+s.recentN)+'</div></div>'+
       '</div>'+chart;
   }
   function open(){ lastFocus=document.activeElement; render(); modal.hidden=false;
