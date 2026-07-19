@@ -172,6 +172,10 @@
   .rcard .badges .badge { margin-left: 0; }
   .rcard .badge.gather { color: #5fd08a; }
   .rcard .desc { font-family: 'Spline Sans Mono', monospace; font-size: 12px; line-height: 1.6; color: #c9c2b0; }
+  /* 정석 코스 배지 — 유명 코스(대회전·와리가리·정석) 이름 */
+  .rtitle .jseok { display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px;
+    font-size:11px; font-weight:700; vertical-align:middle;
+    background:rgba(232,181,62,.16); color:#e8b53e; border:1px solid rgba(232,181,62,.4); }
   .rcard .spin {
     display: inline-flex; align-items: center; gap: 6px;
     margin-top: 8px; font-size: 12px; color: #9b9484;
@@ -2045,11 +2049,12 @@ function collideBB(a,b,P){
 //    반발각 30~35°, 순수 스틱은 ~17%에 그침)
 //  · 시네루 홀드: 강한 회전은 법선 반발을 죽여 공이 쿠션을 타게 만든다
 function collideCushion(b,P){
-  let n=null;
-  if(b.x<play.x0+BALL_R && b.vx<0){ b.x=play.x0+BALL_R; n={x:1,y:0}; }
-  else if(b.x>play.x1-BALL_R && b.vx>0){ b.x=play.x1-BALL_R; n={x:-1,y:0}; }
-  else if(b.y<play.y0+BALL_R && b.vy<0){ b.y=play.y0+BALL_R; n={x:0,y:1}; }
-  else if(b.y>play.y1-BALL_R && b.vy>0){ b.y=play.y1-BALL_R; n={x:0,y:-1}; }
+  // 반환: 맞은 레일 문자(없으면 false). 장쿠션=상 T·하 B(폭 방향) · 단쿠션=좌 L·우 R.
+  let n=null, wall=false;
+  if(b.x<play.x0+BALL_R && b.vx<0){ b.x=play.x0+BALL_R; n={x:1,y:0}; wall='L'; }
+  else if(b.x>play.x1-BALL_R && b.vx>0){ b.x=play.x1-BALL_R; n={x:-1,y:0}; wall='R'; }
+  else if(b.y<play.y0+BALL_R && b.vy<0){ b.y=play.y0+BALL_R; n={x:0,y:1}; wall='T'; }
+  else if(b.y>play.y1-BALL_R && b.vy>0){ b.y=play.y1-BALL_R; n={x:0,y:-1}; wall='B'; }
   if(!n) return false;
   const tx=-n.y, ty=n.x;                   // 접선 t̂ = ẑ×n̂
   const vn=b.vx*n.x+b.vy*n.y;              // 접근 성분 (<0)
@@ -2068,7 +2073,7 @@ function collideCushion(b,P){
   // 구름 상태로 절반쯤 재정렬된다 (쿠션 뒤 과도한 커브 방지)
   b.wx=0.7*(b.wx*0.8)+0.3*(-b.vy/BALL_R);
   b.wy=0.7*(b.wy*0.8)+0.3*( b.vx/BALL_R);
-  return true;
+  return wall;
 }
 
 // ===== ③ 전체 샷 시뮬레이션 — 4개 공 전부 추적 =====
@@ -5312,11 +5317,12 @@ function collideBB3(a,b,P){
   return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, thickness:1-cut, nx, ny, pre};
 }
 function collideCushion3(b,P){
-  let n=null;
-  if(b.x<play.x0+BALL_R&&b.vx<0){ b.x=play.x0+BALL_R; n={x:1,y:0}; }
-  else if(b.x>play.x1-BALL_R&&b.vx>0){ b.x=play.x1-BALL_R; n={x:-1,y:0}; }
-  else if(b.y<play.y0+BALL_R&&b.vy<0){ b.y=play.y0+BALL_R; n={x:0,y:1}; }
-  else if(b.y>play.y1-BALL_R&&b.vy>0){ b.y=play.y1-BALL_R; n={x:0,y:-1}; }
+  // 반환: 맞은 레일 문자(없으면 false). 장쿠션=상 T·하 B(폭 방향) · 단쿠션=좌 L·우 R.
+  let n=null, wall=false;
+  if(b.x<play.x0+BALL_R&&b.vx<0){ b.x=play.x0+BALL_R; n={x:1,y:0}; wall='L'; }
+  else if(b.x>play.x1-BALL_R&&b.vx>0){ b.x=play.x1-BALL_R; n={x:-1,y:0}; wall='R'; }
+  else if(b.y<play.y0+BALL_R&&b.vy<0){ b.y=play.y0+BALL_R; n={x:0,y:1}; wall='T'; }
+  else if(b.y>play.y1-BALL_R&&b.vy>0){ b.y=play.y1-BALL_R; n={x:0,y:-1}; wall='B'; }
   if(!n) return false;
   const tx=-n.y, ty=n.x;
   const vn=b.vx*n.x+b.vy*n.y;
@@ -5336,7 +5342,7 @@ function collideCushion3(b,P){
   // 구름 상태로 절반쯤 재정렬된다 (쿠션 뒤 과도한 커브 방지)
   b.wx=0.7*(b.wx*0.8)+0.3*(-b.vy/BALL_R);
   b.wy=0.7*(b.wy*0.8)+0.3*( b.vx/BALL_R);
-  return true;
+  return wall;
 }
 // 쓰리쿠션 샷 시뮬레이션 — rec 시 수구 경로 폴리라인 기록
 function simulate3(dir,speed,spin,P,rec){
@@ -5346,6 +5352,7 @@ function simulate3(dir,speed,spin,P,rec){
   setShot3(B.cue,dir,speed,spin);
   const res={first:null, second:null, cush:0, cushAtSecond:0,
     success:false, fail:false, firstInfo:null, secondInfo:null,
+    rails:'', railsBefore:'',   // 수구가 맞은 레일 순서(둘째 적구 전) / 첫 적구 전 부분
     paths:rec?{cue:[{x:B.cue.x,y:B.cue.y}]}:null,
     frames:rec?[]:null};
   let t=0, doneT=-1, recDone=false, stepN=0;
@@ -5380,7 +5387,11 @@ function simulate3(dir,speed,spin,P,rec){
       }
     }
     for(const o of S){
-      if(collideCushion3(o,P)&&o.k==='cue'&&!res.second) res.cush++;
+      const w3=collideCushion3(o,P);
+      if(w3&&o.k==='cue'&&!res.second){
+        res.cush++; res.rails+=w3;
+        if(!res.first) res.railsBefore+=w3;   // 첫 적구 전 = 선행 쿠션(와리가리)
+      }
     }
     if(res.fail) break;
     if(res.success&&doneT<0) doneT=t;
@@ -5430,6 +5441,23 @@ const SPEEDS3=[
   {mul:1.00, label:'중'},
   {mul:1.28, label:'강'},
 ];
+// 정석 코스 분류 — 수구가 맞은 레일 순서로 유명한 3구 코스를 알아본다.
+//  장쿠션 = 상 T·하 B(폭 방향, 긴 쪽) · 단쿠션 = 좌 L·우 R(짧은 쪽).
+//  앞돌리기/뒤돌리기 같은 세부명은 배치·유파마다 갈려 틀린 지시가 될 수 있으니,
+//  객관적으로 분명한 것만 이름 붙이고 3쿠션 정석은 '정석 코스'로 통칭한다.
+function classify3(rails, railsBefore, cush, travelRails){
+  const between=rails.slice((railsBefore||'').length);
+  const isLong=c=>c==='T'||c==='B';
+  if((railsBefore||'').length>=1) return {name:'와리가리', en:'Bank-first', boost:4};   // 선행 쿠션(되돌려치기·옆돌리기)
+  if(cush>=4 && travelRails>=2.6)  return {name:'대회전', en:'Grand tour', boost:5};      // 크게 한 바퀴
+  if(cush===3 && between.length>=3){
+    const alt=(isLong(between[0])!==isLong(between[1])) && (isLong(between[1])!==isLong(between[2]));
+    if(alt) return isLong(between[0])
+      ? {name:'정석 코스 (장-단-장)', en:'Textbook (long-short-long)', boost:5}
+      : {name:'정석 코스 (단-장-단)', en:'Textbook (short-long-short)', boost:5};
+  }
+  return {name:null, en:null, boost:0};
+}
 async function solve3(onProgress){
   const P=phyParams();
   const cue=balls.cue;
@@ -5600,14 +5628,18 @@ async function solve3(onProgress){
     if(ok<1) continue;
     const r=simulate3(c.dir,P.speed,c.spin,P,true);
     if(!r.success||!r.firstInfo) continue;
+    let tv=0; for(let i=1;i<r.paths.cue.length;i++) tv+=len(sub(r.paths.cue[i],r.paths.cue[i-1]));
+    const pat=classify3(r.rails, r.railsBefore, r.cushAtSecond, tv/PW);
     const {gather}=gather3(r.final);
-    out.push({...c, prob, gather,
-      score:prob*100+c.tol+(gather||0)*0.05});
+    out.push({...c, prob, gather, pattern:pat.name, patternEn:pat.en, recBoost:pat.boost,
+      score:prob*100+pat.boost+c.tol+(gather||0)*0.05});
   }
-  // 성공률(쉬운 것) 순으로 정렬하고, 전략이 같은 near-중복은 접는다 —
+  // 성공률(쉬운 것)을 기본으로 하되, 유명한 정석 코스에 우선순위를 가산한다 —
+  // 성공률이 비슷하면 대회전·와리가리·장단장 같은 정석 코스가 먼저 추천된다
+  // (가산 4~5점 ≈ 성공률 4~5%p). 전략이 같은 near-중복은 접는다 —
   // (첫 적구·뱅크 여부·쿠션수·당점)이 같으면 조준점만 다른 사실상 같은 경로다.
   // 서로 다른 전략의 경로가 최대 6개 뽑히게 해 재현성 재검(kept) 뒤 5개까지 남긴다.
-  out.sort((a,b)=>b.prob-a.prob || b.score-a.score);
+  out.sort((a,b)=>(b.prob*100+(b.recBoost||0))-(a.prob*100+(a.recBoost||0)) || b.score-a.score);
   const picked=[], sig=new Set();
   for(const r of out){
     if(picked.length>=6) break;
@@ -5665,9 +5697,13 @@ async function solve3(onProgress){
     best.travel=0;
     for(let i=1;i<best.path.length;i++)
       best.travel+=len(sub(best.path[i],best.path[i-1]));
+    // 정석 코스 이름을 확정 속도의 실제 경로로 다시 분류(속도가 바뀌면 경로도 바뀜)
+    const patK=classify3(sim.rails, sim.railsBefore, sim.cushAtSecond, best.travel/PW);
+    best.pattern=patK.name; best.patternEn=patK.en; best.recBoost=patK.boost;
     kept.push(best);
   }
-  kept.sort((a,b)=>b.prob-a.prob);
+  // 성공률 우선, 정석 코스 우선순위 가산(≈4~5%p) — 유명한 코스가 앞에 온다
+  kept.sort((a,b)=>(b.prob*100+(b.recBoost||0))-(a.prob*100+(a.recBoost||0)));
   if(kept.length>5) kept.length=5;   // 최대 5개
   // 경로를 찾긴 했으나 전부 재현성이 없어 버린 경우를 빈 결과와 구분한다
   kept.dropped=picked.length-kept.length;
@@ -5833,7 +5869,7 @@ function renderPhyCards(){
       <div class="rc-top">
         <span class="swatch" style="background:${PHY_COLORS[i]}"></span>
         <div class="rc-title">
-          <div class="rtitle">${L.spin(r.spin.key)}</div>
+          <div class="rtitle">${L.spin(r.spin.key)}${r.pattern?`<span class="jseok">${L.t(r.pattern,r.patternEn)}</span>`:''}</div>
           ${r.gather!=null?`<div class="rc-sub">${L.t('공 모임','Gather')} ${r.gather}%</div>`:''}
         </div>
         <div class="rc-hero">
