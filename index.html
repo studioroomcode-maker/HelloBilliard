@@ -1377,10 +1377,10 @@
 
   <!-- 시스템 미선택(기본) 안내 — 물리 경로 우선, 시스템은 궁금할 때 -->
   <div class="none-hint" id="g3-noneHint">
-    <div class="nh-title">🎯 경로 계산이 기본입니다</div>
-    <p>공을 배치하고 <b>[경로 계산]</b>을 누르면 실제 시뮬레이션으로
+    <div class="nh-title" data-en="🎯 Path calculation is the default">🎯 경로 계산이 기본입니다</div>
+    <p data-en-html="Place the balls and press <b>[Calculate]</b> to find scoring paths with success rates by real simulation.">공을 배치하고 <b>[경로 계산]</b>을 누르면 실제 시뮬레이션으로
       득점 경로를 성공률과 함께 찾아 줍니다.</p>
-    <p class="nh-sub">파이브앤하프·플러스·볼 시스템은 각각 <b>특정 샷 패턴을 위한 조준
+    <p class="nh-sub" data-en-html="Five-and-a-half, Plus and Ball are <b>aiming systems for specific shot patterns</b>. Tap the <b>tabs above</b> to see how they work; tap again to turn off.">파이브앤하프·플러스·볼 시스템은 각각 <b>특정 샷 패턴을 위한 조준
       계산법</b>입니다. 그 방식이 궁금하면 <b>위 탭</b>을 눌러 확인하고, 다시 누르면 끕니다.</p>
   </div>
 
@@ -1702,6 +1702,7 @@ window.hbLang=(function(){
     get:function(){ return cur; },
     set:function(v){ cur=(v==='ko2'||v==='en')?v:'ko1'; try{ localStorage.setItem('hb_lang',cur); }catch(e){} },
     isEn:function(){ return cur==='en'; },
+    t:function(ko,en){ return cur==='en'?en:ko; },   // 동적 문자열 — 영어면 en, 아니면 한국어
     spin:function(k){ return pick(SPIN[k])||k; },
     spinTitle:function(k){ var n=pick(SPIN[k])||k; if(cur==='en') return n; var t=TAG[k]; return t?n+' — '+t:n; },
     power:function(p){ return pick(POWER[p]); },
@@ -2868,20 +2869,24 @@ function renderCards(){
       }));
   }
   if(!routes.length){
+    const L=window.hbLang;
     if(!calcTried){
-      box.innerHTML='<div class="panel"><span class="empty">공을 배치하고 ‘경로 계산’을 누르세요.</span></div>';
+      box.innerHTML='<div class="panel"><span class="empty">'+L.t('공을 배치하고 ‘경로 계산’을 누르세요.','Place the balls and press "Calculate".')+'</span></div>';
       return;
     }
-    const ruleTxt=cushRule==='any'?'':
-      ` (쿠션 수 ${cushRule===3?'3회 이상':cushRule+'회'} 조건 적용 중 — 조건을 '추천'으로 바꾸면 더 찾을 수 있습니다)`;
+    const ruleTxt=cushRule==='any'?'':L.t(
+      ` (쿠션 수 ${cushRule===3?'3회 이상':cushRule+'회'} 조건 적용 중 — 조건을 '추천'으로 바꾸면 더 찾을 수 있습니다)`,
+      ` (cushion filter: ${cushRule===3?'3+':cushRule} — set it to "Auto" to find more)`);
     // 실력이 낮으면 회전·얇은 두께 샷을 제외하므로, 배치가 아니라 실력 제한 때문에
     // 못 찾는 경우가 많다 — '공 배치를 바꾸라'는 안내만으로는 오해를 준다.
     const sk=getSkill();
     const skillTxt = sk==='adv' ? '' : sk==='beg'
-      ? ` <b>지금 실력이 초급</b>이라 회전(시네루)·얇은 두께 샷을 빼고 계산합니다 — 실력을 <b>중급/상급</b>으로 올리면 경로가 나올 수 있습니다.`
-      : ` <b>지금 실력이 중급</b>이라 혼합 당점 샷을 빼고 계산합니다 — <b>상급</b>으로 올리면 더 찾을 수 있습니다.`;
-    box.innerHTML='<div class="panel"><span class="empty">이 배치에서 지금 조건으로 칠 수 있는 득점 경로를 찾지 못했습니다.'+
-      skillTxt+ruleTxt+' 공 배치를 바꿔 다시 시도해 볼 수도 있습니다.</span></div>';
+      ? L.t(` <b>지금 실력이 초급</b>이라 회전(시네루)·얇은 두께 샷을 빼고 계산합니다 — 실력을 <b>중급/상급</b>으로 올리면 경로가 나올 수 있습니다.`,
+            ` <b>Skill is Beginner</b>, so english & thin cuts are excluded — raise to <b>Intermediate/Advanced</b> to find paths.`)
+      : L.t(` <b>지금 실력이 중급</b>이라 혼합 당점 샷을 빼고 계산합니다 — <b>상급</b>으로 올리면 더 찾을 수 있습니다.`,
+            ` <b>Skill is Intermediate</b>, so mixed-english shots are excluded — raise to <b>Advanced</b> to find more.`);
+    box.innerHTML='<div class="panel"><span class="empty">'+L.t('이 배치에서 지금 조건으로 칠 수 있는 득점 경로를 찾지 못했습니다.','No scoring path found for this layout under current settings.')+
+      skillTxt+ruleTxt+L.t(' 공 배치를 바꿔 다시 시도해 볼 수도 있습니다.',' You can also move the balls and try again.')+'</span></div>';
     return;
   }
   const STRAT={none:'정석 — 무회전 기본 경로',draw:'끌어치기 — 각을 크게 만드는 경로',
@@ -2893,47 +2898,52 @@ function renderCards(){
   // 실력 폴백 배너 — 현재 실력 기준으론 경로가 없어 상위 실력 기준으로 제안했음을
   // 밝힌다. 성공률도 그 실력의 실행 오차 기준이므로 함께 명시한다.
   const fb=routes[0]&&routes[0].skillFallback;
-  const fbBanner=fb?`<div class="panel" style="margin-bottom:10px"><span class="empty">`+
-    `⚠ <b>${SKILLS[routes[0].skillBase].label}</b> 기준으로는 이 배치를 칠 수 있는 경로가 없습니다 — `+
-    `${routes[0].skillBase==='beg'?'초보가 치기 어려운 코스입니다':'상급 기술이 필요한 코스입니다'}. `+
-    `아래는 <b>${SKILLS[fb].label} 기준</b>(${fb==='adv'?'혼합 당점·얇은 두께 포함':'회전·얇은 두께 포함'}) 제안이며, `+
-    `성공률도 ${SKILLS[fb].label} 기준입니다.</span></div>`:'';
+  const skName=b=>window.hbLang.t(SKILLS[b].label,{beg:'Beginner',mid:'Intermediate',adv:'Advanced'}[b]);
+  let fbBanner='';
+  if(fb){ const base=routes[0].skillBase;
+    fbBanner='<div class="panel" style="margin-bottom:10px"><span class="empty">'+window.hbLang.t(
+      `⚠ <b>${skName(base)}</b> 기준으로는 이 배치를 칠 수 있는 경로가 없습니다 — ${base==='beg'?'초보가 치기 어려운 코스입니다':'상급 기술이 필요한 코스입니다'}. 아래는 <b>${skName(fb)} 기준</b>(${fb==='adv'?'혼합 당점·얇은 두께 포함':'회전·얇은 두께 포함'}) 제안이며, 성공률도 ${skName(fb)} 기준입니다.`,
+      `⚠ No playable shot at <b>${skName(base)}</b> level — ${base==='beg'?'too hard for a beginner':'needs advanced technique'}. Below is an <b>${skName(fb)}</b> suggestion (${fb==='adv'?'incl. mixed english & thin cuts':'incl. english & thin cuts'}); success rates are at <b>${skName(fb)}</b> level too.`
+    )+'</span></div>';
+  }
   box.innerHTML=fbBanner+routes.map((r,i)=>{
-    const f=r.first==='r1'?'적구 1':'적구 2';
-    const s=r.second==='r1'?'적구 1':'적구 2';
+    const L=window.hbLang;
+    const f=r.first==='r1'?L.t('적구 1','Red 1'):L.t('적구 2','Red 2');
+    const s=r.second==='r1'?L.t('적구 1','Red 1'):L.t('적구 2','Red 2');
     // 두께를 8분의 N 으로 표기 (4구 표준)
     const eighths=Math.round(r.thickness*8);
-    const thickLabel=eighths>=8?`8/8(${window.hbLang.label('face')})`:eighths<=1?`1/8(${window.hbLang.isEn()?'thin':'얇게'})`:`${eighths}/8`;
+    const thickLabel=eighths>=8?`8/8(${L.label('face')})`:eighths<=1?`1/8(${L.isEn()?'thin':'얇게'})`:`${eighths}/8`;
     const defl=Math.round(r.cueDeflect);
     const pw=powerLevel(r);   // 경로 길이·쿠션·회전 기반 추천 파워
     const isRef=!!r.reference;   // 참고용 '다른 순서' 경로
     const pctRaw=Math.round(r.prob*20)*5;   // 5% 단위 버킷
-    // 실제 샷은 천·구름·미스큐 등 모델이 못 담는 변수가 있어 '확실한 100%'는 없다 —
-    // 상한 95%로 두어 과신을 막는다 (정렬은 원본 prob 사용, 순위엔 영향 없음).
-    const pctShown=Math.min(95,pctRaw);
+    const pctShown=Math.min(95,pctRaw);   // 상한 95% — '확실한 100%'는 없음
+    const band=Math.round((r.uncertainty||18)/2), cm=(r.gather!=null&&r.gatherAvg)?Math.round(r.gatherAvg/MM/10):0;
+    const gKO=(r.gather!=null&&r.gatherAvg)?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b> + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${cm}cm</b> 기준`:'';
+    const gEN=(r.gather!=null&&r.gatherAvg)?`<br>Gather ${r.gather}% = post-shot <b>gap between reds (50%)</b> + cue→each red (25% each), weighted avg ~<b>${cm}cm</b>`:'';
     return `<div class="rcard ${i===selected?'sel':''} ${isRef?'ref':''}" data-i="${i}" style="--d:${i*70}ms">
       <div class="rc-top">
         <span class="swatch" style="background:${routeColor(i)}"></span>
         <div class="rc-title">
           <div class="rtitle">${isRef
-            ?`<span class="ref-badge">참고</span> 다른 순서 — ${f} 먼저`
-            :`${r.cushBefore>0?(window.hbLang.isEn()?'Bank · ':'뱅크샷 · '):''}${window.hbLang.spinTitle(r.spin.key)}`}</div>
-          ${isRef?`<div class="rc-sub ref">${pctRaw<5?'성공률 낮음 · ':''}순서 비교용 참고 경로</div>`
-            :r.gather!=null?`<div class="rc-sub">공 모임 ${r.gather}%</div>`:''}
+            ?`<span class="ref-badge">${L.t('참고','Ref')}</span> ${L.t(`다른 순서 — ${f} 먼저`,`Other order — ${f} first`)}`
+            :`${r.cushBefore>0?L.t('뱅크샷 · ','Bank · '):''}${L.spinTitle(r.spin.key)}`}</div>
+          ${isRef?`<div class="rc-sub ref">${pctRaw<5?L.t('성공률 낮음 · ','Low success · '):''}${L.t('순서 비교용 참고 경로','reference (order compare)')}</div>`
+            :r.gather!=null?`<div class="rc-sub">${L.t('공 모임','Gather')} ${r.gather}%</div>`:''}
         </div>
         <div class="rc-hero">
           <div class="rc-pct">${isRef&&pctRaw<5?'&lt;5':pctShown}<span class="u">%</span></div>
-          <div class="rc-herolabel">${isRef?'참고 성공률':'성공률'}</div>
+          <div class="rc-herolabel">${isRef?L.t('참고 성공률','Ref. success'):L.t('성공률','Success')}</div>
         </div>
       </div>
-      <div class="desc">수구 → ${r.cushBefore>0?`<b>쿠션 ${r.cushBefore}회</b> → `:''}${f} <b>${thickLabel} 두께</b> 맞힘 ·
-        수구 분리각 <b>약 ${defl}°</b><br>
-        → ${r.cushions>0?`쿠션 ${r.cushions}회 → `:''}${s} 도착${r.kiss?' · <span style="color:#d9582b">⚠ 키스 경유</span>':''}
-        <details class="rdetail"><summary>기술 상세</summary><div>
-        보정 <b>${r.tuningText}</b> · 오차 밴드 <b>±${Math.round((r.uncertainty||18)/2)}px</b>
-        · 성공률은 실전 오차 몬테카를로 90회 시뮬레이션 예상치 (5% 단위 표시)${
-        r.gather!=null&&r.gatherAvg?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b>
-        + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${Math.round(r.gatherAvg/MM/10)}cm</b> 기준`:''}</div></details></div>
+      <div class="desc">${L.t(
+        `수구 → ${r.cushBefore>0?`<b>쿠션 ${r.cushBefore}회</b> → `:''}${f} <b>${thickLabel} 두께</b> 맞힘 · 수구 분리각 <b>약 ${defl}°</b><br>→ ${r.cushions>0?`쿠션 ${r.cushions}회 → `:''}${s} 도착${r.kiss?' · <span style="color:#d9582b">⚠ 키스 경유</span>':''}`,
+        `Cue → ${r.cushBefore>0?`<b>${r.cushBefore} cush</b> → `:''}${f} <b>${thickLabel} thick</b> · separation <b>~${defl}°</b><br>→ ${r.cushions>0?`${r.cushions} cush → `:''}reach ${s}${r.kiss?' · <span style="color:#d9582b">⚠ via kiss</span>':''}`
+      )}
+        <details class="rdetail"><summary>${L.t('기술 상세','Details')}</summary><div>${L.t(
+        `보정 <b>${r.tuningText}</b> · 오차 밴드 <b>±${band}px</b> · 성공률은 실전 오차 몬테카를로 90회 시뮬레이션 예상치 (5% 단위 표시)${gKO}`,
+        `Calibration <b>${r.tuningText}</b> · error band <b>±${band}px</b> · success = 90-shot Monte-Carlo estimate (5% steps)${gEN}`
+      )}</div></details></div>
       <div class="metrics">
         <div class="metric">
           <div class="mlabel">${window.hbLang.label('tip')}</div>
@@ -3107,9 +3117,10 @@ calcBtn.addEventListener('click',()=>{
   if(ov){
     calcTried=true; routes=[]; selected=0; renderCards();
     const box=document.getElementById('g4-routes');
-    if(box) box.innerHTML='<div class="panel"><span class="empty">⚠ '+
-      BALL_NAMES[ov[0]]+'와(과) '+BALL_NAMES[ov[1]]+'가 겹쳐 있습니다 — '+
-      '공을 서로 떨어뜨려 배치한 뒤 다시 계산해 주세요.</span></div>';
+    if(box){ const nm=k=>window.hbLang.t(BALL_NAMES[k],{cue:'My cue',cue2:'Opp. cue',r1:'Red 1',r2:'Red 2'}[k]);
+      box.innerHTML='<div class="panel"><span class="empty">⚠ '+window.hbLang.t(
+        `${BALL_NAMES[ov[0]]}와(과) ${BALL_NAMES[ov[1]]}가 겹쳐 있습니다 — 공을 서로 떨어뜨려 배치한 뒤 다시 계산해 주세요.`,
+        `${nm(ov[0])} and ${nm(ov[1])} overlap — move them apart and calculate again.`)+'</span></div>'; }
     draw();
     return;
   }
@@ -5711,69 +5722,71 @@ function renderPhyCards(){
   if(!phyRoutes.length){
     // 경로 자체가 없었는지, 찾았지만 재현성이 없어 버렸는지를 구분해 준다 —
     // 후자는 '이 배치가 어렵다'는 정보이지 계산 실패가 아니다.
-    box.innerHTML=phyRoutes.dropped
-      ? '<div class="panel"><span class="empty">득점 경로를 찾았지만 재현율이 너무 낮아 '+
-        '(48회 시뮬레이션 중 성공률 5% 미만) 제안하지 않습니다 — 아주 어려운 배치입니다. '+
-        '배치를 바꾸거나 시스템 계산기를 활용해 보세요.</span></div>'
-      : '<div class="panel"><span class="empty">쓰리쿠션 득점 경로를 찾지 못했습니다 — '+
-        '배치를 바꾸거나 시스템 계산기를 활용해 보세요.</span></div>';
+    box.innerHTML='<div class="panel"><span class="empty">'+(phyRoutes.dropped
+      ? window.hbLang.t('득점 경로를 찾았지만 재현율이 너무 낮아 (48회 시뮬레이션 중 성공률 5% 미만) 제안하지 않습니다 — 아주 어려운 배치입니다. 배치를 바꾸거나 시스템 계산기를 활용해 보세요.',
+          'A scoring path exists but its success is too low (<5% over 48 sims) to suggest — a very hard layout. Move the balls or try the system calculator.')
+      : window.hbLang.t('쓰리쿠션 득점 경로를 찾지 못했습니다 — 배치를 바꾸거나 시스템 계산기를 활용해 보세요.',
+          'No three-cushion scoring path found — move the balls or try the system calculator.'))+'</span></div>';
     return;
   }
-  const NAME={obj:'제1적구',target:'제2적구'};
+  const NAME={obj:window.hbLang.t('제1적구','Object 1'),target:window.hbLang.t('제2적구','Object 2')};
   // 실력 폴백 배너 (4구와 동일) — 상위 실력 기준 제안임을 밝힌다
   const fb3=phyRoutes.skillFallback;
-  const fb3Banner=fb3?`<div class="panel" style="margin-bottom:10px"><span class="empty">`+
-    `⚠ <b>${SKILLS3[phyRoutes.skillBase].label}</b> 기준으로는 이 배치를 칠 수 있는 경로가 없습니다 — `+
-    `${phyRoutes.skillBase==='beg'?'초보가 치기 어려운 코스입니다':'상급 기술이 필요한 코스입니다'}. `+
-    `아래는 <b>${SKILLS3[fb3].label} 기준</b> 제안이며, 성공률도 ${SKILLS3[fb3].label} 기준입니다.</span></div>`:'';
+  const skName3=b=>window.hbLang.t(SKILLS3[b].label,{beg:'Beginner',mid:'Intermediate',adv:'Advanced'}[b]);
+  let fb3Banner='';
+  if(fb3){ const base=phyRoutes.skillBase;
+    fb3Banner='<div class="panel" style="margin-bottom:10px"><span class="empty">'+window.hbLang.t(
+      `⚠ <b>${skName3(base)}</b> 기준으로는 이 배치를 칠 수 있는 경로가 없습니다 — ${base==='beg'?'초보가 치기 어려운 코스입니다':'상급 기술이 필요한 코스입니다'}. 아래는 <b>${skName3(fb3)} 기준</b> 제안이며, 성공률도 ${skName3(fb3)} 기준입니다.`,
+      `⚠ No playable shot at <b>${skName3(base)}</b> level — ${base==='beg'?'too hard for a beginner':'needs advanced technique'}. Below is an <b>${skName3(fb3)}</b> suggestion; success rates are at <b>${skName3(fb3)}</b> level too.`
+    )+'</span></div>';
+  }
   box.classList.toggle('just', !!justSolved3);   // 새 계산 결과일 때만 등장 애니메이션
   box.innerHTML=fb3Banner+phyRoutes.map((r,i)=>{
+    const L=window.hbLang;
     const eighths=Math.max(1,Math.min(8,Math.round(r.thickness*8)));
-    const thickLabel=eighths>=8?`8/8(${window.hbLang.label('face')})`
-      :`${window.hbLang.side(r.aimSide)} ${eighths}/8`;
+    const thickLabel=eighths>=8?`8/8(${L.label('face')})`:`${L.side(r.aimSide)} ${eighths}/8`;
+    const rail=(r.travel/PW).toFixed(1), railcm=Math.round(PW/MMS/10);
+    const cm=(r.gather!=null&&r.gatherAvg)?Math.round(r.gatherAvg/MMS/10):0;
+    const gKO=(r.gather!=null&&r.gatherAvg)?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b> + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${cm}cm</b> 기준`:'';
+    const gEN=(r.gather!=null&&r.gatherAvg)?`<br>Gather ${r.gather}% = post-shot <b>gap between reds (50%)</b> + cue→each red (25% each), weighted avg ~<b>${cm}cm</b>`:'';
+    const kKO=r.kiss?`<br><b style="color:var(--warn)">키스 경로</b> — 제1적구가 제2적구를 먼저 건드려 밀어낸 뒤 그 자리에서 득점합니다. 그림의 선이 <b>제자리에 그려진 제2적구를 빗나가</b> 보이는 건 이 때문이며, 키스는 재현이 까다로워 성공률이 낮습니다.`:'';
+    const kEN=r.kiss?`<br><b style="color:var(--warn)">Kiss path</b> — Object 1 nudges Object 2 first, then scores. That's why the line seems to <b>miss the drawn Object 2</b>; kisses are hard to reproduce, so success is low.`:'';
     return `<div class="rcard ${i===phySel?'sel':''}" data-i="${i}" style="--d:${i*70}ms">
       <div class="rc-top">
         <span class="swatch" style="background:${PHY_COLORS[i]}"></span>
         <div class="rc-title">
-          <div class="rtitle">${window.hbLang.spin(r.spin.key)}</div>
-          ${r.gather!=null?`<div class="rc-sub">공 모임 ${r.gather}%</div>`:''}
+          <div class="rtitle">${L.spin(r.spin.key)}</div>
+          ${r.gather!=null?`<div class="rc-sub">${L.t('공 모임','Gather')} ${r.gather}%</div>`:''}
         </div>
         <div class="rc-hero">
           <div class="rc-pct">${Math.min(95,Math.round(r.prob*20)*5)}<span class="u">%</span></div>
-          <div class="rc-herolabel">성공률</div>
+          <div class="rc-herolabel">${L.t('성공률','Success')}</div>
         </div>
       </div>
-      <div class="desc">수구 → ${NAME[r.fk]} <b>${thickLabel} 두께</b>
-        → 쿠션 <b>${r.cush}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점 ·
-        추천 파워 <b>${r.power}</b>(수구 ${(r.travel/PW).toFixed(1)}레일 구름)
-        <details class="rdetail"><summary>기술 상세</summary><div>
-        추천 파워는 약·중·강 세 속도를 각각 24회씩 시뮬레이션해 <b>이 경로에서
-        성공률이 가장 높았던 속도</b>입니다 — 수구가 실제로 구른 거리는
-        <b>${(r.travel/PW).toFixed(1)}레일</b>(장쿠션 ${Math.round(PW/MMS/10)}cm 기준)입니다.
-        테이블 반응에 따라 달라지는 <b>근삿값</b>이니 첫 샷으로 감을 잡고 조절하세요.
-        <br>성공률은 이 속도에서 실전 오차 몬테카를로 <b>48회</b> 시뮬레이션한 예상치
-        (5% 단위 표시) — 실제 사용자 통계가 아닙니다${
-        r.gather!=null&&r.gatherAvg?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b>
-        + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${Math.round(r.gatherAvg/MMS/10)}cm</b> 기준`:''}${
-        r.kiss?`<br><b style="color:var(--warn)">키스 경로</b> — 제1적구가 제2적구를 먼저 건드려
-        밀어낸 뒤 그 자리에서 득점합니다. 그림의 선이 <b>제자리에 그려진 제2적구를 빗나가</b>
-        보이는 건 이 때문이며, 키스는 재현이 까다로워 성공률이 낮습니다.`:''}</div></details></div>
-      ${r.kiss?`<div class="miss" style="margin-top:6px;font-size:12px">⚠ 키스 경로 — 제1적구가 제2적구를 건드립니다 (선이 제2적구를 빗나가 보임)</div>`:''}
+      <div class="desc">${L.t(
+        `수구 → ${NAME[r.fk]} <b>${thickLabel} 두께</b> → 쿠션 <b>${r.cush}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점 · 추천 파워 <b>${r.power}</b>(수구 ${rail}레일 구름)`,
+        `Cue → ${NAME[r.fk]} <b>${thickLabel} thick</b> → <b>${r.cush} cush</b> → score ${NAME[r.fk==='obj'?'target':'obj']} · power <b>${r.power}</b> (cue rolls ${rail} rails)`
+      )}
+        <details class="rdetail"><summary>${L.t('기술 상세','Details')}</summary><div>${L.t(
+        `추천 파워는 약·중·강 세 속도를 각각 24회씩 시뮬레이션해 <b>이 경로에서 성공률이 가장 높았던 속도</b>입니다 — 수구가 실제로 구른 거리는 <b>${rail}레일</b>(장쿠션 ${railcm}cm 기준)입니다. 테이블 반응에 따라 달라지는 <b>근삿값</b>이니 첫 샷으로 감을 잡고 조절하세요.<br>성공률은 이 속도에서 실전 오차 몬테카를로 <b>48회</b> 시뮬레이션한 예상치 (5% 단위 표시) — 실제 사용자 통계가 아닙니다${gKO}${kKO}`,
+        `Recommended power = best of soft/medium/hard (24 sims each) for this path — the cue rolled <b>${rail} rails</b> (long rail ${railcm}cm). It's an <b>approximation</b> that varies with the table, so take a first shot and adjust.<br>Success = 48-shot Monte-Carlo estimate at this speed (5% steps) — not real user stats${gEN}${kEN}`
+      )}</div></details></div>
+      ${r.kiss?`<div class="miss" style="margin-top:6px;font-size:12px">${L.t('⚠ 키스 경로 — 제1적구가 제2적구를 건드립니다 (선이 제2적구를 빗나가 보임)','⚠ Kiss path — Object 1 touches Object 2 (line seems to miss Object 2)')}</div>`:''}
       <div class="metrics">
         <div class="metric">
-          <div class="mlabel">${window.hbLang.label('tip')}</div>
+          <div class="mlabel">${L.label('tip')}</div>
           <div class="mvis">${tipSVG3(r.spin)}</div>
-          <div class="mval">${window.hbLang.spin(r.spin.key)}</div>
+          <div class="mval">${L.spin(r.spin.key)}</div>
         </div>
         <div class="metric">
-          <div class="mlabel">${window.hbLang.label('thick')}</div>
+          <div class="mlabel">${L.label('thick')}</div>
           <div class="mvis">${thicknessSVG3(eighths,r.aimSide)}</div>
-          <div class="mval">${eighths>=8?`${window.hbLang.label('face')} 8/8`:`${window.hbLang.side(r.aimSide)} ${eighths}/8`}</div>
+          <div class="mval">${eighths>=8?`${L.label('face')} 8/8`:`${L.side(r.aimSide)} ${eighths}/8`}</div>
         </div>
         <div class="metric">
-          <div class="mlabel">경유 쿠션</div>
-          <div class="mvis" style="font-size:20px;font-weight:800">${r.cush}회</div>
-          <div class="mval">둘째 적구 전</div>
+          <div class="mlabel">${L.t('경유 쿠션','Cushions')}</div>
+          <div class="mvis" style="font-size:20px;font-weight:800">${r.cush}${L.t('회','')}</div>
+          <div class="mval">${L.t('둘째 적구 전','before 2nd')}</div>
         </div>
       </div>
     </div>`;
@@ -5781,8 +5794,9 @@ function renderPhyCards(){
   // Pro 업셀 — 무료라 감춘 경로가 있으면 카드 밑에 안내
   if(phyRoutes._proHidden){
     box.innerHTML +=
-      `<div class="pro-upsell" id="g3-proUpsell" role="button" tabindex="0">`+
-      `🔒 <b>+${phyRoutes._proHidden}개 경로</b>가 더 있어요 — <span>Pro에서 전체 보기 →</span></div>`;
+      `<div class="pro-upsell" id="g3-proUpsell" role="button" tabindex="0">🔒 `+
+      window.hbLang.t(`<b>+${phyRoutes._proHidden}개 경로</b>가 더 있어요 — <span>Pro에서 전체 보기 →</span>`,
+        `<b>+${phyRoutes._proHidden} more paths</b> — <span>see all in Pro →</span>`)+`</div>`;
     const up=document.getElementById('g3-proUpsell');
     if(up){
       const go=()=>{ window.hbTrack&&window.hbTrack('gate_3gu'); window.hbShowPaywall&&window.hbShowPaywall('routes3'); };
@@ -5812,7 +5826,7 @@ function renderPhyCards(){
   if(n) n.addEventListener('click',()=>rec(false));
 })();
 // 헤더 컨트롤(언어·당구대 색) 변경 시 3구 갱신
-window.addEventListener('hblang', function(){ try{ renderPhyCards(); }catch(e){} });
+window.addEventListener('hblang', function(){ try{ buildToolbar(); renderPhyCards(); if(typeof updateSideUI==='function') updateSideUI(); }catch(e){} });
 window.addEventListener('hbfelt', function(){ try{ draw(); if(typeof drawP3==='function') drawP3(); }catch(e){} });
 function drawPhyRoute(r,color,alpha){
   ctx.save(); ctx.globalAlpha=alpha;
@@ -5857,9 +5871,10 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
   if(ov){
     phyRoutes=[]; phySel=0; renderPhyCards();
     const box=document.getElementById('g3-phyRoutes');
-    if(box) box.innerHTML='<div class="panel"><span class="empty">⚠ '+
-      balls[ov[0]].name+'와(과) '+balls[ov[1]].name+'가 겹쳐 있습니다 — '+
-      '공을 서로 떨어뜨려 배치한 뒤 다시 계산해 주세요.</span></div>';
+    if(box){ const nm=k=>window.hbLang.t(balls[k].name,{cue:'Cue',obj:'Object 1',target:'Object 2'}[k]);
+      box.innerHTML='<div class="panel"><span class="empty">⚠ '+window.hbLang.t(
+        `${balls[ov[0]].name}와(과) ${balls[ov[1]].name}가 겹쳐 있습니다 — 공을 서로 떨어뜨려 배치한 뒤 다시 계산해 주세요.`,
+        `${nm(ov[0])} and ${nm(ov[1])} overlap — move them apart and calculate again.`)+'</span></div>'; }
     return;
   }
   window.hbTrack&&window.hbTrack('solve',{mode:'3gu'});
@@ -6342,7 +6357,7 @@ function syncTb(){
 }
 function buildToolbar(){
   const tb=document.getElementById('g3-toolbar');
-  const labels={cue:'수구',obj:'제1적구',target:'제2적구(목표)'};
+  const labels={cue:window.hbLang.t('수구','Cue'),obj:window.hbLang.t('제1적구','Object 1'),target:window.hbLang.t('제2적구(목표)','Object 2 (target)')};
   const colors={cue:'#f7f4ea',obj:'#f0c542',target:'#d23b2b'};   // 실물 색(흰·노랑·빨강)
   // 맨 앞에 undo/redo — 4구 툴바와 같은 배치·아이콘. 툴바를 다시 그릴 때마다
   // 버튼도 다시 만들어지므로 핸들러·활성 상태를 매번 함께 붙인다.
