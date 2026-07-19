@@ -1528,7 +1528,7 @@
       <button class="tool" id="proDonate" type="button" data-en="☕ Support">☕ 후원하기</button>
     </div>
     <div class="pro-redeem" id="proRedeemRow">
-      <input id="proCode" type="text" autocomplete="off" placeholder="구매 후 받은 코드 입력" data-en-ph="Enter the code you received" aria-label="언락 코드">
+      <input id="proCode" type="text" autocomplete="off" placeholder="언락 코드 입력" data-en-ph="Enter unlock code" aria-label="언락 코드">
       <button class="tool" id="proRedeem" type="button" data-en="OK">확인</button>
     </div>
     <p class="pro-note" id="proNote" hidden></p>
@@ -1615,6 +1615,31 @@ window.hbTrack=(function(){
 
 // ===== Pro 권한 / 무료 한도 (유료화 1단계) =====
 // 게이팅만 구현하고 결제는 나중에 붙인다(0단계 검증 후). 아래 한도 상수를 크게 잡거나
+// ===== 스토어 빌드 감지 =====
+// 플레이스토어(TWA)·앱스토어(iOS 래퍼)로 감싼 빌드에서는 '앱 안에서 디지털 상품을
+// 외부 링크로 판매'하는 것이 스토어 정책 위반이다(Google Play 결제정책 / Apple 3.1.1).
+// 그래서 스토어 빌드에서는 구매·후원 버튼을 감추고 '언락 코드 입력'만 남긴다.
+//  · 래퍼의 시작 URL에 ?store=play 또는 ?store=ios 를 넣으면 그 값이 기기에 저장된다.
+//  · TWA는 referrer가 android-app:// 라 자동 감지도 된다.
+//  · 콘솔 __hbSetStore('play'|'ios'|null) 로 테스트 전환.
+window.hbStore=(function(){
+  var KEY='hb_store', v=null;
+  try{
+    var q=(location.search.match(/[?&]store=([a-z]+)/)||[])[1];
+    if(q==='play'||q==='ios'){ v=q; localStorage.setItem(KEY,v); }
+    else v=localStorage.getItem(KEY);
+  }catch(e){}
+  if(!v){ try{
+    if(document.referrer && document.referrer.indexOf('android-app://')===0){
+      v='play'; localStorage.setItem(KEY,v); }
+  }catch(e){} }
+  window.__hbSetStore=function(s){
+    try{ if(s==='play'||s==='ios'){ v=s; localStorage.setItem(KEY,s); }
+         else { v=null; localStorage.removeItem(KEY); } }catch(e){}
+    return v;
+  };
+  return { get:function(){ return v; }, is:function(){ return !!v; } };
+})();
 // PRO_CODES 에 코드를 넣으면 즉시 조절/무력화된다. 콘솔 __hbSetPro(1) 로 소유자/테스트 언락.
 window.hbPro=(function(){
   var FKEY='hb_pro', PKEY='hb_photo_day';
@@ -6869,10 +6894,12 @@ if(typeof window!=='undefined')
     return L.t('더 깊이 파고드는 분들을 위한 기능이에요. 관심을 남겨 주시면 우선순위에 반영합니다.','Features for those who want to go deeper. Leave your interest to shape our priorities.'); }
   var lastFocus=null;
   function pro(){ return !!(window.hbPro && window.hbPro.is()); }
+  // 스토어(플레이·앱스토어) 빌드에서는 외부 결제 유도가 정책 위반이라 구매·후원 줄을 아예 숨긴다.
+  var storeBuild=!!(window.hbStore && window.hbStore.is());
   function syncState(){
     var p=pro();
     var a=document.getElementById('proActive'); if(a) a.hidden=!p;
-    var buy=document.getElementById('proBuyRow'); if(buy) buy.style.display=p?'none':'';
+    var buy=document.getElementById('proBuyRow'); if(buy) buy.style.display=(p||storeBuild)?'none':'';
     var rr=document.getElementById('proRedeemRow'); if(rr) rr.style.display=p?'none':'';
     chip.classList.toggle('is-pro',p);
     chip.textContent=p?'✦ Pro ✓':'✦ Pro';
@@ -6882,7 +6909,8 @@ if(typeof window!=='undefined')
     if(lead) lead.textContent=leadText(ctx);
     syncState();
     modal.hidden=false; if(note){ note.hidden=true; note.textContent=''; }
-    var b=document.getElementById(pro()?'proRedeem':'proBuy');
+    // 스토어 빌드는 구매 버튼이 없으니 코드 입력칸으로 포커스
+    var b=document.getElementById(storeBuild?'proCode':(pro()?'proRedeem':'proBuy'));
     if(b&&b.focus) try{ b.focus(); }catch(e){}
     window.hbTrack&&window.hbTrack('pro_open',ctx?{ctx:ctx}:null);
   }

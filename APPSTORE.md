@@ -104,6 +104,26 @@ npx cap open ios
 
 ---
 
+## 결제 버튼 숨기기 (구현 완료 — 설정 필수)
+
+앱에 **스토어 빌드 감지**가 들어가 있다. 인식되면 Pro 모달에서
+**'Pro 구매하기'·'후원하기' 버튼이 사라지고 언락 코드 입력만 남는다.**
+
+⚠ **iOS는 자동 감지가 안 되므로 반드시 시작 URL에 플래그를 붙여야 한다:**
+
+```
+https://hellobilliard.studioroomkr.com/?store=ios
+```
+
+- PWABuilder iOS 프로젝트: 웹뷰가 로드하는 URL 상수를 위 주소로 수정
+- Capacitor: `capacitor.config.json` 의 `server.url` 을 위 주소로
+- 한 번 로드되면 기기에 저장돼 이후 실행에도 유지됨
+
+> 테스트: 브라우저 콘솔에서 `__hbSetStore('ios')` → 구매 버튼 사라짐 / `__hbSetStore(null)` → 원복
+> **스크린샷 촬영 전에도 반드시 적용할 것** (구매 버튼이 찍히면 반려 사유)
+
+---
+
 ## ⚠ 결제 정책 (Play보다 더 엄격)
 
 - 애플은 **디지털 상품에 StoreKit 인앱결제(IAP) 강제** — 수수료 15~30%.
