@@ -714,6 +714,7 @@
     }
     h1 { font-size: 24px; }
     h1 .sub { font-size: 11px; margin-top: 5px; }
+
     .sport-tabs { margin-bottom: 12px; }
     .sport-tabs button { padding: 6px 6px; min-height: 0; }
     .sport-tabs button .big { font-size: 14px; margin-bottom: 1px; }
@@ -1064,15 +1065,15 @@
     </h1>
     <div class="hctl">
       <select id="langSel" class="hsel" aria-label="당구 용어 언어">
-        <option value="ko1">🇰🇷 일상 용어</option>
-        <option value="ko2">🇰🇷 표준 용어</option>
-        <option value="en">🇺🇸 English</option>
+        <option value="ko1">일상 용어</option>
+        <option value="ko2">표준 용어</option>
+        <option value="en">English</option>
       </select>
       <select id="feltSel" class="hsel" aria-label="당구대 색">
-        <option value="green">🟩 녹색 대</option>
-        <option value="blue">🟦 파란 대</option>
+        <option value="green">녹색 대</option>
+        <option value="blue">파란 대</option>
       </select>
-      <button id="statsChip" class="pro-chip" type="button" aria-label="내 연습 기록">📈 기록</button>
+      <button id="statsChip" class="pro-chip" type="button" aria-label="내 연습 기록"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 13.5h11"/><path d="M3.5 11 6.5 7.5 9 9.5 13 4.5"/></svg>기록</button>
       <button id="proTeaser" class="pro-chip" type="button" aria-label="Hello Billiard Pro 안내">✦ Pro</button>
     </div>
     <button id="themeToggle" class="theme-toggle" type="button" aria-label="라이트/다크 테마 전환" title="라이트/다크 전환">🌙</button>
@@ -1516,6 +1517,21 @@
   .hist-clear{ margin-top:14px; text-align:center; }
   .hist-clear button{ background:none; border:none; color:var(--tx-3,#8a8272);
     font-size:12px; text-decoration:underline; cursor:pointer; }
+
+  /* ===== 모바일 헤더 컨트롤을 한 줄로 =====
+     용어·대 색·기록·Pro 가 좁은 폭에서 두 줄로 갈라졌다. 테마 토글 자리(52px)는
+     로고 줄에서만 비우면 되므로, 그 아래 컨트롤 줄은 폭을 다 쓰게 한다.
+     (기본 .hctl 규칙보다 뒤에 와야 덮인다 — 앞에 두면 flex-wrap:wrap 이 이긴다) */
+  @media (max-width: 640px) {
+    .app-header { padding-right: 0; }
+    .app-header > h1.brand { padding-right: 52px; }
+    .hctl {
+      width: 100%; margin-left: 0;
+      flex-wrap: nowrap; justify-content: flex-start; gap: 5px;
+    }
+    .hctl .hsel { padding: 5px 5px; font-size: 11px; min-width: 0; }
+    .hctl .pro-chip { padding: 5px 7px; font-size: 11px; white-space: nowrap; }
+  }
 
   /* ===== 사진 인식 — 버튼을 사진 위에 띄운다 =====
      사진이 길면 버튼이 화면 밖으로 밀려 '다음에 뭘 눌러야 하는지' 안 보였다.
