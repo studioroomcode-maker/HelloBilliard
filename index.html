@@ -1224,7 +1224,7 @@
   </div>
 
   <details class="venue guide" style="margin-top:14px">
-  <summary>사용법 · 물리 엔진 설명 <span class="venue-sub">성공률 · 사진 인식 · 테이블 보정</span></summary>
+  <summary data-en-html="How to use · physics engine <span class=&quot;venue-sub&quot;>Success rate · photo scan · table calibration</span>">사용법 · 물리 엔진 설명 <span class="venue-sub">성공률 · 사진 인식 · 테이블 보정</span></summary>
   <div class="panel" style="margin-top:8px">
     <p class="hint">엔진은 무회전·끌어치기·밀어치기·좌우 시네루를 조합해 득점 경로를 탐색하고,
     전략이 서로 다른 경로 3개를 추려 제안합니다. 카드를 누르면 해당 경로가 당구대에 표시됩니다.<br><br>
@@ -3883,7 +3883,7 @@ document.getElementById('g4-file').addEventListener('change',e=>{
     URL.revokeObjectURL(url);
     photoPanel.style.display='block';
     document.body.classList.add('photo-open');
-    photoMsg.textContent='이 사진을 읽을 수 없습니다. 아이폰 HEIC 형식일 수 있습니다 — 설정 → 카메라 → 포맷에서 "높은 호환성"으로 바꿔 다시 찍거나, 스크린샷으로 저장해 올려 주세요.';
+    photoMsg.textContent=window.hbLang.t('이 사진을 읽을 수 없습니다. 아이폰 HEIC 형식일 수 있습니다 — 설정 → 카메라 → 포맷에서 "높은 호환성"으로 바꿔 다시 찍거나, 스크린샷으로 저장해 올려 주세요.','Can\'t read this photo. It may be iPhone HEIC — set Settings → Camera → Formats to "Most Compatible" and retake, or upload a screenshot instead.');
     if(photoPanel.scrollIntoView) photoPanel.scrollIntoView({behavior:'smooth'});
   };
   im.src=url;
@@ -3985,8 +3985,9 @@ function pDown(e){
       photoMarks.push({x:p.x,y:p.y,color:markColor(k)});
       routes=[]; selected=0; draw(); renderCards(); drawPhoto();
       if(photoMissing.length){
-        photoMsg.textContent=`${BALL_NAMES[k]} 지정 완료 — 다음: 사진에서 `+
-          `${BALL_NAMES[photoMissing[0]]} 위치를 탭하세요.`;
+        const nmp=x=>window.hbLang.t(BALL_NAMES[x],{cue:'My cue',cue2:'Opp. cue',r1:'Red 1',r2:'Red 2'}[x]);
+        photoMsg.textContent=window.hbLang.t(`${BALL_NAMES[k]} 지정 완료 — 다음: 사진에서 ${BALL_NAMES[photoMissing[0]]} 위치를 탭하세요.`,
+          `${nmp(k)} set — next: tap ${nmp(photoMissing[0])} in the photo.`);
       } else {
         photoMsg.textContent=window.hbLang.t('모든 공 지정 완료 — 최적 경로를 계산합니다.','All balls set — calculating the best path.');
         solveGen++; requestRecalc();
@@ -4111,15 +4112,16 @@ document.getElementById('g4-detect').addEventListener('click',()=>{
   drawPhoto();
   if(photoMissing.length){
     // 일부만 인식 — 미인식 공을 사진 탭으로 지정받은 뒤 계산한다
-    photoMsg.textContent=(got.length?`인식 완료: ${got.join(' · ')} — `:'⚠ 공을 인식하지 못했습니다. ')+
-      `사진에서 ${BALL_NAMES[photoMissing[0]]} 위치를 탭해 지정해 주세요.`+
-      ' (모서리 4점이 경기면에 정확한지, 조명이 충분한지도 확인)';
+    const nmp=x=>window.hbLang.t(BALL_NAMES[x],{cue:'My cue',cue2:'Opp. cue',r1:'Red 1',r2:'Red 2'}[x]);
+    photoMsg.textContent=window.hbLang.t(
+      (got.length?`인식 완료: ${got.join(' · ')} — `:'⚠ 공을 인식하지 못했습니다. ')+`사진에서 ${BALL_NAMES[photoMissing[0]]} 위치를 탭해 지정해 주세요. (모서리 4점이 경기면에 정확한지, 조명이 충분한지도 확인)`,
+      (got.length?`Detected ${got.length} — `:'⚠ No balls detected. ')+`Tap ${nmp(photoMissing[0])} in the photo to set it. (Check the 4 corners are exact and lighting is sufficient.)`);
     routes=[]; selected=0; draw(); renderCards();
     return;
   }
-  photoMsg.textContent=`인식 완료: ${got.join(' · ')}`+
-    ' — 계산된 경로가 사진 위에 겹쳐 표시됩니다. 경로 카드를 누르면 사진의 경로도 바뀝니다.'+
-    (res.ambiguous?' ⚠ 두 수구가 모두 흰색에 가까워 임의로 배정했습니다 — 바뀌었으면 [수구 ⇄ 상대]를 누르세요.':'');
+  photoMsg.textContent=window.hbLang.t(
+    `인식 완료: ${got.join(' · ')} — 계산된 경로가 사진 위에 겹쳐 표시됩니다. 경로 카드를 누르면 사진의 경로도 바뀝니다.${res.ambiguous?' ⚠ 두 수구가 모두 흰색에 가까워 임의로 배정했습니다 — 바뀌었으면 [수구 ⇄ 상대]를 누르세요.':''}`,
+    `Recognized all balls — the calculated path overlays on the photo. Tap a route card to change the path shown.${res.ambiguous?' ⚠ Both cue balls look near-white, so they were assigned arbitrarily — press [Cue ⇄ Opp.] if swapped.':''}`);
   routes=[]; selected=0; solveGen++; draw(); renderCards();
   pushHist();               // 사진 인식 배치도 히스토리 기록
   requestRecalc();          // 최적 경로 자동 계산 (계산 중이면 끝난 뒤)
@@ -5769,7 +5771,7 @@ function renderPhyCards(){
       </div>
       <div class="desc">${L.t(
         `수구 → ${NAME[r.fk]} <b>${thickLabel} 두께</b> → 쿠션 <b>${r.cush}회</b> → ${NAME[r.fk==='obj'?'target':'obj']} 득점 · 추천 파워 <b>${r.power}</b>(수구 ${rail}레일 구름)`,
-        `Cue → ${NAME[r.fk]} <b>${thickLabel} thick</b> → <b>${r.cush} cush</b> → score ${NAME[r.fk==='obj'?'target':'obj']} · power <b>${r.power}</b> (cue rolls ${rail} rails)`
+        `Cue → ${NAME[r.fk]} <b>${thickLabel} thick</b> → <b>${r.cush} cush</b> → score ${NAME[r.fk==='obj'?'target':'obj']} · power <b>${({'약하게':'Soft','보통':'Medium','강하게':'Hard','아주 약하게':'Very soft','아주 강하게':'Very hard','세게':'Hard','살살':'Very soft','빡세게':'Very hard'}[r.power]||r.power)}</b> (cue rolls ${rail} rails)`
       )}
         <details class="rdetail"><summary>${L.t('기술 상세','Details')}</summary><div>${L.t(
         `추천 파워는 약·중·강 세 속도를 각각 24회씩 시뮬레이션해 <b>이 경로에서 성공률이 가장 높았던 속도</b>입니다 — 수구가 실제로 구른 거리는 <b>${rail}레일</b>(장쿠션 ${railcm}cm 기준)입니다. 테이블 반응에 따라 달라지는 <b>근삿값</b>이니 첫 샷으로 감을 잡고 조절하세요.<br>성공률은 이 속도에서 실전 오차 몬테카를로 <b>48회</b> 시뮬레이션한 예상치 (5% 단위 표시) — 실제 사용자 통계가 아닙니다${gKO}${kKO}`,
@@ -5830,7 +5832,7 @@ function renderPhyCards(){
   if(n) n.addEventListener('click',()=>rec(false));
 })();
 // 헤더 컨트롤(언어·당구대 색) 변경 시 3구 갱신
-window.addEventListener('hblang', function(){ try{ buildToolbar(); renderPhyCards(); if(typeof updateSideUI==='function') updateSideUI(); }catch(e){} });
+window.addEventListener('hblang', function(){ try{ buildToolbar(); renderPhyCards(); if(typeof setSystemText==='function') setSystemText(); if(typeof updateSideUI==='function') updateSideUI(); }catch(e){} });
 window.addEventListener('hbfelt', function(){ try{ draw(); if(typeof drawP3==='function') drawP3(); }catch(e){} });
 function drawPhyRoute(r,color,alpha){
   ctx.save(); ctx.globalAlpha=alpha;
@@ -6383,32 +6385,44 @@ function buildToolbar(){
 const SYS_INFO={
   five:{
     title:'파이브앤하프 계산',
+    titleEn:'Five-and-a-half calc',
     formula:'제1쿠션수 = 수구수 − 제3쿠션수\n(기준 3팁 · 2팁이면 +5, 맥시멈이면 −3 보정)',
+    formulaEn:'1st-cushion# = cue# − 3rd-cushion#\n(base 3-tip · +5 if 2-tip, −3 if max)',
     panelTitle:'파이브앤하프 시스템 (코너-50)',
+    panelTitleEn:'Five-and-a-half system (corner-50)',
     panelText:'수구가 상단 장쿠션(1) → 좌측 단쿠션(2) → 하단 장쿠션(3)을 돌아 '+
       '우측 트랙선을 따라 제2적구로 가는 쓰리쿠션 표준 계산법입니다. '+
       '수구수는 우하 코너=50, 하단 장쿠션 왼쪽으로 60·70·80·90, 우측 단쿠션 '+
       '위로 45·40·35·30(코너 근처가 반 칸 간격이라 "파이브 앤 하프"). '+
       '수구수에서 제3쿠션수를 빼면 상단 장쿠션에서 겨냥할 1쿠션수(좌상 코너=50)가 '+
       '나옵니다. 3쿠션수는 제2적구를 지나는 트랙에서 자동 역산됩니다. 당점은 3팁 순방향 회전.',
+    panelTextEn:'The standard three-cushion method: the cue travels top long rail (1) → left short rail (2) → bottom long rail (3) along the right track to Object 2. Cue# = 50 at the bottom-right corner, 60/70/80/90 leftward on the bottom long rail, and 45/40/35/30 up the right short rail (half-spacing near the corner = "five and a half"). Cue# minus 3rd-cushion# gives the 1st-cushion aim on the top long rail (top-left corner = 50); the 3rd-cushion# is back-computed from the track through Object 2. Use 3-tip running english.',
   },
   plus:{
     title:'플러스 시스템 계산',
+    titleEn:'Plus system calc',
     formula:'도착수 = 출발수 + 제1쿠션수\n→ 제1쿠션수 = 도착수 − 출발수 (유효 15~40)',
+    formulaEn:'arrival# = start# + 1st-cushion#\n→ 1st-cushion# = arrival# − start# (valid 15–40)',
     panelTitle:'플러스 시스템',
+    panelTitleEn:'Plus system',
     panelText:'수구가 우측 단쿠션(1) → 상단 장쿠션(2)을 거쳐 하단 장쿠션(3)으로 '+
       '되돌아오는(플러스) 짧은 각을 다룹니다. 출발수와 도착수는 하단 장쿠션의 '+
       '같은 눈금(우하 코너=0, 왼쪽으로 10/칸)이고, 1쿠션수는 우측 단쿠션 '+
       '눈금(아래 0 → 위로 10/칸)입니다. 수구와 목표가 하단 장쿠션 부근일 때 정확합니다.',
+    panelTextEn:'Handles the short "plus" angle: the cue goes right short rail (1) → top long rail (2) → back to the bottom long rail (3). Start# and arrival# use the same bottom-long-rail scale (bottom-right corner = 0, +10 per diamond leftward); the 1st-cushion# is the right short rail scale (0 at bottom, +10 per diamond up). Accurate when cue and target are near the bottom long rail.',
   },
   ball:{
     title:'볼 시스템 계산',
+    titleEn:'Ball system calc',
     formula:'총 볼값 = 제1적구수 + 제3쿠션수 ± 진입 기울기\n총 볼값 = 두께(n/8) + 당점(팁수)',
+    formulaEn:'total ball = Object1# + 3rd-cushion# ± entry slope\ntotal ball = thickness(n/8) + english(tips)',
     panelTitle:'볼 시스템 (모델 A · 코너 기점 0)',
+    panelTitleEn:'Ball system (model A · corner 0)',
     panelText:'제1적구를 실제로 맞히는 옆돌리기·제각돌리기 배치에서 두께와 당점을 한 번에 '+
       '산출합니다. 제1적구수·제3쿠션수에 수구의 진입 기울기를 가감해 총 볼값을 구하고, '+
       '이를 두께와 팁수의 합으로 분해합니다. 제1적구가 쿠션에 붙어 있으면 키스 위험이 있어 '+
       '얇은 두께를 권장합니다.',
+    panelTextEn:'For shots that actually strike Object 1, it derives thickness and english at once. Add/subtract the cue entry slope to Object1# + 3rd-cushion# for the total ball value, then split it into thickness + tips. If Object 1 is frozen to a rail, kiss risk is high, so a thin hit is recommended.',
   },
 };
 // 시스템별 표준 초기 배치 — 각 시스템이 가정하는 출발 형태에 맞춤
@@ -6445,12 +6459,17 @@ function applyPreset(){
   for(const k in p){ balls[k].x=p[k].x; balls[k].y=p[k].y; }
 }
 
+function setSystemText(){
+  if(!system) return;
+  const info=SYS_INFO[system], en=window.hbLang.isEn(), g=k=>(en&&info[k+'En'])?info[k+'En']:info[k];
+  document.getElementById('g3-calcTitle').textContent=g('title');
+  document.getElementById('g3-formula').textContent=g('formula');
+  document.getElementById('g3-panelTitle').textContent=g('panelTitle');
+  document.getElementById('g3-panelText').textContent=g('panelText');
+}
 function applySystem(){
   const info=SYS_INFO[system];
-  document.getElementById('g3-calcTitle').textContent=info.title;
-  document.getElementById('g3-formula').textContent=info.formula;
-  document.getElementById('g3-panelTitle').textContent=info.panelTitle;
-  document.getElementById('g3-panelText').textContent=info.panelText;
+  setSystemText();
   document.getElementById('g3-tipseg').style.display = system==='ball'?'none':'flex';
   if(!SYS_BALLS[system].includes(activeBall)) activeBall=SYS_BALLS[system][0];
   // 사용자가 직접 배치한 적 없으면 이 시스템의 랜덤 배치로 시작한다 —
