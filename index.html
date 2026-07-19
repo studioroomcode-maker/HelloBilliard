@@ -1618,8 +1618,8 @@ window.hbPro=(function(){
   var FREE_PHOTO_PER_DAY=5;   // 사진 인식: 무료 하루 5회 / Pro 무제한
   var FREE_3GU_ROUTES=1;      // 3구 물리 경로: 무료 대표 1개 / Pro 전체
   // ── 언락 코드 (결제 연동 전 수동 발급용) — 예: ['HB-PRO-XXXX'] ──
-  // 'HB-OWNER-SKB-2026' = 소유자 개인 코드 (Pro 코드 입력창에 넣으면 영구 Pro)
-  var PRO_CODES=['HB-OWNER-SKB-2026'];
+  // 'ADMIN1983' = 소유자 개인 코드 (Pro 코드 입력창에 넣으면 영구 Pro)
+  var PRO_CODES=['ADMIN1983'];
   function is(){ try{ return localStorage.getItem(FKEY)==='1'; }catch(e){ return false; } }
   function set(v){ try{ if(v) localStorage.setItem(FKEY,'1'); else localStorage.removeItem(FKEY); }catch(e){} }
   window.__hbSetPro=function(v){ set(!!v); return is(); };   // 소유자·테스트용 콘솔 스위치
