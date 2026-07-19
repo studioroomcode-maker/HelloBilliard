@@ -108,7 +108,10 @@
     height: auto;
     display: block;
     border-radius: 6px;
-    touch-action: none;
+    /* pan-y = 다이 위에서 시작한 세로 스와이프는 '페이지 스크롤'로 넘긴다.
+       공(또는 사진 모서리 점)을 직접 잡았을 때만 코드가 preventDefault 해서
+       제스처를 가져간다 — 스크롤하려다 공이 옮겨지는 사고를 막는다. */
+    touch-action: pan-y;
     cursor: crosshair;
   }
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 10px; }
@@ -333,7 +336,7 @@
   }
   /* 시스템 탭이 붙어 있을 때만 왼쪽 위 모서리를 탭과 연결 */
   .tabs + .board .stage { border-radius:0 14px 14px 14px; }
-  canvas { width:100%; height:auto; display:block; border-radius:6px; touch-action:none; cursor:crosshair; }
+  canvas { width:100%; height:auto; display:block; border-radius:6px; touch-action:pan-y; cursor:crosshair; }
   .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 10px; }
   .tool {
     flex:1 1 auto; min-width:90px; background:#211c14;
@@ -1203,7 +1206,7 @@
       data-en="📷 Photo scan — align corners">📷 사진 인식 — 모서리 맞추기</h3>
     <div class="photo-wrap">
       <canvas id="g4-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
-        style="width:100%;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
+        style="width:100%;border-radius:8px;touch-action:pan-y;cursor:crosshair"></canvas>
       <div class="actions photo-float">
         <button class="tool primary" id="g4-detect" data-en="Detect → Calculate">공 인식 → 경로 계산</button>
         <button class="tool" id="g4-swapCue" data-en="Cue ⇄ Opp.">수구 ⇄ 상대</button>
@@ -1369,7 +1372,7 @@
       사진 인식 — 모서리 맞추기</h3>
     <div class="photo-wrap">
       <canvas id="g3-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
-        style="width:100%;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
+        style="width:100%;border-radius:8px;touch-action:pan-y;cursor:crosshair"></canvas>
       <div class="actions photo-float">
         <button class="tool primary" id="g3-detect" data-en="Detect">공 인식</button>
         <button class="tool" id="g3-photoCancel" data-en="Close">닫기</button>
@@ -1743,6 +1746,34 @@ window.hbTrack=(function(){
 
 // ===== Pro 권한 / 무료 한도 (유료화 1단계) =====
 // 게이팅만 구현하고 결제는 나중에 붙인다(0단계 검증 후). 아래 한도 상수를 크게 잡거나
+// ===== 스크롤과 탭을 구분하는 도우미 =====
+// 예전에는 다이·사진 위 touchstart 에서 곧바로 공을 옮겨 버려서,
+// 화면을 위아래로 스크롤하려고 다이를 스치기만 해도 공 위치가 바뀌는 사고가 났다.
+// 이제 빈 곳을 터치하면 아무것도 바꾸지 않고 기다렸다가, 손을 뗄 때
+// '거의 움직이지 않은 짧은 탭'이었을 때만 실행한다. 움직였으면 = 스크롤이므로 취소.
+// (마우스는 스크롤 제스처와 겹치지 않으므로 즉시 실행)
+window.hbTapGuard=function(){
+  var s=null, MOVE=10, MS=600;
+  return {
+    start:function(e,run){
+      if(!e.touches){ run(); return; }              // 마우스 → 즉시
+      var t=e.touches[0]; if(!t) return;
+      s={x:t.clientX,y:t.clientY,t:Date.now(),run:run};
+    },
+    move:function(e){
+      if(!s||!e.touches||!e.touches[0]) return;
+      var t=e.touches[0];
+      if(Math.abs(t.clientX-s.x)>MOVE||Math.abs(t.clientY-s.y)>MOVE) s=null;   // 스크롤로 판정
+    },
+    up:function(){
+      if(!s) return;
+      var r=s.run, ok=(Date.now()-s.t)<=MS; s=null;
+      if(ok) r();
+    },
+    cancel:function(){ s=null; }
+  };
+};
+
 // 사진 인식이 끝나면 결과(경로)를 바로 볼 수 있게 위쪽 당구대로 부드럽게 이동한다.
 // 사진이 길면 다이가 화면 밖에 있어 '계산이 됐는지' 알 수 없었다.
 window.hbScrollToBoard=function(){
@@ -3162,18 +3193,37 @@ function cpos(e){
 function clampB(p){return{
   x:Math.max(play.x0+BALL_R,Math.min(play.x1-BALL_R,p.x)),
   y:Math.max(play.y0+BALL_R,Math.min(play.y1-BALL_R,p.y))};}
-function hitB(p){for(const k in balls) if(len(sub(balls[k],p))<BALL_R+10) return k; return null;}
+function hitB(p,pad){for(const k in balls) if(len(sub(balls[k],p))<BALL_R+(pad||10)) return k; return null;}
+// 손가락으로 잡을 때는 넉넉하게 — 폰에서는 캔버스가 크게 축소돼(≈0.4배) 화면상
+// 잡기 반경이 7px 밖에 안 됐다. 화면 기준 ~18px 가 되도록 캔버스 좌표로 환산한다.
+function grabPad(e){
+  if(!e||!e.touches) return 10;
+  const r=cv.getBoundingClientRect();
+  return r.width ? Math.max(10, 18*(W/r.width)) : 10;
+}
+const tapG=window.hbTapGuard();
 function onDown(e){
-  e.preventDefault();
-  stopAnim(false);
-  solveGen++;                 // 진행 중인 계산 결과 무효화
-  const p=cpos(e), k=hitB(p);
-  if(k){dragging=k;activeBall=k;dragStart={x:balls[k].x,y:balls[k].y};syncTb();}
-  else{const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
-    routes=[];renderCards();pushHist();}   // 탭 배치 — 히스토리 기록
-  draw();
+  const p=cpos(e), k=hitB(p,grabPad(e));
+  if(k){
+    // 공을 직접 잡았다 = 확실한 조작 → 이 제스처는 앱이 가져간다(스크롤 차단)
+    e.preventDefault();
+    stopAnim(false);
+    solveGen++;                 // 진행 중인 계산 결과 무효화
+    dragging=k;activeBall=k;dragStart={x:balls[k].x,y:balls[k].y};syncTb();
+    draw();
+    return;
+  }
+  // 빈 곳 — 스크롤일 수 있으니 preventDefault 하지 않고, 손 뗄 때 탭이면 배치
+  tapG.start(e,function(){
+    stopAnim(false);
+    solveGen++;
+    const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
+    routes=[];renderCards();pushHist();   // 탭 배치 — 히스토리 기록
+    draw();
+  });
 }
 function onMove(e){
+  tapG.move(e);
   if(!dragging) return;
   e.preventDefault();
   const c=clampB(cpos(e));
@@ -3181,6 +3231,7 @@ function onMove(e){
   routes=[];draw();
 }
 function onUp(){
+  tapG.up();                 // 스크롤이 아니라 '짧은 탭'이었으면 여기서 배치된다
   const wasDragging=dragging;
   // 드래그로 위치가 실제로 바뀌었을 때만 히스토리에 기록
   if(dragging&&dragStart&&
@@ -4134,17 +4185,21 @@ function ppos(e){
   return {x:(t.clientX-r.left)*(pcv.width/r.width),
           y:(t.clientY-r.top)*(pcv.height/r.height)};
 }
+const pTapG=window.hbTapGuard();
 function pDown(e){
   if(!photoCorners||photoPanel.style.display==='none') return;
-  e.preventDefault();
   const p=ppos(e);
   let best=-1, bd=1e9;
   photoCorners.forEach((c,i)=>{
     const d=Math.hypot(c.x-p.x,c.y-p.y);
     if(d<bd){bd=d;best=i;}
   });
-  if(bd<pcv.width/12){ photoDrag=best; return; }
-  // 미인식 공 직접 지정 — 탭 위치를 테이블 좌표로 변환해 배치
+  // 모서리 점을 직접 잡았을 때만 제스처 점유 — 그 외는 스크롤을 막지 않는다
+  if(bd<pcv.width/12){ e.preventDefault(); photoDrag=best; return; }
+  pTapG.start(e,function(){ pTapPlace(p); });
+}
+// 미인식 공 직접 지정 — '짧은 탭'으로 확정됐을 때만 실행된다
+function pTapPlace(p){
   if(photoHinv&&photoMissing.length){
     let t=applyH(photoHinv,p.x,p.y);
     if(camW){
@@ -4172,13 +4227,14 @@ function pDown(e){
   }
 }
 function pMove(e){
+  pTapG.move(e);
   if(photoDrag<0) return;
   e.preventDefault();
   const p=ppos(e);
   photoCorners[photoDrag]={x:clamp(p.x,0,pcv.width-1), y:clamp(p.y,0,pcv.height-1)};
   drawPhoto();
 }
-function pUp(){ photoDrag=-1; }
+function pUp(){ pTapG.up(); photoDrag=-1; }
 pcv.addEventListener('mousedown',pDown);
 pcv.addEventListener('mousemove',pMove);
 window.addEventListener('mouseup',pUp);
@@ -6390,17 +6446,21 @@ function p3pos(e){
   return {x:(t.clientX-r.left)*(p3cv.width/r.width),
           y:(t.clientY-r.top)*(p3cv.height/r.height)};
 }
+const p3TapG=window.hbTapGuard();
 function p3Down(e){
   if(!p3Corners||p3Panel.style.display==='none') return;
-  e.preventDefault();
   const p=p3pos(e);
   let best=-1, bd=1e9;
   p3Corners.forEach((c,i)=>{
     const d=Math.hypot(c.x-p.x,c.y-p.y);
     if(d<bd){bd=d;best=i;}
   });
-  if(bd<p3cv.width/12){ p3Drag=best; return; }
-  // 미인식 공 탭 지정
+  // 모서리 점을 직접 잡았을 때만 제스처 점유 — 그 외는 스크롤을 막지 않는다
+  if(bd<p3cv.width/12){ e.preventDefault(); p3Drag=best; return; }
+  p3TapG.start(e,function(){ p3TapPlace(p); });
+}
+// 미인식 공 탭 지정 — '짧은 탭'으로 확정됐을 때만 실행된다
+function p3TapPlace(p){
   if(p3Hinv&&p3Missing.length){
     const V=window.__hbVision;
     let t=V.applyH(p3Hinv,p.x,p.y);
@@ -6426,13 +6486,14 @@ function p3Down(e){
   }
 }
 function p3Move(e){
+  p3TapG.move(e);
   if(p3Drag<0) return;
   e.preventDefault();
   const p=p3pos(e);
   p3Corners[p3Drag]={x:clamp(p.x,0,p3cv.width-1), y:clamp(p.y,0,p3cv.height-1)};
   drawP3();
 }
-function p3Up(){ p3Drag=-1; }
+function p3Up(){ p3TapG.up(); p3Drag=-1; }
 p3cv.addEventListener('mousedown',p3Down);
 p3cv.addEventListener('mousemove',p3Move);
 window.addEventListener('mouseup',p3Up);
@@ -6554,9 +6615,9 @@ function cpos(e){
 function clampB(p){return{
   x:Math.max(play.x0+BALL_R,Math.min(play.x1-BALL_R,p.x)),
   y:Math.max(play.y0+BALL_R,Math.min(play.y1-BALL_R,p.y))};}
-function hitB(p){
+function hitB(p,pad){
   const keys=phyRoutes?['cue','obj','target']:curBalls();
-  for(const k of keys) if(len(sub(balls[k],p))<BALL_R+10) return k;
+  for(const k of keys) if(len(sub(balls[k],p))<BALL_R+(pad||10)) return k;
   return null;
 }
 // ── 배치 히스토리 (undo/redo) — 4구와 같은 방식, 3구는 공 3개 좌표만 기록 ──
@@ -6594,19 +6655,37 @@ function syncUndoRedo3(){
 function doUndo3(){ if(histIdx3>0){ histIdx3--; applyState3(hist3[histIdx3]); syncUndoRedo3(); } }
 function doRedo3(){ if(histIdx3<hist3.length-1){ histIdx3++; applyState3(hist3[histIdx3]); syncUndoRedo3(); } }
 
+// 손가락 잡기 반경은 화면 기준 ~18px 이 되도록 캔버스 좌표로 환산 (4구와 동일)
+function grabPad3(e){
+  if(!e||!e.touches) return 10;
+  const r=cv.getBoundingClientRect();
+  return r.width ? Math.max(10, 18*(W/r.width)) : 10;
+}
+const tapG3=window.hbTapGuard();
 function onDown(e){
-  e.preventDefault();
-  stopAnim3(false);
-  solveGen3++;                // 진행 중인 계산 결과 무효화
-  const p=cpos(e), k=hitB(p);
-  if(k){dragging=k;activeBall=k;syncTb();}
-  else{const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
+  const p=cpos(e), k=hitB(p,grabPad3(e));
+  if(k){
+    // 공을 직접 잡았을 때만 제스처를 앱이 가져간다(스크롤 차단)
+    e.preventDefault();
+    stopAnim3(false);
+    solveGen3++;                // 진행 중인 계산 결과 무효화
+    dragging=k;activeBall=k;syncTb();
+    draw();
+    return;
+  }
+  // 빈 곳 — 스크롤 허용. 손 뗄 때 '짧은 탭'이면 배치
+  tapG3.start(e,function(){
+    stopAnim3(false);
+    solveGen3++;
+    const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
     userPlaced=true;
     solution=null;phyRoutes=null;renderPhyCards();autoSystem();
-    pushHist3();}   // 탭 배치 → 자동 계산 + 히스토리 기록
-  draw();
+    pushHist3();   // 탭 배치 → 자동 계산 + 히스토리 기록
+    draw();
+  });
 }
 function onMove(e){
+  tapG3.move(e);
   if(!dragging) return;
   e.preventDefault();
   const c=clampB(cpos(e));
@@ -6616,6 +6695,7 @@ function onMove(e){
   autoSystem();   // 드래그 중 debounce 자동 계산
 }
 function onUp(){
+  tapG3.up();                // 스크롤이 아니라 '짧은 탭'이었으면 여기서 배치된다
   const wasDragging=dragging;
   if(dragging){ dragging=null; pushHist3(); }   // 드래그 끝 = 한 번의 배치 변경
   autoSystem();
