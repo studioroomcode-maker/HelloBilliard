@@ -1226,8 +1226,13 @@
   <details class="venue guide" style="margin-top:14px">
   <summary data-en-html="How to use · physics engine <span class=&quot;venue-sub&quot;>Success rate · photo scan · table calibration</span>">사용법 · 물리 엔진 설명 <span class="venue-sub">성공률 · 사진 인식 · 테이블 보정</span></summary>
   <div class="panel" style="margin-top:8px">
-    <p class="hint">엔진은 무회전·끌어치기·밀어치기·좌우 시네루를 조합해 득점 경로를 탐색하고,
-    전략이 서로 다른 경로 3개를 추려 제안합니다. 카드를 누르면 해당 경로가 당구대에 표시됩니다.<br><br>
+    <p class="hint" data-lang="en" hidden>The engine searches scoring paths by combining no-spin, draw, follow and left/right english, then suggests up to 5 paths with different strategies. Tap a card to show that path on the table.<br><br>
+    <b>v4 physics engine</b> · a time-step simulation scaled to real proportions (ball 65.5mm / table 2844mm). It integrates the slide→roll friction transition, so draw/follow curves and post-cushion swerve are reproduced (Alciatore data: rolling half-ball separation ≈34°, stun ≈90° tangent line). All four balls are tracked, and kiss and foul (opponent-cue contact) paths are filtered out. Besides direct shots, it also searches <b>bank shots</b> (1–2 cushions first, then to the object ball). The card's <b>success rate (%)</b> is not real user stats — it's the expected scoring ratio over a <b>90-shot Monte-Carlo</b> that adds skill-based execution error to aim, power and english. Shots that happen to bank in and score also count per the rules.<br><br>
+    <b>Skill</b> · Beginner uses only no-spin/draw/follow, and only <b>within half a tip of center</b> (no extreme high/low english), excludes thin cuts and uses larger execution error, so success rates read realistically. Advanced uses every technique incl. mixed english & thin cuts with precise error. The card's <b>gather (%)</b> is a weighted average giving <b>50% to the gap between the two reds</b> and 25% each to the cue→each-red approach distance from the next shot's start, showing how favorable the leave is (setting shared with the 3-cushion tab).<br><br>
+    <b>Table calibration</b> · if real balls <b>rebound shorter</b> than predicted, tap cushion "− shorter"; if <b>longer</b>, tap "+ longer" to fit the model to your table. Adjust roll calibration if the ball rolls less/more than predicted. Values are saved permanently on this device.<br><br>
+    <b><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> Photo scan</b> · shoot from as high as possible with the table centered for best recognition. The 4 yellow dots go to the <b>inner corner where the cushion wall meets the cloth</b> (not the wood frame or rail top); auto-detect picks only the cloth area and insets by the cushion-top width (≈5cm). It back-computes the camera position to auto-correct the parallax from cushion height (37mm) and ball height (33mm), and re-centers half-shadowed balls by circle-fit. Pick <b>my ball color</b> (white/yellow) in settings; when two cue balls can't be told apart (e.g. a two-white set) they're assigned arbitrarily with a notice, so press [Cue ⇄ Opp.] to swap. Colors are classified relatively (robust to lighting — a white ball looking yellowish under warm light is still told apart), and right after detection the best path is auto-calculated and <b>overlaid on the photo in perspective</b>. Tapping a route card also changes the photo's path. Photos never leave your device.</p>
+    <p class="hint" data-lang="ko">엔진은 무회전·끌어치기·밀어치기·좌우 시네루를 조합해 득점 경로를 탐색하고,
+    전략이 서로 다른 경로를 최대 5개 추려 제안합니다. 카드를 누르면 해당 경로가 당구대에 표시됩니다.<br><br>
     <b>v4 물리 엔진</b> · 실측 비율(공 65.5mm / 대대 2844mm)로 스케일을 맞춘
     시간 스텝 시뮬레이션입니다. 미끄럼→구름 마찰 전이를 수치 적분해 끌어/밀어치기의
     곡선 경로와 쿠션 후 커브가 그대로 재현되고(알시아토레 실측: 구름 1/2두께 분리각 ≈34°,
@@ -1727,6 +1732,9 @@ function applyI18n(){
   for(var m=0;m<p.length;m++){ var e3=p[m];
     if(e3._kph==null) e3._kph=e3.getAttribute('placeholder')||'';
     e3.setAttribute('placeholder', en?e3.getAttribute('data-en-ph'):e3._kph); }
+  var g=document.querySelectorAll('[data-lang]');   // 한/영 단락 토글(긴 문단용)
+  for(var q=0;q<g.length;q++){ var e4=g[q];
+    e4.hidden = (e4.getAttribute('data-lang')==='en')!==en; }
 }
 if(typeof window!=='undefined') window.hbApplyI18n=applyI18n;
 
@@ -4557,11 +4565,11 @@ const THICK_WORD={1:'8분의 1', 2:'4분의 1', 3:'8분의 3', 4:'절반',
 // 상하(밀어/끌어)는 빈쿠션 시스템이 규정하지 않는 값이라 중단(v=0)에 찍고,
 // 지어내는 대신 그렇다고 적는다.
 function aimCard(s,tipLabel){
-  const side=runningSide(s.path);
+  const L=window.hbLang, side=runningSide(s.path);
   const spin={h:side*TIP_H[tip], v:0};
   return `<div class="aimcard">${tipSVG3(spin)}`+
-    `<div class="aimtxt"><b>${tipLabel}</b> · ${side<0?'좌':'우'} 순방향 회전`+
-    `<span>상하는 중단 기준 — 이 시스템은 좌우 회전만 규정합니다</span></div></div>`;
+    `<div class="aimtxt"><b>${tipLabel}</b> · ${L.t(side<0?'좌':'우','')}${L.t(' 순방향 회전',(side<0?'Left':'Right')+' running english')}`+
+    `<span>${L.t('상하는 중단 기준 — 이 시스템은 좌우 회전만 규정합니다','Vertical is center — this system defines only side english')}</span></div></div>`;
 }
 
 // 검증된 구간 밖이라는 표시 — 파이브앤하프는 제1쿠션수가 커질수록(깊은 뱅크)
@@ -4574,80 +4582,74 @@ const FIVE_VERIFIED_C1=[20,25], DEEP_BANK_C1=30;
 function expBadge(s){
   if(s.sys!=='five'||!s.valid||s.c1Num==null) return '';
   if(s.c1Num<DEEP_BANK_C1) return '';
-  return `<div class="exp"><b>⚠ 실험적</b> — 제1쿠션수 ${r0(s.c1Num)}은 `+
-    `교차 검증된 구간(${FIVE_VERIFIED_C1[0]}~${FIVE_VERIFIED_C1[1]}) 밖입니다. `+
-    `이 앱의 물리 시뮬레이션은 깊은 뱅크에서 시스템 예측보다 길게 나오고`+
-    `(1쿠션 30 → 시스템 20 / 시뮬 31), 어느 쪽이 실제와 맞는지는 아직 `+
-    `실측으로 확인하지 않았습니다. 첫 샷으로 도착점을 보고 판단하세요.</div>`;
+  return `<div class="exp">`+window.hbLang.t(
+    `<b>⚠ 실험적</b> — 제1쿠션수 ${r0(s.c1Num)}은 교차 검증된 구간(${FIVE_VERIFIED_C1[0]}~${FIVE_VERIFIED_C1[1]}) 밖입니다. 이 앱의 물리 시뮬레이션은 깊은 뱅크에서 시스템 예측보다 길게 나오고(1쿠션 30 → 시스템 20 / 시뮬 31), 어느 쪽이 실제와 맞는지는 아직 실측으로 확인하지 않았습니다. 첫 샷으로 도착점을 보고 판단하세요.`,
+    `<b>⚠ Experimental</b> — 1st-cushion# ${r0(s.c1Num)} is outside the cross-checked range (${FIVE_VERIFIED_C1[0]}–${FIVE_VERIFIED_C1[1]}). This app's physics runs longer than the system on deep banks (1st 30 → system 20 / sim 31); which is right hasn't been field-verified. Judge by where your first shot lands.`
+  )+`</div>`;
 }
 
 // ===== 결과 출력 =====
 function showResult(s){
   const numsEl=document.getElementById('g3-nums');
   const resEl=document.getElementById('g3-result');
-  const tipLabel={1:'약회전(2팁)',2:'표준(3팁)',3:'강회전(맥시멈)'}[tip];
+  const L=window.hbLang;
+  const tipLabel=L.t({1:'약회전(2팁)',2:'표준(3팁)',3:'강회전(맥시멈)'}[tip],{1:'Soft (2 tip)',2:'Standard (3 tip)',3:'Strong (max)'}[tip]);
 
   if(s.sys==='five'){
-    numsEl.innerHTML=numBox('수구수',s.cueNum,'cue')+
-      numBox('제1쿠션수',s.c1Num,'')+numBox('제3쿠션수',s.c3Num,'target');
-    let h=`<div>수구수 <b>${r0(s.cueNum)}</b> − 제3쿠션수 <b>${r0(s.c3Num)}</b>`+
-      `${s.tipAdj?` (당점 보정 ${s.tipAdj>0?'+':''}${s.tipAdj})`:''}`+
-      ` = 제1쿠션수 <b>${r0(s.c1Num)}</b></div>`;
-    // 무효 배치에서는 겨냥 지시를 내지 않는다 — 유효 범위 밖 숫자는 레일에
-    // 존재하지 않는 지점이라, 겨냥하라고 하면 없는 곳을 가리키는 셈이 된다.
+    numsEl.innerHTML=numBox(L.t('수구수','Cue#'),s.cueNum,'cue')+
+      numBox(L.t('제1쿠션수','1st cush#'),s.c1Num,'')+numBox(L.t('제3쿠션수','3rd cush#'),s.c3Num,'target');
+    let h=`<div>`+L.t(
+      `수구수 <b>${r0(s.cueNum)}</b> − 제3쿠션수 <b>${r0(s.c3Num)}</b>${s.tipAdj?` (당점 보정 ${s.tipAdj>0?'+':''}${s.tipAdj})`:''} = 제1쿠션수 <b>${r0(s.c1Num)}</b>`,
+      `Cue# <b>${r0(s.cueNum)}</b> − 3rd# <b>${r0(s.c3Num)}</b>${s.tipAdj?` (english adj ${s.tipAdj>0?'+':''}${s.tipAdj})`:''} = 1st# <b>${r0(s.c1Num)}</b>`)+`</div>`;
     if(s.valid&&!s.blockedT)
-      h+=`<div>상단 장쿠션 <b>${r0(s.c1Num)} 지점</b>(좌상 코너=50) 겨냥</div>`+
+      h+=`<div>`+L.t(`상단 장쿠션 <b>${r0(s.c1Num)} 지점</b>(좌상 코너=50) 겨냥`,`Aim top long rail <b>${r0(s.c1Num)}</b> (top-left corner = 50)`)+`</div>`+
         aimCard(s,tipLabel);
     h+=verdict(s)+expBadge(s);
     resEl.innerHTML=h;
   } else if(s.sys==='plus'){
-    numsEl.innerHTML=numBox('출발수',s.startNum,'cue')+
-      numBox('제1쿠션수',s.c1Adj,'')+numBox('도착수',s.c3Num,'target');
-    let h=`<div>도착수 <b>${r0(s.c3Num)}</b> − 출발수 <b>${r0(s.startNum)}</b>`+
-      `${tip!==2?' (당점 보정 포함)':''} = 제1쿠션수 <b>${r0(s.c1Adj)}</b></div>`;
+    numsEl.innerHTML=numBox(L.t('출발수','Start#'),s.startNum,'cue')+
+      numBox(L.t('제1쿠션수','1st cush#'),s.c1Adj,'')+numBox(L.t('도착수','Arrival#'),s.c3Num,'target');
+    let h=`<div>`+L.t(
+      `도착수 <b>${r0(s.c3Num)}</b> − 출발수 <b>${r0(s.startNum)}</b>${tip!==2?' (당점 보정 포함)':''} = 제1쿠션수 <b>${r0(s.c1Adj)}</b>`,
+      `Arrival# <b>${r0(s.c3Num)}</b> − Start# <b>${r0(s.startNum)}</b>${tip!==2?' (incl. english adj)':''} = 1st# <b>${r0(s.c1Adj)}</b>`)+`</div>`;
     if(s.valid&&!s.blockedT)
-      h+=`<div>우측 단쿠션 <b>${r0(s.c1Adj)} 지점</b>(우하 코너=0, 위로 10/칸) 겨냥</div>`+
+      h+=`<div>`+L.t(`우측 단쿠션 <b>${r0(s.c1Adj)} 지점</b>(우하 코너=0, 위로 10/칸) 겨냥`,`Aim right short rail <b>${r0(s.c1Adj)}</b> (bottom-right corner = 0, +10/diamond up)`)+`</div>`+
         aimCard(s,tipLabel);
     if(s.valid&&!s.nearBottom)
-      h+=`<div style="opacity:.65;font-size:12px">⚠ 플러스는 수구와 목표가 모두 `+
-        `하단 장쿠션 부근일 때 정확한 시스템입니다.</div>`;
+      h+=`<div style="opacity:.65;font-size:12px">`+L.t('⚠ 플러스는 수구와 목표가 모두 하단 장쿠션 부근일 때 정확한 시스템입니다.','⚠ Plus is accurate only when cue and target are both near the bottom long rail.')+`</div>`;
     h+=verdict(s);
     resEl.innerHTML=h;
   } else {
-    numsEl.innerHTML=numBox('제1적구수',s.objNum,'')+
-      numBox('제3쿠션수',s.c3Num,'target')+
-      numBox('기울기',s.slope,'cue');
-    const angleType = s.isObtuse ? '엇각(안쪽)' : '빗각(바깥쪽)';
-    let h=`<div>큐선 기울기 <b>${r1(s.cells)}칸</b> · <b>${angleType}</b> `+
-      `→ 기울기 보정값 <b>${s.slope>=0?'+':''}${r1(s.slope)}</b></div>`;
-    h+=`<div>제1적구수 <b>${r1(s.objNum)}</b> + 제3쿠션수 <b>${r1(s.c3Num)}</b>`+
-      ` ${s.slope>=0?'+':'−'} 기울기 <b>${Math.abs(s.slope)}</b>`+
-      `${s.verticalAdj>0?` + 세로보정 <b>${r1(s.verticalAdj)}</b>`:''}`+
-      ` = 총 볼값 <b>${r1(s.total)}</b></div>`;
+    numsEl.innerHTML=numBox(L.t('제1적구수','Object1#'),s.objNum,'')+
+      numBox(L.t('제3쿠션수','3rd cush#'),s.c3Num,'target')+
+      numBox(L.t('기울기','Slope'),s.slope,'cue');
+    const angleType = L.t(s.isObtuse?'엇각(안쪽)':'빗각(바깥쪽)', s.isObtuse?'obtuse (inside)':'acute (outside)');
+    let h=`<div>`+L.t(`큐선 기울기 <b>${r1(s.cells)}칸</b> · <b>${angleType}</b> → 기울기 보정값 <b>${s.slope>=0?'+':''}${r1(s.slope)}</b>`,
+      `Cue-line slope <b>${r1(s.cells)}</b> · <b>${angleType}</b> → slope adj <b>${s.slope>=0?'+':''}${r1(s.slope)}</b>`)+`</div>`;
+    h+=`<div>`+L.t(
+      `제1적구수 <b>${r1(s.objNum)}</b> + 제3쿠션수 <b>${r1(s.c3Num)}</b> ${s.slope>=0?'+':'−'} 기울기 <b>${Math.abs(s.slope)}</b>${s.verticalAdj>0?` + 세로보정 <b>${r1(s.verticalAdj)}</b>`:''} = 총 볼값 <b>${r1(s.total)}</b>`,
+      `Object1# <b>${r1(s.objNum)}</b> + 3rd# <b>${r1(s.c3Num)}</b> ${s.slope>=0?'+':'−'} slope <b>${Math.abs(s.slope)}</b>${s.verticalAdj>0?` + vert adj <b>${r1(s.verticalAdj)}</b>`:''} = total ball <b>${r1(s.total)}</b>`)+`</div>`;
     if(s.combos.length){
-      h+=`<div style="margin-top:6px">두께·당점 조합 (총합 일정):</div>`+
+      h+=`<div style="margin-top:6px">`+L.t('두께·당점 조합 (총합 일정):','Thickness · english combos (constant total):')+`</div>`+
         `<div class="combos">`;
       s.combos.forEach((c,i)=>{
         h+=`<span class="combo ${i===0?'best':''}">${thickAmountSVG(c.thick)}`+
           `${tipAmountSVG(c.tip)}`+
-          `<span class="ctxt"><b>${c.thick}/8</b> 두께 + <b>${c.tip}팁</b>`+
-          `<span>적구의 ${THICK_WORD[c.thick]||`${c.thick}/8`}을 덮음 · `+
-          `${c.tip?`당점은 중심에서 ${c.tip}팁`:'당점은 중심(무회전)'}</span></span></span>`;
+          `<span class="ctxt"><b>${c.thick}/8</b> ${L.t('두께','thick')} + <b>${c.tip}${L.t('팁','tip')}</b>`+
+          `<span>`+L.t(`적구의 ${THICK_WORD[c.thick]||`${c.thick}/8`}을 덮음 · ${c.tip?`당점은 중심에서 ${c.tip}팁`:'당점은 중심(무회전)'}`,
+            `covers ${c.thick}/8 of the ball · ${c.tip?`english ${c.tip} tip off center`:'center (no english)'}`)+`</span></span></span>`;
       });
-      h+=`</div><div class="cnote">두 그림은 왼쪽이 <b>두께</b>(적구를 얼마나 덮는가), `+
-        `오른쪽이 <b>당점</b>(수구 중심에서 얼마나 떨어뜨리는가)입니다. `+
-        `볼 시스템은 둘 다 <b>크기</b>만 내고 좌우는 규정하지 않아서, 당점 그림의 `+
-        `점 두 개는 <b>‘중심에서 이만큼 — 좌든 우든’</b>이라는 뜻입니다. `+
-        `어느 쪽인지는 당구대의 <b>큐선</b>을 보세요.</div>`;
+      h+=`</div><div class="cnote">`+L.t(
+        `두 그림은 왼쪽이 <b>두께</b>(적구를 얼마나 덮는가), 오른쪽이 <b>당점</b>(수구 중심에서 얼마나 떨어뜨리는가)입니다. 볼 시스템은 둘 다 <b>크기</b>만 내고 좌우는 규정하지 않아서, 당점 그림의 점 두 개는 <b>'중심에서 이만큼 — 좌든 우든'</b>이라는 뜻입니다. 어느 쪽인지는 당구대의 <b>큐선</b>을 보세요.`,
+        `Left figure is <b>thickness</b> (how much of the ball you cover); right is <b>english</b> (how far off the cue's center). The ball system gives only the <b>amount</b>, not left/right — the two dots mean <b>'this far from center — either side'</b>. Which side? Read the <b>cue line</b> on the table.`)+`</div>`;
       if(s.objNearRail){
-        h+=`<div class="miss" style="margin-top:6px">⚠ 제1적구가 쿠션에 근접 — `+
-          `키스 위험. 1/2보다 얇은 두께(2/8·3/8)에 팁수를 늘려 회전으로 보정하세요.</div>`;
+        h+=`<div class="miss" style="margin-top:6px">`+L.t('⚠ 제1적구가 쿠션에 근접 — 키스 위험. 1/2보다 얇은 두께(2/8·3/8)에 팁수를 늘려 회전으로 보정하세요.','⚠ Object 1 is near the rail — kiss risk. Use a thinner-than-half hit (2/8·3/8) and add tips to compensate with english.')+`</div>`;
       } else {
-        h+=`<div class="hit" style="margin-top:6px">→ 첫 조합(굵게)이 두께 부담이 가장 적습니다.</div>`;
+        h+=`<div class="hit" style="margin-top:6px">`+L.t('→ 첫 조합(굵게)이 두께 부담이 가장 적습니다.','→ The first combo (bold) has the least thickness demand.')+`</div>`;
       }
     } else {
-      h+=`<div class="miss">⚠ 총 볼값 ${r1(s.total)} — 두께+팁으로 낼 수 있는 범위(1~7) 밖입니다.</div>`+
-        sysfix('볼 시스템으로는 이 배치를 칠 두께·당점 조합이 없습니다.');
+      h+=`<div class="miss">`+L.t(`⚠ 총 볼값 ${r1(s.total)} — 두께+팁으로 낼 수 있는 범위(1~7) 밖입니다.`,`⚠ Total ball ${r1(s.total)} is outside the achievable range (1–7) of thickness+tips.`)+`</div>`+
+        sysfix(L.t('볼 시스템으로는 이 배치를 칠 두께·당점 조합이 없습니다.','No thickness/english combo can play this layout with the ball system.'));
     }
     resEl.innerHTML=h;
   }
@@ -4657,57 +4659,47 @@ function numBox(lbl,val,cls){
     `<div class="val">${typeof val==='number'?(Number.isInteger(val)?val:val.toFixed(1)):val}</div></div>`;
 }
 function verdict(s){
-  // 제1적구가 계산 경로 위에 있으면 경고 (빈쿠션 시스템은 제1적구를 무시하므로)
+  const L=window.hbLang;
   const blockWarn=s.blocked?
-    `<div class="miss">⚠ 제1적구(분홍)가 계산 경로 위에 있습니다 — 실제로는 먼저 맞아 `+
-    `진로가 바뀝니다. 배치를 확인하거나 [경로 계산]을 사용하세요.</div>`:'';
-  // 제2적구가 쿠션 전 출발 경로를 막으면 경고 — 쿠션을 돌기 전에 먼저 맞는다
+    `<div class="miss">`+L.t('⚠ 제1적구(분홍)가 계산 경로 위에 있습니다 — 실제로는 먼저 맞아 진로가 바뀝니다. 배치를 확인하거나 [경로 계산]을 사용하세요.','⚠ Object 1 sits on the calculated path — it would be hit first and change the route. Check the layout or use [Calculate].')+`</div>`:'';
   const targetWarn=s.blockedT?
-    `<div class="miss">⚠ 제2적구(빨강)가 쿠션 전 <b>출발 경로</b> 위에 있습니다 — `+
-    `쿠션을 돌기 전에 먼저 맞습니다.</div>`:'';
-  // 출발이 막히면 그게 결론 — 초록 '득점 라인'을 숨기고 행동을 준다
+    `<div class="miss">`+L.t('⚠ 제2적구(빨강)가 쿠션 전 <b>출발 경로</b> 위에 있습니다 — 쿠션을 돌기 전에 먼저 맞습니다.','⚠ Object 2 (red) sits on the <b>start path</b> before the cushion — it gets hit before the cue banks.')+`</div>`:'';
   if(s.valid&&s.blockedT)
     return blockWarn+targetWarn+
-      sysfix(`이 배치는 ${s.sys==='plus'?'플러스':'파이브앤하프'} 계산대로 칠 수 없습니다.`);
+      sysfix(L.t(`이 배치는 ${s.sys==='plus'?'플러스':'파이브앤하프'} 계산대로 칠 수 없습니다.`,`This layout can't be played by the ${s.sys==='plus'?'Plus':'Five-and-a-half'} calculation.`));
   if(!s.valid){
     if(s.reason==='notrack' && s.sys==='five'){
       const cm=s.nearMiss?Math.round(s.err/(PW/2844)/10):null;
-      return `<div class="miss">⚠ 3쿠션 트랙을 제2적구까지 보낼 수 없는 배치입니다`+
-        (cm!=null?` — <b>빨간 점선</b>이 가장 가까운 트랙이고 약 <b>${cm}cm</b> 빗나갑니다`:'')+
-        `.</div>`+
-        sysfix('파이브앤하프는 수구가 노란 구역(수구수 20~90)에 있고, 제2적구가 3쿠션 이후 트랙 위에 있어야 합니다.');
+      return `<div class="miss">`+L.t(`⚠ 3쿠션 트랙을 제2적구까지 보낼 수 없는 배치입니다${cm!=null?` — <b>빨간 점선</b>이 가장 가까운 트랙이고 약 <b>${cm}cm</b> 빗나갑니다`:''}.`,
+        `⚠ The 3-cushion track can't reach Object 2 in this layout${cm!=null?` — the <b>red dashed line</b> is the nearest track and misses by about <b>${cm}cm</b>`:''}.`)+`</div>`+
+        sysfix(L.t('파이브앤하프는 수구가 노란 구역(수구수 20~90)에 있고, 제2적구가 3쿠션 이후 트랙 위에 있어야 합니다.','Five-and-a-half needs the cue in the yellow zone (Cue# 20–90) and Object 2 on the post-3rd-cushion track.'));
     }
     if(s.reason==='c1range' && s.sys==='five')
-      return `<div class="miss">⚠ 수구수 ${r0(s.cueNum)} · 제1쿠션수 ${r0(s.c1Num)} — `+
-        `파이브앤하프 유효 범위 밖입니다.</div>`+
-        sysfix('수구를 노란 구역(수구수 20~90)으로 옮기면 이 시스템이 맞습니다. 빨간 점선은 범위 밖이라 신뢰할 수 없습니다.');
+      return `<div class="miss">`+L.t(`⚠ 수구수 ${r0(s.cueNum)} · 제1쿠션수 ${r0(s.c1Num)} — 파이브앤하프 유효 범위 밖입니다.`,`⚠ Cue# ${r0(s.cueNum)} · 1st# ${r0(s.c1Num)} — outside the five-and-a-half valid range.`)+`</div>`+
+        sysfix(L.t('수구를 노란 구역(수구수 20~90)으로 옮기면 이 시스템이 맞습니다. 빨간 점선은 범위 밖이라 신뢰할 수 없습니다.','Move the cue into the yellow zone (Cue# 20–90) for this system to apply. The red dashed line is out of range and unreliable.'));
     if(s.reason==='c1range' && s.sys==='plus')
-      return `<div class="miss">⚠ 제1쿠션수 ${r0(s.c1Adj)} — 플러스 유효 구간(15~40) 밖입니다.</div>`+
-        sysfix('플러스는 수구와 목표가 모두 하단 노란 구역에 있을 때만 맞습니다. 그래서 경로를 그리지 않았습니다.');
+      return `<div class="miss">`+L.t(`⚠ 제1쿠션수 ${r0(s.c1Adj)} — 플러스 유효 구간(15~40) 밖입니다.`,`⚠ 1st# ${r0(s.c1Adj)} — outside the Plus valid range (15–40).`)+`</div>`+
+        sysfix(L.t('플러스는 수구와 목표가 모두 하단 노란 구역에 있을 때만 맞습니다. 그래서 경로를 그리지 않았습니다.','Plus applies only when cue and target are both in the bottom yellow zone, so no path was drawn.'));
     if(s.reason==='above' && s.sys==='plus')
-      return `<div class="miss">⚠ 수구가 제1쿠션 지점(우측 단쿠션 ${r0(s.c1Adj)})보다 <b>위</b>에 있습니다 — `+
-        `이 배치에서 수구는 그 지점을 향해 <b>내려가며</b> 맞으므로, 거기서 상단 장쿠션으로 `+
-        `올라가는 플러스 경로는 나올 수 없습니다.</div>`+
-        sysfix('플러스는 수구가 1쿠션 지점보다 아래에 있어야 성립합니다. 수구를 하단 쪽으로 내리면 이 시스템이 맞습니다.');
+      return `<div class="miss">`+L.t(`⚠ 수구가 제1쿠션 지점(우측 단쿠션 ${r0(s.c1Adj)})보다 <b>위</b>에 있습니다 — 이 배치에서 수구는 그 지점을 향해 <b>내려가며</b> 맞으므로, 거기서 상단 장쿠션으로 올라가는 플러스 경로는 나올 수 없습니다.`,
+        `⚠ The cue is <b>above</b> the 1st-cushion point (right short rail ${r0(s.c1Adj)}) — it would strike going <b>down</b>, so the plus path back up to the top long rail can't form.`)+`</div>`+
+        sysfix(L.t('플러스는 수구가 1쿠션 지점보다 아래에 있어야 성립합니다. 수구를 하단 쪽으로 내리면 이 시스템이 맞습니다.','Plus needs the cue below the 1st-cushion point. Move the cue toward the bottom for it to apply.'));
     if(s.reason==='impossible')
-      return `<div class="miss">⚠ 이 배치에서는 계산 경로가 물리적으로 성립하지 않습니다 `+
-        `— 수구가 쿠션에 너무 붙어 있거나 1쿠션이 코너에 걸려 반사가 나오지 않습니다.</div>`+
-        sysfix('배치를 조금 옮기거나 물리 경로로 실제 답을 확인하세요.');
-    return `<div class="miss">⚠ 계산값이 이 시스템의 적용 범위를 벗어납니다.</div>`+
-      sysfix('다른 시스템이 더 적합한 배치입니다.');
+      return `<div class="miss">`+L.t('⚠ 이 배치에서는 계산 경로가 물리적으로 성립하지 않습니다 — 수구가 쿠션에 너무 붙어 있거나 1쿠션이 코너에 걸려 반사가 나오지 않습니다.','⚠ The calculated path is physically impossible here — the cue is too close to a rail, or the 1st cushion hits a corner with no reflection.')+`</div>`+
+        sysfix(L.t('배치를 조금 옮기거나 물리 경로로 실제 답을 확인하세요.','Move the balls a bit, or use the physics path for the real answer.'));
+    return `<div class="miss">`+L.t('⚠ 계산값이 이 시스템의 적용 범위를 벗어납니다.','⚠ The computed value is outside this system\'s range.')+`</div>`+
+      sysfix(L.t('다른 시스템이 더 적합한 배치입니다.','Another system fits this layout better.'));
   }
   if(s.sys==='plus')
-    return blockWarn+`<div class="hit">→ 단-장-장 진행 · 우측 단쿠션 ${r0(s.c1Adj)} 지점을 겨냥하세요. `+
-      `도착수 ${r0(s.c3Num)} 지점(하단)으로 돌아옵니다.</div>`;
+    return blockWarn+`<div class="hit">`+L.t(`→ 단-장-장 진행 · 우측 단쿠션 ${r0(s.c1Adj)} 지점을 겨냥하세요. 도착수 ${r0(s.c3Num)} 지점(하단)으로 돌아옵니다.`,`→ short-long-long path · aim right short rail ${r0(s.c1Adj)}. It returns to arrival ${r0(s.c3Num)} (bottom).`)+`</div>`;
   if(s.ok)
-    return blockWarn+`<div class="hit">→ 3쿠션 ${r0(s.c3Num)} 경유 · 트랙 오차 ${r0(s.err)}px · 득점 라인</div>`;
-  return blockWarn+`<div class="miss">→ 트랙이 목표에서 ${r0(s.err)}px 벗어남 — 당점을 바꾸거나 배치를 확인하세요.</div>`;
+    return blockWarn+`<div class="hit">`+L.t(`→ 3쿠션 ${r0(s.c3Num)} 경유 · 트랙 오차 ${r0(s.err)}px · 득점 라인`,`→ via 3rd cushion ${r0(s.c3Num)} · track error ${r0(s.err)}px · scoring line`)+`</div>`;
+  return blockWarn+`<div class="miss">`+L.t(`→ 트랙이 목표에서 ${r0(s.err)}px 벗어남 — 당점을 바꾸거나 배치를 확인하세요.`,`→ track misses target by ${r0(s.err)}px — change english or check the layout.`)+`</div>`;
 }
-// 시스템이 안 맞을 때 붙이는 행동 블록 — 왜 안 되는지 길게 쓰는 대신,
-// 이 배치의 실제 답인 물리 경로를 한 번에 볼 수 있게 한다.
+// 시스템이 안 맞을 때 붙이는 행동 블록 — 물리 경로로 실제 답을 볼 수 있게 한다.
 function sysfix(why){
   return `<div class="sysfix"><button class="tool primary" data-act="phys">`+
-    `🎯 물리 경로로 답 보기</button><span class="why">${why}</span></div>`;
+    window.hbLang.t('🎯 물리 경로로 답 보기','🎯 See the answer via physics path')+`</button><span class="why">${why}</span></div>`;
 }
 // 결과 영역은 매번 innerHTML로 다시 그려지므로 위임으로 받는다
 document.getElementById('g3-result').addEventListener('click',e=>{
@@ -5832,7 +5824,7 @@ function renderPhyCards(){
   if(n) n.addEventListener('click',()=>rec(false));
 })();
 // 헤더 컨트롤(언어·당구대 색) 변경 시 3구 갱신
-window.addEventListener('hblang', function(){ try{ buildToolbar(); renderPhyCards(); if(typeof setSystemText==='function') setSystemText(); if(typeof updateSideUI==='function') updateSideUI(); }catch(e){} });
+window.addEventListener('hblang', function(){ try{ buildToolbar(); renderPhyCards(); if(typeof setSystemText==='function') setSystemText(); if(solution&&typeof showResult==='function') showResult(solution); if(typeof updateSideUI==='function') updateSideUI(); }catch(e){} });
 window.addEventListener('hbfelt', function(){ try{ draw(); if(typeof drawP3==='function') drawP3(); }catch(e){} });
 function drawPhyRoute(r,color,alpha){
   ctx.save(); ctx.globalAlpha=alpha;
