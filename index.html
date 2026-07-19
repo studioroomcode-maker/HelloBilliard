@@ -4716,6 +4716,14 @@ function draw(){
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle=(window.hbFelt&&window.hbFelt.colors().line)||'#16573b'; ctx.lineWidth=2;
   ctx.strokeRect(play.x0,play.y0,PW,PH);
+  // 시스템 미선택 기본 화면에는 4구 다이와 같은 레일 다이아몬드 점을 찍는다.
+  // (시스템을 켜면 그 자리에 수구수·쿠션수 숫자가 대신 들어가므로 생략)
+  if(!system){
+    ctx.fillStyle='rgba(244,241,232,.4)';
+    const dot=(x,y)=>{ ctx.beginPath(); ctx.arc(x,y,2,0,7); ctx.fill(); };
+    for(let i=1;i<8;i++){ const x=play.x0+PW*i/8; dot(x,play.y0-17); dot(x,play.y1+17); }
+    for(let i=1;i<4;i++){ const y=play.y0+PH*i/4; dot(play.x0-17,y); dot(play.x1+17,y); }
+  }
   drawCoords();
   if(solution) drawSolution(solution);
   if(phyRoutes&&phyRoutes.length){
