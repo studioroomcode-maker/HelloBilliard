@@ -52,10 +52,13 @@ async function run() {
   for (let k = 0; k < 3000 && !els['g3-phyRoutes'].innerHTML; k++) await new Promise(r => setImmediate(r));
   return routes() || [];
 }
-const missesTarget = (r) => {
-  const m = Math.min(...r.path.map(q => Math.hypot(q.x - balls.target.x, q.y - balls.target.y)));
-  return m > 2.5 * BALL_R;   // 선이 그려진 제2적구를 눈에 띄게 빗나감
+const missesBall = (r, b) => {
+  const m = Math.min(...r.path.map(q => Math.hypot(q.x - b.x, q.y - b.y)));
+  return m > 2.5 * BALL_R;   // 선이 그려진 적구를 눈에 띄게 빗나감
 };
+// 수구는 두 적구를 모두 맞히므로 정상 경로는 두 적구의 그려진 위치를 모두 지난다.
+// 어느 쪽이든 밀려나(키스) 선이 빗나가면 카드가 이유를 밝혀야 한다.
+const missesTarget = (r) => missesBall(r, balls.obj) || missesBall(r, balls.target);
 
 (async () => {
   // ── 1) 키스가 잘 나오는 배치: 빗나가는 경로엔 반드시 kiss 플래그 ──

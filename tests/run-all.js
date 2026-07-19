@@ -44,7 +44,7 @@ const t0 = Date.now();
 for (const c of CASES) {
   const started = Date.now();
   const r = spawnSync(process.execPath, [path.join(__dirname, c.f)], {
-    encoding: 'utf8', timeout: 240000,
+    encoding: 'utf8', timeout: 360000,   // 3구 물리 경로 테스트는 solve3를 수십 번 호출 — 느린 머신 여유
   });
   const out = (r.stdout || '') + (r.stderr || '');
   const problems = [];

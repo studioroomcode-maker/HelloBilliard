@@ -5437,7 +5437,7 @@ async function solve3(onProgress){
   const spinN=P.skill.keys?Object.keys(P.skill.keys).length:SPINS3.length;
   // 진행률 추정 — 전수 스캔 + 상위 10후보 MC
   //   + 표시 3경로 × (속도 2종 재조준 17 + 속도 3종 MC 24 + 확정 속도 정밀 24)
-  const est=2*spinN*73 + spinN*4*41 + 10*24 + 3*(2*17 + 3*24 + 24) + 5;
+  const est=2*spinN*73 + spinN*4*33 + 18*24 + 6*(2*17 + 3*24 + 24) + 5;
   const bump=async()=>{
     done++;
     if((done&7)===0){
@@ -5453,7 +5453,10 @@ async function solve3(onProgress){
       if(P.skill.keys&&!P.skill.keys[spin.key]) continue;  // 실력별 당점 제한
       let run=[];
       const flush=()=>{
-        if(run.length>=2){
+        // 코너·먼 거리 배치는 성공 창이 스캔 간격보다 좁아 1회만 잡히는 경우가
+        // 많다 — run>=2 만 후보로 삼으면 만들 수 있는 경로가 통째로 사라진다.
+        // 1회 성공도 후보로 올리고, 재현성은 뒤의 몬테카를로(24회)가 걸러낸다.
+        if(run.length>=1){
           const m=run[(run.length/2)|0];
           cands.push({...m, tol:run.length});
         }
@@ -5486,13 +5489,13 @@ async function solve3(onProgress){
     {ax:'y', v:play.y0+BALL_R}, {ax:'y', v:play.y1-BALL_R},
     {ax:'x', v:play.x0+BALL_R}, {ax:'x', v:play.x1-BALL_R},
   ];
-  const NBANK3=40;
+  const NBANK3=32;
   for(const spin of SPINS3){
     if(P.skill.keys&&!P.skill.keys[spin.key]) continue;  // 실력별 당점 제한
     for(const wall of bankWalls3){
       let run=[];
       const flush=()=>{
-        if(run.length>=2){ const m=run[(run.length/2)|0]; cands.push({...m, tol:run.length}); }
+        if(run.length>=1){ const m=run[(run.length/2)|0]; cands.push({...m, tol:run.length}); }
         run=[];
       };
       for(let i=0;i<=NBANK3;i++){
@@ -5588,7 +5591,7 @@ async function solve3(onProgress){
     return {gather:Math.round(5+(1-tt)*90), gatherAvg:d};
   };
   const out=[];
-  for(const c of cands.slice(0,10)){
+  for(const c of cands.slice(0,18)){
     const N=24;
     const prob=await mc3(c,N);
     const ok=Math.round(prob*N);
@@ -5600,16 +5603,16 @@ async function solve3(onProgress){
     out.push({...c, prob, gather,
       score:prob*100+c.tol+(gather||0)*0.05});
   }
-  out.sort((a,b)=>b.score-a.score);
-  const picked=[], used=new Set();
+  // 성공률(쉬운 것) 순으로 정렬하고, 전략이 같은 near-중복은 접는다 —
+  // (첫 적구·뱅크 여부·쿠션수·당점)이 같으면 조준점만 다른 사실상 같은 경로다.
+  // 서로 다른 전략의 경로가 최대 6개 뽑히게 해 재현성 재검(kept) 뒤 5개까지 남긴다.
+  out.sort((a,b)=>b.prob-a.prob || b.score-a.score);
+  const picked=[], sig=new Set();
   for(const r of out){
-    if(picked.length>=3) break;
-    if(used.has(r.spin.key)) continue;
-    picked.push(r); used.add(r.spin.key);
-  }
-  for(const r of out){
-    if(picked.length>=3) break;
-    if(!picked.includes(r)) picked.push(r);
+    if(picked.length>=6) break;
+    const key=`${r.fk}|${r.bank?1:0}|${r.cush}|${r.spin.key}`;
+    if(sig.has(key)) continue;
+    sig.add(key); picked.push(r);
   }
   // 표시될 경로마다 속도 3종을 각각 24회씩 실측해 '가장 잘 들어가는 속도'를 고른다.
   // 예전에는 기준 속도 하나로만 돌리고 카드에 '강(4레일)'을 하드코딩했다 —
@@ -5645,9 +5648,16 @@ async function solve3(onProgress){
     best.hits=[sim.firstInfo,sim.secondInfo].filter(Boolean);
     best.cush=sim.cushAtSecond;
     best.cushBefore=sim.cushBeforeFirst||0;   // 첫 적구 전 쿠션(와리가리 선행 쿠션)
-    // 키스 — 제2적구가 수구에 맞기 전 제1적구에 밀려났으면, 그림의 선이 (시작
-    // 위치에 그려진) 제2적구를 빗나가 보인다. 물리는 실제지만 그림이 오해를 준다.
-    best.kiss=(sim.secondMoved||0) > 1.5*BALL_R;
+    // 키스 — 둘째 적구가 수구에 맞기 전 밀려났으면, 그림의 선이 (시작 위치에
+    // 그려진) 그 적구를 빗나가 보인다. 물리는 실제지만 그림이 오해를 준다.
+    // 판정은 '기록된 수구 경로가 그려진 둘째 적구를 얼마나 빗나가는가'로 한다 —
+    // 화면에서 실제로 보이는 어긋남 그대로라, 표시 임계(2.5R)와 어긋나지 않는다.
+    best.kiss=false;
+    if(sim.second){
+      let mind=Infinity;
+      for(const q of sim.paths.cue){ const dd=Math.hypot(q.x-balls[sim.second].x,q.y-balls[sim.second].y); if(dd<mind) mind=dd; }
+      best.kiss=mind>2.5*BALL_R;
+    }
     const g=gather3(sim.final);
     best.gather=g.gather; best.gatherAvg=g.gatherAvg;
     // 수구가 실제로 구른 거리 — '몇 레일 파워'의 근거가 되는 측정값
