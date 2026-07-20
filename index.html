@@ -1069,10 +1069,13 @@
         <option value="ko2">표준 용어</option>
         <option value="en">English</option>
       </select>
-      <select id="feltSel" class="hsel" aria-label="당구대 색">
-        <option value="green">녹색 대</option>
-        <option value="blue">파란 대</option>
-      </select>
+      <span class="felt-pick">
+        <span class="felt-dot" id="feltDot" aria-hidden="true"></span>
+        <select id="feltSel" class="hsel" aria-label="당구대 색">
+          <option value="green">녹색 대</option>
+          <option value="blue">파란 대</option>
+        </select>
+      </span>
       <button id="statsChip" class="pro-chip" type="button" aria-label="내 연습 기록"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 13.5h11"/><path d="M3.5 11 6.5 7.5 9 9.5 13 4.5"/></svg>기록</button>
       <button id="proTeaser" class="pro-chip" type="button" aria-label="Hello Billiard Pro 안내">✦ Pro</button>
     </div>
@@ -1532,6 +1535,21 @@
     .hctl .hsel { padding: 5px 5px; font-size: 11px; min-width: 0; }
     .hctl .pro-chip { padding: 5px 7px; font-size: 11px; white-space: nowrap; }
   }
+
+  /* ===== 다이 색 칩 — 매트 마감 =====
+     <option> 안에는 SVG·색상을 넣을 수 없어, 셀렉트 위에 작은 칩을 겹쳐 얹고
+     왼쪽 패딩으로 자리를 비운다. 색은 실제 펠트 색(hbFelt)을 그대로 쓴다.
+     매트 = 그라데이션·광택·그림자 없이 납작한 단색 + 아주 옅은 안쪽 테두리만.
+     (모바일 .hctl .hsel 패딩 규칙보다 뒤에 와야 padding-left 가 먹는다) */
+  .felt-pick { position: relative; display: inline-flex; align-items: center; }
+  .felt-pick .felt-dot {
+    position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+    width: 11px; height: 11px; border-radius: 3px;
+    background: #1f6b4a;                       /* JS가 현재 펠트 색으로 갱신 */
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.38);
+    pointer-events: none;
+  }
+  .felt-pick .hsel { padding-left: 26px; }
 
   /* ===== 사진 인식 — 버튼을 사진 위에 띄운다 =====
      사진이 길면 버튼이 화면 밖으로 밀려 '다음에 뭘 눌러야 하는지' 안 보였다.
@@ -7292,8 +7310,16 @@ if(typeof window!=='undefined')
   window.hbApplyI18n&&window.hbApplyI18n();   // 최초 로드 시 반영(저장된 언어가 en이면)
   if(felt){
     if(window.hbFelt) felt.value=window.hbFelt.get();
+    // 셀렉트 위에 얹은 매트 칩을 실제 펠트 색으로 맞춘다
+    var fdot=document.getElementById('feltDot');
+    function syncFeltDot(){
+      if(!fdot||!window.hbFelt) return;
+      try{ fdot.style.background=window.hbFelt.colors().base; }catch(e){}
+    }
+    syncFeltDot();
     felt.addEventListener('change', function(){
       if(window.hbFelt) window.hbFelt.set(felt.value);
+      syncFeltDot();
       try{ window.dispatchEvent(new Event('hbfelt')); }catch(e){}
       window.hbTrack&&window.hbTrack('felt',{v:felt.value});
     });
