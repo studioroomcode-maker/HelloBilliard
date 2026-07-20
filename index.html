@@ -1076,7 +1076,6 @@
           <option value="blue">파란 대</option>
         </select>
       </span>
-      <button id="statsChip" class="pro-chip" type="button" aria-label="내 연습 기록"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 13.5h11"/><path d="M3.5 11 6.5 7.5 9 9.5 13 4.5"/></svg>기록</button>
       <button id="proTeaser" class="pro-chip" type="button" aria-label="Hello Billiard Pro 안내">✦ Pro</button>
     </div>
     <button id="themeToggle" class="theme-toggle" type="button" aria-label="라이트/다크 테마 전환" title="라이트/다크 전환">🌙</button>
@@ -1494,21 +1493,6 @@
   .pro-upsell span{ color:#e8b45f; font-weight:700; }
   /* 결과 기록 행 */
   /* 기록(성장) 모달 통계 */
-  .hist-streak{ display:flex; align-items:baseline; gap:8px; margin:8px 0 14px; }
-  .hist-streak .n{ font-size:30px; font-weight:800; color:#e8b45f;
-    font-variant-numeric:tabular-nums; line-height:1; }
-  .hist-streak .u{ font-size:13px; color:var(--tx-2,#c9c2b0); }
-  .hist-grid{ display:flex; gap:9px; margin-bottom:16px; }
-  .hist-stat{ flex:1; text-align:center; padding:12px 8px; border-radius:14px;
-    background:var(--surface-2,#241d15); border:1px solid var(--line-soft,#3a3327); }
-  .hist-stat .v{ font-size:22px; font-weight:800; color:var(--tx-1,#f4f1e8);
-    font-variant-numeric:tabular-nums; line-height:1; }
-  .hist-stat .l{ margin-top:5px; font-size:11px; color:var(--tx-3,#8a8272); }
-  .hist-chart-t{ font-size:12px; color:var(--tx-3,#8a8272); margin:0 0 7px; letter-spacing:.03em; }
-  .hist-empty{ font-size:13px; color:var(--tx-2,#c9c2b0); line-height:1.6; text-align:center; padding:10px 0; }
-  .hist-clear{ margin-top:14px; text-align:center; }
-  .hist-clear button{ background:none; border:none; color:var(--tx-3,#8a8272);
-    font-size:12px; text-decoration:underline; cursor:pointer; }
 
   /* ===== 모바일 헤더 컨트롤을 한 줄로 =====
      용어·대 색·기록·Pro 가 좁은 폭에서 두 줄로 갈라졌다. 테마 토글 자리(52px)는
@@ -1697,16 +1681,6 @@
   </div>
 </div>
 
-<!-- ===== 내 기록(성장 추적) 모달 ===== -->
-<div id="histModal" class="pro-modal" hidden>
-  <div class="pro-modal-backdrop" data-histclose></div>
-  <div class="pro-card" role="dialog" aria-modal="true" aria-labelledby="histTitle">
-    <button class="pro-x" type="button" data-histclose aria-label="닫기">✕</button>
-    <h2 id="histTitle" data-en="📈 My record">📈 내 기록</h2>
-    <div id="histBody"></div>
-    <div class="hist-clear"><button type="button" id="histClear" data-en="Clear record">기록 지우기</button></div>
-  </div>
-</div>
 
 <!-- Vercel Web Analytics (같은 오리진·쿠키 없음). Vercel 대시보드에서 'Web Analytics'를
      켜야 집계됨. 안 켜져 있으면 404로 조용히 무시되고 로컬 __hbStats() 만 동작. -->
@@ -1862,37 +1836,6 @@ window.hbPro=(function(){
     FREE_PHOTO_PER_DAY:FREE_PHOTO_PER_DAY, FREE_3GU_ROUTES:FREE_3GU_ROUTES };
 })();
 
-// ===== 연습 기록 / 성장 추적 (로컬, 백엔드 0) =====
-// 쳐보고 성공/실패를 남기면 성공률 추이·연속일이 쌓인다 — 구독(2단계)의 데이터 토대이자
-// 지금 유저에게 바로 쓸모. 콘솔 __hbHistory() 로 확인. 나중에 클라우드 동기화로 확장.
-window.hbHistory=(function(){
-  var KEY='hb_history', SKEY='hb_streak', CAP=2000;
-  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return []; } }
-  function save(a){ try{ localStorage.setItem(KEY,JSON.stringify(a.slice(-CAP))); }catch(e){} }
-  function today(){ try{ return new Date().toISOString().slice(0,10); }catch(e){ return ''; } }
-  function prevDay(d){ try{ return new Date(Date.parse(d)-86400000).toISOString().slice(0,10); }catch(e){ return ''; } }
-  function bumpStreak(){
-    try{ var s=JSON.parse(localStorage.getItem(SKEY)||'{}'), d=today();
-      if(s.last===d) return; s.n=(s.last===prevDay(d))?(s.n|0)+1:1; s.last=d;
-      localStorage.setItem(SKEY,JSON.stringify(s)); }catch(e){}
-  }
-  function streak(){ try{ var s=JSON.parse(localStorage.getItem(SKEY)||'{}'); if(!s.last) return 0;
-    var d=today(); return (s.last===d||s.last===prevDay(d))?(s.n|0):0; }catch(e){ return 0; } }
-  function log(entry){ var a=load(); a.push(Object.assign({t:Date.now(),d:today()},entry||{}));
-    save(a); bumpStreak();
-    window.hbTrack&&window.hbTrack('shot_logged',{mode:entry&&entry.mode,made:entry&&entry.made?1:0});
-    return stats(); }
-  function stats(){
-    var a=load(), makes=0; for(var i=0;i<a.length;i++) if(a[i].made) makes++;
-    var recent=a.slice(-20), rm=0; for(var j=0;j<recent.length;j++) if(recent[j].made) rm++;
-    var byDay={}; a.forEach(function(e){ var d=e.d||''; (byDay[d]=byDay[d]||{a:0,m:0}).a++; if(e.made) byDay[d].m++; });
-    return { attempts:a.length, makes:makes, rate:a.length?makes/a.length:0,
-      recentRate:recent.length?rm/recent.length:0, recentN:recent.length, streak:streak(), byDay:byDay };
-  }
-  window.__hbHistory=function(){ return { entries:load(), stats:stats() }; };
-  return { log:log, stats:stats, streak:streak,
-    clear:function(){ try{ localStorage.removeItem(KEY); localStorage.removeItem(SKEY); }catch(e){} } };
-})();
 
 // ===== 당구대 천 색 (녹색/파란색) =====
 window.hbFelt=(function(){
@@ -7075,20 +7018,30 @@ if(typeof window!=='undefined')
 })();
 
 // ===== 종목 전환 =====
+// 마지막으로 보던 탭을 기억한다 — 4구만 쓰는 사람이 매번 4구로 바꾸지 않아도 되게.
 (function(){
+  var KEY='hb_mode';
   var tabs = document.querySelectorAll('#sportTabs button');
+  function apply(mode, save){
+    tabs.forEach(function(x){ x.classList.toggle('on', x.dataset.mode===mode); });
+    document.getElementById('panel-m4').classList.toggle('show', mode==='m4');
+    document.getElementById('panel-m3').classList.toggle('show', mode==='m3');
+    if(save){ try{ localStorage.setItem(KEY, mode); }catch(e){} }
+    // 보드 고정(sticky) 여부는 지금 보이는 탭의 사진 패널 기준으로 갱신
+    var pp=document.getElementById(mode==='m4'?'g4-photoPanel':'g3-photoPanel');
+    if(document.body) document.body.classList.toggle('photo-open', !!(pp&&pp.style.display==='block'));
+  }
   tabs.forEach(function(b){
     b.addEventListener('click', function(){
-      tabs.forEach(function(x){ x.classList.remove('on'); });
-      b.classList.add('on');
-      document.getElementById('panel-m4').classList.toggle('show', b.dataset.mode==='m4');
-      document.getElementById('panel-m3').classList.toggle('show', b.dataset.mode==='m3');
+      apply(b.dataset.mode, true);
       window.hbTrack&&window.hbTrack('mode',{to:b.dataset.mode});
-      // 보드 고정(sticky) 여부는 지금 보이는 탭의 사진 패널 기준으로 갱신
-      var pp=document.getElementById(b.dataset.mode==='m4'?'g4-photoPanel':'g3-photoPanel');
-      document.body.classList.toggle('photo-open', !!(pp&&pp.style.display==='block'));
     });
   });
+  // 저장된 탭 복원 (없으면 기본 4구 그대로)
+  try{
+    var saved=localStorage.getItem(KEY);
+    if(saved==='m3'||saved==='m4') apply(saved,false);
+  }catch(e){}
 })();
 
 // ===== 라이트/다크 테마 토글 =====
@@ -7212,54 +7165,6 @@ if(typeof window!=='undefined')
   window.hbTrack&&window.hbTrack('app_open');
 })();
 
-// ===== 내 기록(성장 추적) 모달 =====
-(function(){
-  var modal=document.getElementById('histModal');
-  var chip=document.getElementById('statsChip');
-  if(!modal||!chip) return;
-  var lastFocus=null;
-  function pct(x){ return Math.round((x||0)*100); }
-  function render(){
-    var body=document.getElementById('histBody'); if(!body) return;
-    var s=window.hbHistory?window.hbHistory.stats():{attempts:0};
-    var L=window.hbLang;
-    if(!s.attempts){
-      body.innerHTML='<div class="hist-empty">'+L.t('아직 기록이 없어요.<br>경로를 계산한 뒤 <b>성공/실패</b>를 남기면<br>성공률 추이와 연속일이 쌓입니다.',
-        'No record yet.<br>Calculate a path, then log <b>Made/Missed</b><br>to build your success trend & streak.')+'</div>';
-      return;
-    }
-    var days=Object.keys(s.byDay).sort().slice(-14);
-    var H=64, bw=18, gap=8;
-    var bars=days.map(function(d,i){
-      var o=s.byDay[d], rate=o.a?o.m/o.a:0;
-      var h=Math.max(3, rate*(H-14)), x=i*(bw+gap), y=H-h;
-      var col=rate>=0.5?'#5fd08a':(rate>=0.25?'#e8b45f':'#e0705a');
-      return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h.toFixed(1)+'" rx="3" fill="'+col+'">'+
-        '<title>'+d+' · '+pct(rate)+'% ('+o.m+'/'+o.a+')</title></rect>';
-    }).join('');
-    var chart=days.length
-      ? '<p class="hist-chart-t">'+L.t('일자별 성공률 (최근 '+days.length+'일)','Success by day (last '+days.length+')')+'</p>'+
-        '<div style="overflow-x:auto"><svg width="'+(days.length*(bw+gap))+'" height="'+H+'" '+
-        'role="img" aria-label="'+L.t('일자별 성공률 막대 그래프','Success rate by day')+'">'+bars+'</svg></div>' : '';
-    body.innerHTML=
-      '<div class="hist-streak"><span class="n">🔥 '+s.streak+'</span><span class="u">'+L.t('일 연속 기록','day streak')+'</span></div>'+
-      '<div class="hist-grid">'+
-        '<div class="hist-stat"><div class="v">'+s.attempts+'</div><div class="l">'+L.t('누적 시도','Attempts')+'</div></div>'+
-        '<div class="hist-stat"><div class="v">'+pct(s.rate)+'%</div><div class="l">'+L.t('전체 성공률','Overall')+'</div></div>'+
-        '<div class="hist-stat"><div class="v">'+pct(s.recentRate)+'%</div><div class="l">'+L.t('최근 '+s.recentN+'샷','Last '+s.recentN)+'</div></div>'+
-      '</div>'+chart;
-  }
-  function open(){ lastFocus=document.activeElement; render(); modal.hidden=false;
-    window.hbTrack&&window.hbTrack('history_open'); }
-  function close(){ modal.hidden=true; if(lastFocus&&lastFocus.focus) try{ lastFocus.focus(); }catch(e){} }
-  chip.addEventListener('click', open);
-  modal.querySelectorAll('[data-histclose]').forEach(function(el){ el.addEventListener('click', close); });
-  window.addEventListener('keydown', function(e){ if(!modal.hidden && e.key==='Escape') close(); });
-  var clr=document.getElementById('histClear');
-  if(clr) clr.addEventListener('click', function(){
-    if(window.hbHistory){ window.hbHistory.clear(); render(); window.hbTrack&&window.hbTrack('history_clear'); }
-  });
-})();
 
 // ===== 헤더 컨트롤: 언어 / 당구대 색 =====
 (function(){
