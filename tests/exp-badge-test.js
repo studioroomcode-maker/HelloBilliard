@@ -56,9 +56,13 @@ global.window.__hb3test.setSystem('five');
 // (좌표계는 앱에서 읽는다 — 여백·캔버스 크기가 바뀌어도 같은 지점을 가리키도록)
 const { play } = global.window.__hb3test;
 const DX = (play.x1 - play.x0) / 8, DY = (play.y1 - play.y0) / 4;
+// 공은 '잡아서 드래그'로만 옮겨진다 (빈 곳 탭 배치는 스크롤 중 오조작 방지로 제거됨).
+// 그래서 수구를 잡아(mousedown) 목표 지점으로 끄는(mousemove) 실제 입력 경로를 쓴다.
+const B3 = global.window.__hb3test.balls;
 const seen = [];
 for (let k = 0; k <= 24; k++) {
-  handlers['g3-table:mousedown'][0](ev(play.x1 - DX * (0.4 + k * 0.12), play.y1 - DY * 0.5));
+  handlers['g3-table:mousedown'][0](ev(B3.cue.x, B3.cue.y));
+  handlers['g3-table:mousemove'][0](ev(play.x1 - DX * (0.4 + k * 0.12), play.y1 - DY * 0.5));
   handlers['g3-calc:click'][0]();
   const v = c1();
   if (v == null || !/득점 라인/.test(result())) continue;

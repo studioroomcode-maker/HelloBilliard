@@ -1179,7 +1179,7 @@
 <div class="board">
   <div class="shot-brief" id="g4-shotBrief" hidden></div>
   <div class="stage">
-    <canvas id="g4-table" width="840" height="460" role="img" aria-label="4구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
+    <canvas id="g4-table" width="840" height="460" role="img" aria-label="4구 당구대 — 공을 잡아 드래그해 옮깁니다"></canvas>
   </div>
   <div class="stage-bar" id="g4-stageBar" hidden>
     <div class="route-picks" id="g4-routePicks"></div>
@@ -1342,7 +1342,7 @@
   <div class="board">
   <div class="shot-brief" id="g3-shotBrief" hidden></div>
   <div class="stage">
-    <canvas id="g3-table" width="892" height="492" role="img" aria-label="3구 당구대 — 선택한 공을 탭하거나 드래그해 배치합니다"></canvas>
+    <canvas id="g3-table" width="892" height="492" role="img" aria-label="3구 당구대 — 공을 잡아 드래그해 옮깁니다"></canvas>
   </div>
   <div class="stage-bar" id="g3-stageBar" hidden>
     <div class="route-picks" id="g3-routePicks"></div>
@@ -3229,35 +3229,26 @@ function clampB(p){return{
   y:Math.max(play.y0+BALL_R,Math.min(play.y1-BALL_R,p.y))};}
 function hitB(p,pad){for(const k in balls) if(len(sub(balls[k],p))<BALL_R+(pad||10)) return k; return null;}
 // 손가락으로 잡을 때는 넉넉하게 — 폰에서는 캔버스가 크게 축소돼(≈0.4배) 화면상
-// 잡기 반경이 7px 밖에 안 됐다. 화면 기준 ~18px 가 되도록 캔버스 좌표로 환산한다.
+// 잡기 반경이 7px 밖에 안 됐다. 화면 기준 ~22px 가 되도록 캔버스 좌표로 환산한다.
+// (탭 배치를 없앴으므로 '잡기'가 유일한 이동 수단 — 넉넉해야 한다)
 function grabPad(e){
   if(!e||!e.touches) return 10;
   const r=cv.getBoundingClientRect();
-  return r.width ? Math.max(10, 18*(W/r.width)) : 10;
+  return r.width ? Math.max(10, 22*(W/r.width)) : 10;
 }
-const tapG=window.hbTapGuard();
+// 공은 '잡아서 드래그'할 때만 움직인다. 빈 곳을 찍어 옮기는 탭 배치는 없앴다 —
+// 스크롤하다 스치기만 해도 공이 순간이동해 배치가 망가지는 사고가 잦았기 때문.
 function onDown(e){
   const p=cpos(e), k=hitB(p,grabPad(e));
-  if(k){
-    // 공을 직접 잡았다 = 확실한 조작 → 이 제스처는 앱이 가져간다(스크롤 차단)
-    e.preventDefault();
-    stopAnim(false);
-    solveGen++;                 // 진행 중인 계산 결과 무효화
-    dragging=k;activeBall=k;dragStart={x:balls[k].x,y:balls[k].y};syncTb();
-    draw();
-    return;
-  }
-  // 빈 곳 — 스크롤일 수 있으니 preventDefault 하지 않고, 손 뗄 때 탭이면 배치
-  tapG.start(e,function(){
-    stopAnim(false);
-    solveGen++;
-    const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
-    routes=[];renderCards();pushHist();   // 탭 배치 — 히스토리 기록
-    draw();
-  });
+  if(!k) return;                // 빈 곳 = 아무것도 하지 않음(페이지 스크롤은 그대로)
+  // 공을 직접 잡았다 = 확실한 조작 → 이 제스처는 앱이 가져간다(스크롤 차단)
+  e.preventDefault();
+  stopAnim(false);
+  solveGen++;                   // 진행 중인 계산 결과 무효화
+  dragging=k;activeBall=k;dragStart={x:balls[k].x,y:balls[k].y};syncTb();
+  draw();
 }
 function onMove(e){
-  tapG.move(e);
   if(!dragging) return;
   e.preventDefault();
   const c=clampB(cpos(e));
@@ -3265,7 +3256,6 @@ function onMove(e){
   routes=[];draw();
 }
 function onUp(){
-  tapG.up();                 // 스크롤이 아니라 '짧은 탭'이었으면 여기서 배치된다
   const wasDragging=dragging;
   // 드래그로 위치가 실제로 바뀌었을 때만 히스토리에 기록
   if(dragging&&dragStart&&
@@ -6689,37 +6679,24 @@ function syncUndoRedo3(){
 function doUndo3(){ if(histIdx3>0){ histIdx3--; applyState3(hist3[histIdx3]); syncUndoRedo3(); } }
 function doRedo3(){ if(histIdx3<hist3.length-1){ histIdx3++; applyState3(hist3[histIdx3]); syncUndoRedo3(); } }
 
-// 손가락 잡기 반경은 화면 기준 ~18px 이 되도록 캔버스 좌표로 환산 (4구와 동일)
+// 손가락 잡기 반경은 화면 기준 ~22px 이 되도록 캔버스 좌표로 환산 (4구와 동일)
 function grabPad3(e){
   if(!e||!e.touches) return 10;
   const r=cv.getBoundingClientRect();
-  return r.width ? Math.max(10, 18*(W/r.width)) : 10;
+  return r.width ? Math.max(10, 22*(W/r.width)) : 10;
 }
-const tapG3=window.hbTapGuard();
+// 4구와 동일 — 공은 '잡아서 드래그'할 때만 움직인다(탭 배치 없음)
 function onDown(e){
   const p=cpos(e), k=hitB(p,grabPad3(e));
-  if(k){
-    // 공을 직접 잡았을 때만 제스처를 앱이 가져간다(스크롤 차단)
-    e.preventDefault();
-    stopAnim3(false);
-    solveGen3++;                // 진행 중인 계산 결과 무효화
-    dragging=k;activeBall=k;syncTb();
-    draw();
-    return;
-  }
-  // 빈 곳 — 스크롤 허용. 손 뗄 때 '짧은 탭'이면 배치
-  tapG3.start(e,function(){
-    stopAnim3(false);
-    solveGen3++;
-    const c=clampB(p);balls[activeBall].x=c.x;balls[activeBall].y=c.y;
-    userPlaced=true;
-    solution=null;phyRoutes=null;renderPhyCards();autoSystem();
-    pushHist3();   // 탭 배치 → 자동 계산 + 히스토리 기록
-    draw();
-  });
+  if(!k) return;                // 빈 곳 = 아무것도 하지 않음(페이지 스크롤은 그대로)
+  // 공을 직접 잡았을 때만 제스처를 앱이 가져간다(스크롤 차단)
+  e.preventDefault();
+  stopAnim3(false);
+  solveGen3++;                  // 진행 중인 계산 결과 무효화
+  dragging=k;activeBall=k;syncTb();
+  draw();
 }
 function onMove(e){
-  tapG3.move(e);
   if(!dragging) return;
   e.preventDefault();
   const c=clampB(cpos(e));
@@ -6729,7 +6706,6 @@ function onMove(e){
   autoSystem();   // 드래그 중 debounce 자동 계산
 }
 function onUp(){
-  tapG3.up();                // 스크롤이 아니라 '짧은 탭'이었으면 여기서 배치된다
   const wasDragging=dragging;
   if(dragging){ dragging=null; pushHist3(); }   // 드래그 끝 = 한 번의 배치 변경
   autoSystem();
