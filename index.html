@@ -1187,12 +1187,6 @@
   </div>
   </div>
 
-  <div class="rec-row" id="g4-rec" hidden>
-    <span class="rec-q" data-en="Did you actually try this shot?">이 샷, 실제로 쳐봤나요?</span>
-    <button class="tool rec-yes" id="g4-recYes" type="button" data-en="Made ✓">성공 ✓</button>
-    <button class="tool rec-no" id="g4-recNo" type="button" data-en="Missed ✗">실패 ✗</button>
-    <span class="rec-msg" id="g4-recMsg" hidden></span>
-  </div>
 
   <div class="actions">
     <button class="tool primary" id="g4-calc" data-en="Calculate">경로 계산</button>
@@ -1352,12 +1346,6 @@
   </div>
   </div>
 
-  <div class="rec-row" id="g3-rec" hidden>
-    <span class="rec-q" data-en="Did you actually try this shot?">이 샷, 실제로 쳐봤나요?</span>
-    <button class="tool rec-yes" id="g3-recYes" type="button" data-en="Made ✓">성공 ✓</button>
-    <button class="tool rec-no" id="g3-recNo" type="button" data-en="Missed ✗">실패 ✗</button>
-    <span class="rec-msg" id="g3-recMsg" hidden></span>
-  </div>
 
   <div class="actions">
     <button class="tool primary" id="g3-calc" style="display:none" data-en="System calc">시스템 계산</button>
@@ -1488,6 +1476,14 @@
     font-weight:700; color:#5fd08a; background:rgba(95,208,138,.1);
     border:1px solid rgba(95,208,138,.35); }
   .pro-note{ margin-top:12px; font-size:12.5px; color:#5fd08a; text-align:center; font-weight:700; }
+  /* Pro 해제 — 되돌리기 어려운 동작이라 눈에 띄지 않게 두고, 두 번 눌러야 실행된다 */
+  .pro-release{ margin-top:10px; text-align:center; }
+  .pro-release button{ background:none; border:none; color:var(--tx-3,#8a8272);
+    font:inherit; font-size:12px; text-decoration:underline; cursor:pointer; padding:4px 6px; }
+  .pro-release button:hover{ color:var(--tx-2,#c9c2b0); }
+  .pro-release .pro-confirm{ display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap;
+    justify-content:center; font-size:12px; color:var(--tx-2,#c9c2b0); }
+  .pro-release .pro-confirm button.danger{ color:#e0705a; font-weight:700; }
   .pro-chip.is-pro{ border-color:rgba(95,208,138,.55); background:rgba(95,208,138,.14); color:#5fd08a; }
   /* 3구 무료 업셀 카드 */
   .pro-upsell{ margin-top:8px; padding:13px 15px; border-radius:16px; cursor:pointer;
@@ -1497,13 +1493,6 @@
   .pro-upsell b{ color:#e8b45f; }
   .pro-upsell span{ color:#e8b45f; font-weight:700; }
   /* 결과 기록 행 */
-  .rec-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:6px 0 2px;
-    padding:9px 12px; border-radius:14px; background:var(--surface-2,#241d15);
-    border:1px solid var(--line-soft,#3a3327); }
-  .rec-row .rec-q{ font-size:13px; color:var(--tx-2,#c9c2b0); margin-right:auto; }
-  .rec-row .rec-yes{ color:#5fd08a; border-color:rgba(95,208,138,.4); }
-  .rec-row .rec-no{ color:#e0705a; border-color:rgba(224,112,90,.4); }
-  .rec-row .rec-msg{ font-size:12.5px; font-weight:700; color:#5fd08a; width:100%; }
   /* 기록(성장) 모달 통계 */
   .hist-streak{ display:flex; align-items:baseline; gap:8px; margin:8px 0 14px; }
   .hist-streak .n{ font-size:30px; font-weight:800; color:#e8b45f;
@@ -1688,6 +1677,14 @@
       <li data-en-html="🖼 <b>No watermark on exported images</b>">🖼 <b>내보낸 이미지 워터마크 제거</b></li>
     </ul>
     <div id="proActive" class="pro-active" hidden data-en="✓ Pro is active — all features unlocked.">✓ Pro가 활성화되어 있어요 — 모든 기능이 열렸습니다.</div>
+    <div class="pro-release" id="proReleaseRow" hidden>
+      <button type="button" id="proRelease" data-en="Deactivate Pro">Pro 해제</button>
+      <span class="pro-confirm" id="proConfirm" hidden>
+        <span data-en="Deactivate on this device?">이 기기에서 해제할까요?</span>
+        <button type="button" id="proReleaseYes" class="danger" data-en="Deactivate">해제</button>
+        <button type="button" id="proReleaseNo" data-en="Cancel">취소</button>
+      </span>
+    </div>
     <div class="pro-actions" id="proBuyRow">
       <button class="tool primary" id="proBuy" type="button" data-en="Buy Pro">Pro 구매하기</button>
       <button class="tool" id="proDonate" type="button" data-en="☕ Support">☕ 후원하기</button>
@@ -3083,8 +3080,6 @@ function renderCards(){
   const box=document.getElementById('g4-routes');
   const bar=document.getElementById('g4-stageBar');
   if(bar) bar.hidden=!routes.length;   // 재생·저장은 경로가 있을 때만 당구대 밑에 노출
-  const recRow=document.getElementById('g4-rec');   // 결과 기록 행도 경로 있을 때만
-  if(recRow){ recRow.hidden=!routes.length; const rm=document.getElementById('g4-recMsg'); if(rm&&!routes.length) rm.hidden=true; }
   // 샷 요약 — 선택한 경로의 당점·두께·파워를 당구대 위에 한 줄로
   const brief=document.getElementById('g4-shotBrief');
   if(brief){
@@ -3519,20 +3514,6 @@ function shareCanvas(canvas,name){
 document.getElementById('g4-share').addEventListener('click',()=>{
   draw(); shareCanvas(cv,'hello-billiard.png');
 });
-// 결과 기록 (4구) — 선택 경로의 성공/실패를 남겨 성장 추적에 쌓는다
-(function(){
-  const rm=document.getElementById('g4-recMsg');
-  function rec(made){
-    const r=routes[selected];
-    const st=window.hbHistory&&window.hbHistory.log({mode:'4gu', made:made,
-      prob:r?r.prob:null, cush:r?r.cushions:null});
-    if(rm&&st){ rm.hidden=false; rm.style.color=made?'#5fd08a':'#e0705a';
-      rm.textContent=window.hbLang.t(`기록됨 · 최근 ${Math.round(st.recentRate*100)}%(${st.recentN}) · 누적 ${st.attempts}회 · 🔥${st.streak}일`,`Logged · recent ${Math.round(st.recentRate*100)}%(${st.recentN}) · total ${st.attempts} · 🔥${st.streak}d`); }
-  }
-  const y=document.getElementById('g4-recYes'), n=document.getElementById('g4-recNo');
-  if(y) y.addEventListener('click',()=>rec(true));
-  if(n) n.addEventListener('click',()=>rec(false));
-})();
 // 헤더 컨트롤(언어·당구대 색) 변경 시 4구 갱신
 window.addEventListener('hblang', function(){ try{ renderCards(); }catch(e){} });
 window.addEventListener('hbfelt', function(){ try{ draw(); if(typeof drawPhoto==='function') drawPhoto(); }catch(e){} });
@@ -6035,8 +6016,6 @@ function renderPhyCards(){
   if(coach && phyRoutes && phyRoutes.length) coach.hidden=true;
   const bar=document.getElementById('g3-stageBar');
   if(bar) bar.hidden=!(phyRoutes&&phyRoutes.length);   // 재생 버튼은 경로가 있을 때만
-  const recRow3=document.getElementById('g3-rec');   // 결과 기록 행
-  if(recRow3){ recRow3.hidden=!(phyRoutes&&phyRoutes.length); const rm3=document.getElementById('g3-recMsg'); if(rm3&&!(phyRoutes&&phyRoutes.length)) rm3.hidden=true; }
   // [겹쳐 보기]는 비교할 경로가 2개 이상일 때만 의미가 있다
   const sa=document.getElementById('g3-showAll');
   if(sa) sa.style.display=(phyRoutes&&phyRoutes.length>1)?'':'none';
@@ -6168,20 +6147,6 @@ function renderPhyCards(){
     });
   });
 }
-// 결과 기록 (3구)
-(function(){
-  const rm=document.getElementById('g3-recMsg');
-  function rec(made){
-    const r=phyRoutes&&phyRoutes[phySel];
-    const st=window.hbHistory&&window.hbHistory.log({mode:'3gu', made:made,
-      prob:r?r.prob:null, cush:r?r.cush:null});
-    if(rm&&st){ rm.hidden=false; rm.style.color=made?'#5fd08a':'#e0705a';
-      rm.textContent=window.hbLang.t(`기록됨 · 최근 ${Math.round(st.recentRate*100)}%(${st.recentN}) · 누적 ${st.attempts}회 · 🔥${st.streak}일`,`Logged · recent ${Math.round(st.recentRate*100)}%(${st.recentN}) · total ${st.attempts} · 🔥${st.streak}d`); }
-  }
-  const y=document.getElementById('g3-recYes'), n=document.getElementById('g3-recNo');
-  if(y) y.addEventListener('click',()=>rec(true));
-  if(n) n.addEventListener('click',()=>rec(false));
-})();
 // 헤더 컨트롤(언어·당구대 색) 변경 시 3구 갱신
 window.addEventListener('hblang', function(){ try{ buildToolbar(); renderPhyCards(); if(typeof setSystemText==='function') setSystemText(); if(solution&&typeof showResult==='function') showResult(solution); if(typeof updateSideUI==='function') updateSideUI(); }catch(e){} });
 window.addEventListener('hbfelt', function(){ try{ draw(); if(typeof drawP3==='function') drawP3(); }catch(e){} });
@@ -7177,8 +7142,16 @@ if(typeof window!=='undefined')
     var a=document.getElementById('proActive'); if(a) a.hidden=!p;
     var buy=document.getElementById('proBuyRow'); if(buy) buy.style.display=(p||storeBuild)?'none':'';
     var rr=document.getElementById('proRedeemRow'); if(rr) rr.style.display=p?'none':'';
+    var rel=document.getElementById('proReleaseRow'); if(rel) rel.hidden=!p;   // Pro일 때만 해제 노출
+    resetRelease();
     chip.classList.toggle('is-pro',p);
     chip.textContent=p?'✦ Pro ✓':'✦ Pro';
+  }
+  // 해제는 2단계 — 잘못 눌러 Pro가 풀리면 코드를 다시 넣어야 하므로 확인을 거친다
+  function resetRelease(){
+    var b=document.getElementById('proRelease'), c=document.getElementById('proConfirm');
+    if(b) b.hidden=false;
+    if(c) c.hidden=true;
   }
   function open(ctx){
     lastFocus=document.activeElement;
@@ -7217,6 +7190,23 @@ if(typeof window!=='undefined')
       thanks(window.hbLang.t('Pro가 활성화되었습니다! 🎉 다음 계산부터 모든 경로가 열려요.','Pro activated! 🎉 All paths unlock from the next calculation.'));
       try{ if(window.__hb3refresh) window.__hb3refresh(); }catch(e){} }
     else { window.hbTrack&&window.hbTrack('redeem_fail'); thanks(window.hbLang.t('코드가 올바르지 않아요. 다시 확인해 주세요.','Invalid code. Please check and try again.'),true); }
+  });
+  // ── Pro 해제 (2단계 확인) ──
+  var relBtn=document.getElementById('proRelease');
+  if(relBtn) relBtn.addEventListener('click', function(){
+    var c=document.getElementById('proConfirm');
+    relBtn.hidden=true; if(c) c.hidden=false;
+  });
+  var relNo=document.getElementById('proReleaseNo');
+  if(relNo) relNo.addEventListener('click', resetRelease);
+  var relYes=document.getElementById('proReleaseYes');
+  if(relYes) relYes.addEventListener('click', function(){
+    if(window.hbPro) window.hbPro.set(false);
+    window.hbTrack&&window.hbTrack('pro_release');
+    syncState();                       // 구매/코드 입력 줄이 다시 보인다
+    thanks(window.hbLang.t('Pro가 해제되었습니다. 코드를 다시 넣으면 언제든 켤 수 있어요.',
+      'Pro deactivated. Enter your code again anytime to re-enable.'));
+    try{ if(window.__hb3refresh) window.__hb3refresh(); }catch(e){}   // 3구 경로 게이팅 반영
   });
   syncState();   // 최초 로드 시 칩/버튼 상태 반영
   window.hbTrack&&window.hbTrack('app_open');
