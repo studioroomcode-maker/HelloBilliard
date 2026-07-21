@@ -1897,6 +1897,7 @@ window.hbPro=(function(){
   // ── 무료 한도 (여기만 바꾸면 조절·해제 가능) ──
   var FREE_PHOTO_PER_DAY=5;   // 사진 인식: 무료 하루 5회 / Pro 무제한
   var FREE_3GU_ROUTES=1;      // 3구 물리 경로: 무료 대표 1개 / Pro 전체
+  var FREE_4GU_ROUTES=1;      // 4구 경로: 무료 대표 1개 / Pro 전체
   var DAY_MS=24*60*60*1000;   // 1일권 유효 기간
   // ── 언락 코드 (결제 연동 전 수동 발급용) ──
   //  PRO_CODES     = 영구(₩4,900) · PRO_DAY_CODES = 1일권(₩1,000)
@@ -1940,7 +1941,7 @@ window.hbPro=(function(){
     return false;
   }
   return { is:is, set:set, redeem:redeem, photoLeft:photoLeft, notePhoto:notePhoto, untilTs:untilTs,
-    FREE_PHOTO_PER_DAY:FREE_PHOTO_PER_DAY, FREE_3GU_ROUTES:FREE_3GU_ROUTES };
+    FREE_PHOTO_PER_DAY:FREE_PHOTO_PER_DAY, FREE_3GU_ROUTES:FREE_3GU_ROUTES, FREE_4GU_ROUTES:FREE_4GU_ROUTES };
 })();
 
 
@@ -2831,8 +2832,8 @@ function draw(){
   for(let i=1;i<4;i++){const y=play.y0+(play.y1-play.y0)*i/4;
     d(play.x0-17,y,2);d(play.x1+17,y,2);}
   // 선택되지 않은 경로 흐리게, 선택된 경로 진하게
-  routes.forEach((r,i)=>{ if(i!==selected) drawRoute(r,routeColor(i),.22); });
-  if(routes[selected]) drawRoute(routes[selected],routeColor(selected),1);
+  routes.forEach((r,i)=>{ if(i!==selected&&!g4Locked(i)) drawRoute(r,routeColor(i),.22); });   // 잠긴 경로는 미표시
+  if(routes[selected]&&!g4Locked(selected)) drawRoute(routes[selected],routeColor(selected),1);
   // 재생 잔상 — 수구가 지나온 자리를 희미하게
   if(anim&&anim.trail&&anim.trail.length>1){
     ctx.save(); ctx.lineCap="round";
@@ -3140,6 +3141,12 @@ const POWER_LABEL={1:'아주 약하게',2:'약하게',3:'보통',4:'강하게',5
 
 let calcTried=false;   // 계산을 한 번이라도 눌렀는지 — 첫 안내와 "경로 없음"을 구분
 let justSolved=false;  // 방금 새 계산 결과인지 — 등장 애니메이션 트리거용
+// 무료로 완전 공개되는 4구 경로 개수 — Pro면 전부, 무료면 FREE_4GU_ROUTES.
+function g4FreeN(){
+  if(!window.hbPro || window.hbPro.is()) return Infinity;
+  return window.hbPro.FREE_4GU_ROUTES||1;
+}
+function g4Locked(i){ return i>=g4FreeN(); }
 function renderCards(){
   const box=document.getElementById('g4-routes');
   const bar=document.getElementById('g4-stageBar');
@@ -3165,11 +3172,13 @@ function renderCards(){
   const picks=document.getElementById('g4-routePicks');
   if(picks){
     picks.innerHTML=routes.map((r,i)=>
-      `<button class="tool mini ${i===selected?'on':''}" data-i="${i}" aria-label="${r.reference?'참고 경로 선택':'경로 '+(i+1)+' 선택'}"><span class="dot" style="background:${routeColor(i)}"></span>${r.reference?'참':i+1}</button>`).join('');
+      `<button class="tool mini ${i===selected?'on':''} ${g4Locked(i)?'locked':''}" data-i="${i}" aria-label="${r.reference?'참고 경로 선택':'경로 '+(i+1)+' 선택'}"><span class="dot" style="background:${routeColor(i)}"></span>${g4Locked(i)?'🔒':(r.reference?'참':i+1)}</button>`).join('');
     picks.querySelectorAll('button').forEach(b=>
       b.addEventListener('click',()=>{
+        const i=+b.dataset.i;
+        if(g4Locked(i)){ window.hbTrack&&window.hbTrack('gate_4gu'); window.hbShowPaywall&&window.hbShowPaywall('routes4'); return; }
         stopAnim(false);
-        selected=+b.dataset.i; renderCards(); draw(); drawPhoto();
+        selected=i; renderCards(); draw(); drawPhoto();
       }));
   }
   if(!routes.length){
@@ -3225,7 +3234,8 @@ function renderCards(){
     const band=Math.round((r.uncertainty||18)/2), cm=(r.gather!=null&&r.gatherAvg)?Math.round(r.gatherAvg/MM/10):0;
     const gKO=(r.gather!=null&&r.gatherAvg)?`<br>공 모임 ${r.gather}% = 득점 후 <b>적구끼리 간격(비중 50%)</b> + 내 수구→각 적구 거리(25%씩)의 가중 평균 약 <b>${cm}cm</b> 기준`:'';
     const gEN=(r.gather!=null&&r.gatherAvg)?`<br>Gather ${r.gather}% = post-shot <b>gap between reds (50%)</b> + cue→each red (25% each), weighted avg ~<b>${cm}cm</b>`:'';
-    return `<div class="rcard ${i===selected?'sel':''} ${isRef?'ref':''}" data-i="${i}" style="--d:${i*70}ms">
+    const locked=g4Locked(i);
+    return `<div class="rcard ${i===selected?'sel':''} ${isRef?'ref':''} ${locked?'locked':''}" data-i="${i}" style="--d:${i*70}ms">
       <div class="rc-top">
         <span class="swatch" style="background:${routeColor(i)}"></span>
         <div class="rc-title">
@@ -3266,12 +3276,17 @@ function renderCards(){
           <div class="mval">${window.hbLang.power(pw)}</div>
         </div>
       </div>
+      ${locked?`<div class="rc-lock">🔒 <span>${L.t('Pro에서 잠금 해제','Unlock in Pro')}</span></div>`:''}
     </div>`;
   }).join('');
   box.querySelectorAll('.rcard').forEach(c=>{
     c.addEventListener('click',()=>{
+      const i=+c.dataset.i;
+      if(c.classList.contains('locked')){   // 잠긴 경로 = 결제 유도
+        window.hbTrack&&window.hbTrack('gate_4gu'); window.hbShowPaywall&&window.hbShowPaywall('routes4'); return;
+      }
       stopAnim(false);
-      selected=+c.dataset.i; renderCards(); draw();
+      selected=i; renderCards(); draw();
       drawPhoto();   // 사진이 열려 있으면 선택 경로를 사진에도 반영
     });
   });
@@ -4206,8 +4221,8 @@ function drawPhoto(){
   }
   // 계산된 경로를 사진 원근에 맞춰 겹쳐 그린다
   if(photoH&&routes.length){
-    routes.forEach((r,i)=>{ if(i!==selected) drawPhotoRoute(r,routeColor(i),0.22); });
-    if(routes[selected]) drawPhotoRoute(routes[selected],routeColor(selected),0.95);
+    routes.forEach((r,i)=>{ if(i!==selected&&!g4Locked(i)) drawPhotoRoute(r,routeColor(i),0.22); });
+    if(routes[selected]&&!g4Locked(selected)) drawPhotoRoute(routes[selected],routeColor(selected),0.95);
   }
 }
 function photoPt(p){ return applyH(photoH,p.x,p.y); }
@@ -7347,6 +7362,7 @@ if(typeof window!=='undefined')
   function leadText(ctx){ var L=window.hbLang;
     if(ctx==='photo') return L.t('무료 사진 인식은 하루 5회예요. Pro로 무제한으로 쓰거나 내일 다시 이용할 수 있어요.','Free photo scan is 5/day. Go Pro for unlimited, or use it again tomorrow.');
     if(ctx==='routes3') return L.t('무료는 3구 대표 경로 1개만 보여드려요. Pro에서 다중·고급 경로 전체를 볼 수 있어요.','Free shows only 1 three-cushion path; Pro shows all multi/advanced paths.');
+    if(ctx==='routes4') return L.t('무료는 4구 대표 경로 1개만 보여드려요. Pro에서 다중 경로 전체를 볼 수 있어요.','Free shows only 1 four-ball path; Pro shows all paths.');
     return L.t('더 깊이 파고드는 분들을 위한 기능이에요. 코드가 있으면 아래에 입력하고, 없으면 [구매 문의하기]로 결제 안내를 받으세요.','Features for those who want to go deeper. Have a code? Enter it below. Otherwise tap [Ask to buy].'); }
   var lastFocus=null;
   function pro(){ return !!(window.hbPro && window.hbPro.is()); }
