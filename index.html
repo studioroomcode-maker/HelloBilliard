@@ -1503,6 +1503,19 @@
   .pro-upsell:hover{ background:rgba(224,164,74,.11); }
   .pro-upsell b{ color:#e8b45f; }
   .pro-upsell span{ color:#e8b45f; font-weight:700; }
+  /* Pro 잠금 경로 카드 — 상단 요약(제목·공모임·성공률)만 선명, 상세는 블러 */
+  .rcard.locked{ position:relative; cursor:pointer; }
+  .rcard.locked .desc,
+  .rcard.locked .rdetail,
+  .rcard.locked .metrics,
+  .rcard.locked .miss{ filter:blur(4.5px); opacity:.6; pointer-events:none; user-select:none; }
+  .rcard.locked .rc-top{ filter:none; }              /* 이 부분만 보이게 */
+  .rc-lock{ position:absolute; left:50%; top:64%; transform:translate(-50%,-50%);
+    display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+    padding:7px 14px; border-radius:999px; font-size:12.5px; font-weight:800;
+    background:rgba(20,17,13,.82); color:#e8b45f; border:1px solid rgba(232,181,62,.5);
+    box-shadow:0 4px 14px rgba(0,0,0,.45); pointer-events:none; z-index:2; }
+  .stage-bar .route-picks .tool.mini.locked{ opacity:.72; }
   /* 결과 기록 행 */
   /* 기록(성장) 모달 통계 */
 
@@ -5011,8 +5024,8 @@ function draw(){
     // 기본은 선택 경로 하나만 — 폰 화면에서 3개를 겹쳐 그리면 선이 교차해
     // 정작 쳐야 할 조준선을 읽을 수 없다. 비교하려면 [겹쳐 보기]로 켠다.
     if(phyShowAll)
-      phyRoutes.forEach((r,i)=>{ if(i!==phySel) drawPhyRoute(r,PHY_COLORS[i],0.2); });
-    if(phyRoutes[phySel]) drawPhyRoute(phyRoutes[phySel],PHY_COLORS[phySel],1);
+      phyRoutes.forEach((r,i)=>{ if(i!==phySel&&!g3Locked(i)) drawPhyRoute(r,PHY_COLORS[i],0.2); });   // 잠긴 경로는 미표시
+    if(phyRoutes[phySel]&&!g3Locked(phySel)) drawPhyRoute(phyRoutes[phySel],PHY_COLORS[phySel],1);
   }
   if(anim3&&anim3.trail&&anim3.trail.length>1){
     ctx.save(); ctx.lineCap="round";
@@ -6060,6 +6073,13 @@ function tipSVG3(spin){
     <line x1="4" y1="15" x2="26" y2="15" stroke="#d8d2bf" stroke-width="1"/>
     <circle cx="${cx}" cy="${cy}" r="4.5" fill="#d9582b"/></svg>`;
 }
+// 무료로 완전 공개되는 경로 개수 — Pro면 전부, 무료면 FREE_3GU_ROUTES.
+// 이 개수 이후 인덱스는 카드 블러 + 당구대 미표시(잠금)로 처리한다.
+function g3FreeN(){
+  if(!window.hbPro || window.hbPro.is()) return Infinity;
+  return window.hbPro.FREE_3GU_ROUTES||1;
+}
+function g3Locked(i){ return i>=g3FreeN(); }
 function renderPhyCards(){
   const box=document.getElementById('g3-phyRoutes');
   const head=document.getElementById('g3-routesHead');
@@ -6095,11 +6115,13 @@ function renderPhyCards(){
   const picks=document.getElementById('g3-routePicks');
   if(picks){
     picks.innerHTML=(phyRoutes||[]).map((r,i)=>
-      `<button class="tool mini ${i===phySel?'on':''}" data-i="${i}" aria-label="경로 ${i+1} 선택"><span class="dot" style="background:${PHY_COLORS[i]}"></span>${i+1}</button>`).join('');
+      `<button class="tool mini ${i===phySel?'on':''} ${g3Locked(i)?'locked':''}" data-i="${i}" aria-label="경로 ${i+1} 선택"><span class="dot" style="background:${PHY_COLORS[i]}"></span>${g3Locked(i)?'🔒':i+1}</button>`).join('');
     picks.querySelectorAll('button').forEach(b=>
       b.addEventListener('click',()=>{
+        const i=+b.dataset.i;
+        if(g3Locked(i)){ window.hbTrack&&window.hbTrack('gate_3gu'); window.hbShowPaywall&&window.hbShowPaywall('routes3'); return; }
         stopAnim3(false);
-        phySel=+b.dataset.i; renderPhyCards(); draw();
+        phySel=i; renderPhyCards(); draw();
       }));
   }
   drawP3();   // 사진이 열려 있으면 경로 오버레이도 갱신 (지움 포함)
@@ -6140,7 +6162,8 @@ function renderPhyCards(){
     const gEN=(r.gather!=null&&r.gatherAvg)?`<br>Gather ${r.gather}% = post-shot <b>gap between reds (50%)</b> + cue→each red (25% each), weighted avg ~<b>${cm}cm</b>`:'';
     const kKO=r.kiss?`<br><b style="color:var(--warn)">키스 경로</b> — 제1적구가 제2적구를 먼저 건드려 밀어낸 뒤 그 자리에서 득점합니다. 그림의 선이 <b>제자리에 그려진 제2적구를 빗나가</b> 보이는 건 이 때문이며, 키스는 재현이 까다로워 성공률이 낮습니다.`:'';
     const kEN=r.kiss?`<br><b style="color:var(--warn)">Kiss path</b> — Object 1 nudges Object 2 first, then scores. That's why the line seems to <b>miss the drawn Object 2</b>; kisses are hard to reproduce, so success is low.`:'';
-    return `<div class="rcard ${i===phySel?'sel':''}" data-i="${i}" style="--d:${i*70}ms">
+    const locked=g3Locked(i);
+    return `<div class="rcard ${i===phySel?'sel':''} ${locked?'locked':''}" data-i="${i}" style="--d:${i*70}ms">
       <div class="rc-top">
         <span class="swatch" style="background:${PHY_COLORS[i]}"></span>
         <div class="rc-title">
@@ -6178,25 +6201,17 @@ function renderPhyCards(){
           <div class="mval">${L.t('둘째 적구 전','before 2nd')}</div>
         </div>
       </div>
+      ${locked?`<div class="rc-lock">🔒 <span>${L.t('Pro에서 잠금 해제','Unlock in Pro')}</span></div>`:''}
     </div>`;
   }).join('');
-  // Pro 업셀 — 무료라 감춘 경로가 있으면 카드 밑에 안내
-  if(phyRoutes._proHidden){
-    box.innerHTML +=
-      `<div class="pro-upsell" id="g3-proUpsell" role="button" tabindex="0">🔒 `+
-      window.hbLang.t(`<b>+${phyRoutes._proHidden}개 경로</b>가 더 있어요 — <span>Pro에서 전체 보기 →</span>`,
-        `<b>+${phyRoutes._proHidden} more paths</b> — <span>see all in Pro →</span>`)+`</div>`;
-    const up=document.getElementById('g3-proUpsell');
-    if(up){
-      const go=()=>{ window.hbTrack&&window.hbTrack('gate_3gu'); window.hbShowPaywall&&window.hbShowPaywall('routes3'); };
-      up.addEventListener('click',go);
-      up.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } });
-    }
-  }
   box.querySelectorAll('.rcard').forEach(c=>{
     c.addEventListener('click',()=>{
+      const i=+c.dataset.i;
+      if(c.classList.contains('locked')){   // 잠긴 경로 = 결제 유도
+        window.hbTrack&&window.hbTrack('gate_3gu'); window.hbShowPaywall&&window.hbShowPaywall('routes3'); return;
+      }
       stopAnim3(false);
-      phySel=+c.dataset.i; renderPhyCards(); draw();
+      phySel=i; renderPhyCards(); draw();
     });
   });
 }
@@ -6274,12 +6289,10 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
   solve3WithFallback(p=>{ btn.textContent=`계산 중… ${p}%`; }).then(rs=>{
     if(myGen!==solveGen3) return;
     solution=null;
-    // Pro 게이트 — 무료는 대표 경로만, 나머지는 감춰 업셀. 정렬 재선발이 없어 배열을
-    // 잘라도 안전하고, 당구대 오버레이(forEach)도 자동으로 무료 범위만 그린다.
+    // Pro 게이트 — 무료도 경로를 '전부' 받되, 대표 개수 이후는 카드에서 블러 처리하고
+    // (상단 요약·성공률만 노출) 당구대 오버레이·재생은 무료 범위만 그린다. g3FreeN() 참조.
     if(window.hbPro && !window.hbPro.is() && rs && rs.length>window.hbPro.FREE_3GU_ROUTES){
-      const hidden=rs.length-window.hbPro.FREE_3GU_ROUTES;
-      rs.length=window.hbPro.FREE_3GU_ROUTES;   // 커스텀 속성(dropped·skillFallback 등)은 유지됨
-      rs._proHidden=hidden;
+      rs._proHidden=rs.length-window.hbPro.FREE_3GU_ROUTES;
     }
     phyRoutes=rs; phySel=0;
     justSolved3=true; renderPhyCards(); justSolved3=false;   // 등장 애니메이션
@@ -6478,8 +6491,8 @@ function drawP3(){
     };
     // 당구대와 같은 규칙 — 기본은 선택 경로만 (사진 위는 더 좁아 겹치면 더 안 읽힌다)
     if(phyShowAll)
-      phyRoutes.forEach((r,i)=>{ if(i!==phySel) drawOne(r,PHY_COLORS[i],0.22); });
-    if(phyRoutes[phySel]) drawOne(phyRoutes[phySel],PHY_COLORS[phySel],0.95);
+      phyRoutes.forEach((r,i)=>{ if(i!==phySel&&!g3Locked(i)) drawOne(r,PHY_COLORS[i],0.22); });
+    if(phyRoutes[phySel]&&!g3Locked(phySel)) drawOne(phyRoutes[phySel],PHY_COLORS[phySel],0.95);
   }
 }
 function p3pos(e){
