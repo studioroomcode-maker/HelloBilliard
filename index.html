@@ -2939,7 +2939,7 @@ function sfxDetect(anim, n){
   if(!anim._sfx){   // 첫 프레임은 상태만 초기화
     const startT=(anim.frames&&anim.frames[0].t)||0;
     const c0=anim.frames?posAt(anim.frames,startT):cur;
-    const s={pd:{},dec:{},rc:[],hit:{},fired:{},seq:0};  // hit: 이미 맞힌 공 · seq: 몇 번째 공인지
+    const s={pd:{},dec:{},rc:[],hit:{},fired:{},seq:0,cueHits:anim.cueHits};  // cueHits: 수구가 실제 맞힌 공만
     for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const k=i+'-'+j;s.pd[k]=ballDist(c0,i,j);s.dec[k]=false;}
     for(let i=0;i<n;i++) s.rc[i]=ptNearRail(c0,i,R);
     anim._sfx=s; anim._sfxT=startT; return;
@@ -2971,6 +2971,9 @@ function sfxBallHit(s,i,j,inten){
   const sfx=window.hbSfx;
   if(i!==0&&j!==0){ sfx.first(inten); return; }
   const other=(i===0?j:i);
+  // 수구가 '실제로 맞힌 공'에만 소리를 낸다. 4구에서 상대수구(파울 공)는 맞히면
+  // 안 되므로 경로가 그 옆을 스쳐도 소리가 나면 안 된다 — 근접 임계로는 못 거른다.
+  if(s.cueHits && !s.cueHits[other]) return;
   if(!s.hit[other]){ s.hit[other]=true; s.seq++; }
   (s.seq>=2?sfx.second:sfx.first)(inten);
 }
@@ -2980,6 +2983,12 @@ function playRoute(){
   stopAnim(false);
   window.hbSfx&&window.hbSfx.cue();   // ▶ = 큐로 수구를 치는 순간
   anim={frames:r.anim, t0:performance.now(), i:0, raf:null, cur:null};
+  // 수구가 실제로 맞힌 공 인덱스만 소리 대상으로 (프레임 순서: 0=수구 1=적구1 2=적구2 3=상대수구).
+  // 상대수구(파울)는 절대 소리 안 나게 — 옆을 스쳐도 무시된다.
+  var HIDX={cue:0,r1:1,r2:2,cue2:3};
+  anim.cueHits={};
+  if(r.first!=null && HIDX[r.first]!=null) anim.cueHits[HIDX[r.first]]=1;
+  if(r.second!=null && HIDX[r.second]!=null) anim.cueHits[HIDX[r.second]]=1;
   const step=()=>{
     if(!anim) return;
     const fr=anim.frames;
