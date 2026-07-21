@@ -1647,7 +1647,46 @@
       padding: 7px 12px; font-size: 12px;
     }
   }
+
+  /* ===== 첫 실행 튜토리얼 (코치마크) ===== */
+  #hbTut[hidden]{ display:none; }
+  #hbTut{ position:fixed; inset:0; z-index:120; }
+  /* 스포트라이트 — 큰 box-shadow 로 대상 주변만 어둡게 파낸다(마스크 불필요) */
+  .hbtut-spot{ position:absolute; border-radius:12px; pointer-events:none;
+    box-shadow:0 0 0 9999px rgba(8,7,5,.72); transition:all .28s cubic-bezier(.4,0,.2,1);
+    outline:2px solid var(--accent,#e8b53e); outline-offset:2px; }
+  .hbtut-spot.center{ box-shadow:0 0 0 9999px rgba(8,7,5,.82); outline:none; }
+  /* 클릭 가로채기용 투명 막 — 실수로 뒤 요소가 눌리지 않게 */
+  .hbtut-catch{ position:absolute; inset:0; }
+  .hbtut-pop{ position:absolute; width:min(300px, calc(100vw - 32px)); z-index:2;
+    background:var(--surface,#1b1712); color:var(--tx-1,#f4f1e8);
+    border:1px solid var(--line,#3a3327); border-radius:16px; padding:16px 16px 14px;
+    box-shadow:0 20px 50px rgba(0,0,0,.6); transition:top .28s, left .28s; }
+  .hbtut-pop h4{ font-size:15px; font-weight:800; margin:0 0 6px; letter-spacing:-.01em; }
+  .hbtut-pop p{ font-size:13px; line-height:1.6; color:var(--tx-2,#c9c2b0); margin:0; }
+  .hbtut-foot{ display:flex; align-items:center; gap:8px; margin-top:14px; }
+  .hbtut-dots{ display:flex; gap:5px; margin-right:auto; }
+  .hbtut-dots i{ width:6px; height:6px; border-radius:50%; background:var(--line,#3a3327); }
+  .hbtut-dots i.on{ background:var(--accent,#e8b53e); }
+  .hbtut-skip{ background:none; border:none; color:var(--tx-3,#8a8272); font:inherit;
+    font-size:12px; cursor:pointer; padding:6px; text-decoration:underline; }
+  .hbtut-next{ background:var(--accent,#e8b53e); color:var(--ink,#171310); border:none;
+    border-radius:10px; font:inherit; font-weight:800; font-size:13px; padding:8px 16px; cursor:pointer; }
+  .hbtut-next:hover{ background:#f2c355; }
 </style>
+<div id="hbTut" hidden aria-live="polite">
+  <div class="hbtut-catch"></div>
+  <div class="hbtut-spot" id="hbTutSpot"></div>
+  <div class="hbtut-pop" id="hbTutPop" role="dialog" aria-modal="true" aria-labelledby="hbTutTitle">
+    <h4 id="hbTutTitle"></h4>
+    <p id="hbTutText"></p>
+    <div class="hbtut-foot">
+      <span class="hbtut-dots" id="hbTutDots"></span>
+      <button type="button" class="hbtut-skip" id="hbTutSkip" data-en="Skip">건너뛰기</button>
+      <button type="button" class="hbtut-next" id="hbTutNext" data-en="Next">다음</button>
+    </div>
+  </div>
+</div>
 <div id="proModal" class="pro-modal" hidden>
   <div class="pro-modal-backdrop" data-proclose></div>
   <div class="pro-card" role="dialog" aria-modal="true" aria-labelledby="proTitle">
@@ -1678,6 +1717,9 @@
       <button class="tool" id="proRedeem" type="button" data-en="OK">확인</button>
     </div>
     <p class="pro-note" id="proNote" hidden></p>
+    <div class="pro-release" style="margin-top:6px">
+      <button type="button" id="proReplayTut" data-en="Replay tutorial">튜토리얼 다시 보기</button>
+    </div>
   </div>
 </div>
 
@@ -7044,6 +7086,144 @@ if(typeof window!=='undefined')
   }catch(e){}
 })();
 
+// ===== 첫 실행 튜토리얼 (코치마크) =====
+// 처음 오는 사람에게 '무엇을 어떤 순서로' 하면 되는지 실제 버튼 위에 스포트라이트로
+// 짚어준다. 한 번 보면(또는 건너뛰면) 다시 안 뜬다. 콘솔 __hbTutorial() 로 다시 볼 수 있다.
+(function(){
+  var DONE='hb_tut_done';
+  var root=document.getElementById('hbTut');
+  // 실제 브라우저에서만 동작 — 테스트 DOM 스텁은 querySelector/createElement 가 없어
+  // 여기서 바로 빠져나가야 스크립트 전체가 깨지지 않는다.
+  if(!root || typeof root.querySelector!=='function' ||
+     typeof document.createElement!=='function' || typeof document.querySelector!=='function') return;
+  var spot=document.getElementById('hbTutSpot'),
+      pop=document.getElementById('hbTutPop'),
+      titleEl=document.getElementById('hbTutTitle'),
+      textEl=document.getElementById('hbTutText'),
+      dotsEl=document.getElementById('hbTutDots'),
+      nextBtn=document.getElementById('hbTutNext'),
+      skipBtn=document.getElementById('hbTutSkip'),
+      catchEl=root.querySelector('.hbtut-catch');
+  var L=function(ko,en){ return (window.hbLang&&window.hbLang.t)?window.hbLang.t(ko,en):ko; };
+  // 각 단계: sel=강조할 요소(없으면 화면 중앙), ko/en 문구
+  var STEPS=[
+    { sel:null, ko:['환영합니다 👋','사진으로 공 배치를 읽고 물리로 득점 경로를 계산하는 당구 코치예요. 30초면 다 익혀요.'],
+                en:['Welcome 👋','A billiards coach that reads the balls from a photo and computes scoring paths. Takes 30 seconds to learn.'] },
+    { sel:'#sportTabs', ko:['① 종목 선택','4구와 3구(쓰리쿠션)를 여기서 전환해요. 마지막에 본 종목이 기억돼요.'],
+                        en:['1) Pick a game','Switch between 4-ball and 3-cushion here. It remembers your last choice.'] },
+    { sel:'#g4-table', ko:['② 공 배치','당구대 위에서 공을 손가락으로 잡아 드래그하면 위치를 옮길 수 있어요.'],
+                       en:['2) Place the balls','Grab a ball on the table and drag to move it.'] },
+    { sel:'#g4-photo', ko:['③ 사진으로 자동 배치','당구대 사진을 찍으면 공 위치를 자동으로 읽어줘요. 사진은 기기 안에서만 처리돼요.'],
+                       en:['3) Auto-place by photo','Take a photo of the table and it reads the ball positions. Photos never leave your device.'] },
+    { sel:'#g4-calc', ko:['④ 경로 계산','공을 배치했으면 이 버튼! 득점 경로를 성공률·정석 코스와 함께 찾아줘요.'],
+                      en:['4) Calculate paths','Once placed, tap this. It finds scoring paths with success rate and standard courses.'] },
+    { sel:'#g4-routes', ko:['⑤ 제안 경로','계산된 경로가 여기 카드로 나와요. 카드를 누르면 그 경로가 당구대에 그려져요.'],
+                        en:['5) Suggested paths','Paths appear here as cards. Tap a card to draw it on the table.'] },
+    { sel:'#proTeaser', ko:['준비 완료 🎉','바로 해보세요! (이 튜토리얼은 ✦ Pro 안내창에서 다시 볼 수 있어요.)'],
+                        en:['All set 🎉','Give it a try! (You can replay this from the ✦ Pro dialog.)'] }
+  ];
+  var i=0, onResize=null;
+  function targetOf(step){
+    if(!step||!step.sel) return null;
+    var el=document.querySelector(step.sel);
+    if(!el) return null;
+    // 가시성은 offsetWidth 로 본다 — getBoundingClientRect().width 는 부드러운
+    // 스크롤 도중 순간적으로 0으로 읽혀 하이라이트가 중앙으로 튀는 원인이었다.
+    if(!el.offsetWidth && !el.offsetHeight) return null;   // display:none 등만 폴백
+    return el;
+  }
+  var timers=[];
+  function clearTimers(){ for(var t=0;t<timers.length;t++) clearTimeout(timers[t]); timers=[]; }
+  function place(){
+    var step=STEPS[i];
+    var el=(step&&step.sel)?document.querySelector(step.sel):null;
+    var vw=window.innerWidth, vh=window.innerHeight, pad=8;
+    var r=el?el.getBoundingClientRect():null;
+    // 대상은 있는데 아직 rect 가 0 (첫 프레임 레이아웃 미확정) → 몇 프레임 재시도
+    if(el && (r.width<1||r.height<1)){
+      if(place._n==null) place._n=0;
+      if(place._n++ < 20){ timers.push(setTimeout(place, 30)); return; }
+    }
+    place._n=0;
+    if(el && r.width>=1 && r.height>=1){
+      spot.classList.remove('center');
+      spot.style.left=(r.left-pad)+'px'; spot.style.top=(r.top-pad)+'px';
+      spot.style.width=(r.width+pad*2)+'px'; spot.style.height=(r.height+pad*2)+'px';
+      // 말풍선: 대상 아래 우선, 공간 없으면 위. 좌우는 화면 안으로 클램프.
+      var pw=pop.offsetWidth||280, ph=pop.offsetHeight||160;
+      var top=r.bottom+14; if(top+ph>vh-10) top=r.top-ph-14;
+      if(top<10) top=Math.max(10,(vh-ph)/2);
+      var left=r.left+r.width/2-pw/2;
+      left=Math.max(10, Math.min(left, vw-pw-10));
+      pop.style.top=top+'px'; pop.style.left=left+'px';
+    } else {
+      // 중앙 스포트라이트(작게) + 말풍선 화면 중앙
+      spot.classList.add('center');
+      spot.style.width='0px'; spot.style.height='0px';
+      spot.style.left=(vw/2)+'px'; spot.style.top=(vh/2)+'px';
+      var pw2=pop.offsetWidth||280, ph2=pop.offsetHeight||160;
+      pop.style.left=Math.max(10,(vw-pw2)/2)+'px';
+      pop.style.top=Math.max(10,(vh-ph2)/2)+'px';
+    }
+  }
+  function render(){
+    var step=STEPS[i];
+    var txt=window.hbLang&&window.hbLang.isEn&&window.hbLang.isEn()?step.en:step.ko;
+    titleEl.textContent=txt[0]; textEl.textContent=txt[1];
+    nextBtn.textContent=(i>=STEPS.length-1)?L('시작하기','Start'):L('다음','Next');
+    skipBtn.textContent=L('건너뛰기','Skip');
+    dotsEl.innerHTML='';
+    for(var d=0;d<STEPS.length;d++){ var s=document.createElement('i'); if(d===i)s.className='on'; dotsEl.appendChild(s); }
+    // 대상을 화면 안으로 스크롤(즉시)한 뒤 위치를 잡는다.
+    // place 는 즉시 한 번 + setTimeout 백업으로 부른다 — rAF 는 일부 환경(헤드리스·
+    // 백그라운드 탭)에서 안 불려 하이라이트가 이전 스텝 자리에 남는 문제가 있었다.
+    var el=targetOf(STEPS[i]);
+    if(el&&el.scrollIntoView){ try{ el.scrollIntoView({block:'center'}); }catch(e){} }
+    clearTimers();   // 이전 스텝의 지연 place 가 현재 스텝을 덮지 않게 정리
+    place._n=0;
+    place(); timers.push(setTimeout(place, 60)); timers.push(setTimeout(place, 220));
+    try{ nextBtn.focus(); }catch(e){}
+  }
+  function finish(){
+    clearTimers();
+    root.hidden=true;
+    if(onResize){ window.removeEventListener('resize',onResize); window.removeEventListener('orientationchange',onResize); onResize=null; }
+    try{ localStorage.setItem(DONE,'1'); }catch(e){}
+  }
+  function start(){
+    i=0; root.hidden=false;
+    onResize=function(){ place(); };
+    window.addEventListener('resize',onResize);
+    window.addEventListener('orientationchange',onResize);
+    render();
+    window.hbTrack&&window.hbTrack('tutorial_start');
+  }
+  nextBtn.addEventListener('click', function(){
+    if(i>=STEPS.length-1){ finish(); window.hbTrack&&window.hbTrack('tutorial_done'); return; }
+    i++; render();
+  });
+  skipBtn.addEventListener('click', function(){ finish(); window.hbTrack&&window.hbTrack('tutorial_skip'); });
+  if(catchEl) catchEl.addEventListener('click', function(e){ e.stopPropagation(); });   // 뒤 요소 오클릭 방지
+  window.addEventListener('keydown', function(e){ if(!root.hidden&&e.key==='Escape') skipBtn.click(); });
+  // 다시 보기용 (Pro 창의 '튜토리얼 다시 보기' 링크와 콘솔에서 호출)
+  window.hbTutorial=start;
+  window.__hbTutorial=start;
+  // 첫 방문이면 자동 실행 — 단, 스플래시(z-index 3000)가 사라진 뒤에.
+  // 안 그러면 튜토리얼이 스플래시 밑에 깔려 안 보인다.
+  try{
+    if(!localStorage.getItem(DONE)){
+      var tries=0;
+      (function waitSplash(){
+        var sp=document.getElementById('hbSplash');
+        var gone=!sp || (sp.classList&&sp.classList.contains('hide'));
+        if(gone){ setTimeout(start, 400); return; }   // 페이드(600ms)가 끝나갈 즈음
+        if(tries++>50){ setTimeout(start, 400); return; }   // 안전장치(최대 ~7.5s)
+        setTimeout(waitSplash, 150);
+      })();
+    }
+  }catch(e){}
+})();
+
 // ===== 라이트/다크 테마 토글 =====
 (function(){
   var btn=document.getElementById('themeToggle');
@@ -7160,6 +7340,10 @@ if(typeof window!=='undefined')
     thanks(window.hbLang.t('Pro가 해제되었습니다. 코드를 다시 넣으면 언제든 켤 수 있어요.',
       'Pro deactivated. Enter your code again anytime to re-enable.'));
     try{ if(window.__hb3refresh) window.__hb3refresh(); }catch(e){}   // 3구 경로 게이팅 반영
+  });
+  var replayT=document.getElementById('proReplayTut');
+  if(replayT) replayT.addEventListener('click', function(){
+    close(); if(window.hbTutorial) window.hbTutorial();
   });
   syncState();   // 최초 로드 시 칩/버튼 상태 반영
   window.hbTrack&&window.hbTrack('app_open');
