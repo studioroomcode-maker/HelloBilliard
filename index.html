@@ -1094,7 +1094,7 @@
 
   <div class="mode-panel show" id="panel-m4">
   <div class="col-board">
-  <details class="venue autofold" style="margin:0 0 12px">
+  <details class="venue autofold" id="g4-settings" style="margin:0 0 12px">
   <summary data-en-html="Shot &amp; Personal <span class=&quot;venue-sub&quot;>Power · Cushions · Skill · Table</span>">샷 · 개인 설정 <span class="venue-sub">파워 · 쿠션 수 · 실력 · 구장 조건</span></summary>
   <div class="tune-controls" id="g4-tuning" style="margin-top:8px">
     <div class="tune-row">
@@ -7113,12 +7113,14 @@ if(typeof window!=='undefined')
                         en:['1) Pick a game','Switch between 4-ball and 3-cushion here. It remembers your last choice.'] },
     { sel:'#g4-table', ko:['② 공 배치','당구대 위에서 공을 손가락으로 잡아 드래그하면 위치를 옮길 수 있어요.'],
                        en:['2) Place the balls','Grab a ball on the table and drag to move it.'] },
-    { sel:'#g4-photo', ko:['③ 사진으로 자동 배치','당구대 사진을 찍으면 공 위치를 자동으로 읽어줘요. 사진은 기기 안에서만 처리돼요.'],
-                       en:['3) Auto-place by photo','Take a photo of the table and it reads the ball positions. Photos never leave your device.'] },
-    { sel:'#g4-calc', ko:['④ 경로 계산','공을 배치했으면 이 버튼! 득점 경로를 성공률·정석 코스와 함께 찾아줘요.'],
-                      en:['4) Calculate paths','Once placed, tap this. It finds scoring paths with success rate and standard courses.'] },
-    { sel:'#g4-routes', ko:['⑤ 제안 경로','계산된 경로가 여기 카드로 나와요. 카드를 누르면 그 경로가 당구대에 그려져요.'],
-                        en:['5) Suggested paths','Paths appear here as cards. Tap a card to draw it on the table.'] },
+    { sel:'#g4-settings', open:'#g4-settings', ko:['③ 샷·개인 설정','샷 파워·쿠션 수·내 실력을 여기서 정해요. 특히 내 실력(초급~100점 / 중급~250점 / 상급250점~)을 맞추면 칠 수 있는 경로만 추천해요. 구장 조건에선 천·쿠션 반발을 우리 대에 맞춥니다.'],
+                          en:['3) Shot & personal settings','Set shot power, cushion count and your skill here. Matching your skill (Beginner ~100 / Intermediate ~250 / Advanced 250+) filters to shots you can actually make. Table condition tunes cloth/cushion to your table.'] },
+    { sel:'#g4-photo', ko:['④ 사진으로 자동 배치','당구대 사진을 찍으면 공 위치를 자동으로 읽어줘요. 사진은 기기 안에서만 처리돼요.'],
+                       en:['4) Auto-place by photo','Take a photo of the table and it reads the ball positions. Photos never leave your device.'] },
+    { sel:'#g4-calc', ko:['⑤ 경로 계산','공을 배치했으면 이 버튼! 득점 경로를 성공률·정석 코스와 함께 찾아줘요.'],
+                      en:['5) Calculate paths','Once placed, tap this. It finds scoring paths with success rate and standard courses.'] },
+    { sel:'#g4-routes', ko:['⑥ 제안 경로','계산된 경로가 여기 카드로 나와요. 카드를 누르면 그 경로가 당구대에 그려져요.'],
+                        en:['6) Suggested paths','Paths appear here as cards. Tap a card to draw it on the table.'] },
     { sel:'#proTeaser', ko:['준비 완료 🎉','바로 해보세요! (이 튜토리얼은 ✦ Pro 안내창에서 다시 볼 수 있어요.)'],
                         en:['All set 🎉','Give it a try! (You can replay this from the ✦ Pro dialog.)'] }
   ];
@@ -7174,6 +7176,8 @@ if(typeof window!=='undefined')
     skipBtn.textContent=L('건너뛰기','Skip');
     dotsEl.innerHTML='';
     for(var d=0;d<STEPS.length;d++){ var s=document.createElement('i'); if(d===i)s.className='on'; dotsEl.appendChild(s); }
+    // 접힌 설정 패널(details)을 펼쳐 옵션이 보이게 한 뒤 강조한다
+    if(STEPS[i].open){ var op=document.querySelector(STEPS[i].open); if(op&&'open' in op) op.open=true; }
     // 대상을 화면 안으로 스크롤(즉시)한 뒤 위치를 잡는다.
     // place 는 즉시 한 번 + setTimeout 백업으로 부른다 — rAF 는 일부 환경(헤드리스·
     // 백그라운드 탭)에서 안 불려 하이라이트가 이전 스텝 자리에 남는 문제가 있었다.
