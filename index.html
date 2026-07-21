@@ -1484,6 +1484,18 @@
     justify-content:center; font-size:12px; color:var(--tx-2,#c9c2b0); }
   .pro-release .pro-confirm button.danger{ color:#e0705a; font-weight:700; }
   .pro-chip.is-pro{ border-color:rgba(95,208,138,.55); background:rgba(95,208,138,.14); color:#5fd08a; }
+  /* Pro 구매 안내 — 1일권/영구 두 플랜 + 문의 */
+  .pro-buy{ margin:4px 0 6px; }
+  .pro-plans{ display:flex; gap:8px; margin-bottom:10px; }
+  .pro-plan{ flex:1; text-align:center; padding:11px 8px; border-radius:14px;
+    border:1px solid var(--line,#3a3327); background:var(--surface-2,#241d15); }
+  .pro-plan.best{ border-color:rgba(232,181,62,.55); background:rgba(232,181,62,.08); }
+  .pro-plan .pp-name{ display:block; font-size:12px; font-weight:700; color:var(--tx-2,#c9c2b0); }
+  .pro-plan .pp-price{ display:block; font-size:19px; font-weight:800; color:var(--tx-1,#f4f1e8); margin:2px 0 1px; }
+  .pro-plan.best .pp-price{ color:#e8b45f; }
+  .pro-plan .pp-sub{ display:block; font-size:11px; color:var(--tx-3,#8a8272); }
+  .pro-buy-note{ margin:9px 2px 0; font-size:12px; line-height:1.55; color:var(--tx-3,#8a8272); text-align:center; }
+  .pro-buy-note b{ color:var(--tx-2,#c9c2b0); }
   /* 3구 무료 업셀 카드 */
   .pro-upsell{ margin-top:8px; padding:13px 15px; border-radius:16px; cursor:pointer;
     border:1px dashed rgba(224,164,74,.5); background:rgba(224,164,74,.06);
@@ -1691,7 +1703,6 @@
   <div class="pro-modal-backdrop" data-proclose></div>
   <div class="pro-card" role="dialog" aria-modal="true" aria-labelledby="proTitle">
     <button class="pro-x" type="button" data-proclose aria-label="닫기">✕</button>
-    <span class="pro-badge" data-en="Coming soon">준비 중</span>
     <h2 id="proTitle">Hello Billiard <b>Pro</b></h2>
     <p class="pro-lead" id="proLead">더 깊이 파고드는 분들을 위한 기능을 준비하고 있어요. 관심을 남겨 주시면 우선순위에 반영합니다.</p>
     <ul class="pro-list">
@@ -1708,9 +1719,21 @@
         <button type="button" id="proReleaseNo" data-en="Cancel">취소</button>
       </span>
     </div>
-    <div class="pro-actions" id="proBuyRow">
-      <button class="tool primary" id="proBuy" type="button" data-en="Buy Pro">Pro 구매하기</button>
-      <button class="tool" id="proDonate" type="button" data-en="☕ Support">☕ 후원하기</button>
+    <div class="pro-buy" id="proBuyRow">
+      <div class="pro-plans">
+        <div class="pro-plan">
+          <span class="pp-name" data-en="1-day pass">1일권</span>
+          <span class="pp-price">₩1,000</span>
+          <span class="pp-sub" data-en="24 hours">24시간</span>
+        </div>
+        <div class="pro-plan best">
+          <span class="pp-name" data-en="Lifetime">영구</span>
+          <span class="pp-price">₩4,900</span>
+          <span class="pp-sub" data-en="one-time">한 번만</span>
+        </div>
+      </div>
+      <button class="tool primary" id="proBuy" type="button" data-en="Ask to buy">구매 문의하기</button>
+      <p class="pro-buy-note" data-en="Message us — we’ll guide payment and send an unlock code. Enter it below to unlock instantly.">문의 주시면 결제 안내 후 <b>언락 코드</b>를 보내드려요. 아래에 입력하면 바로 열립니다.</p>
     </div>
     <div class="pro-redeem" id="proRedeemRow">
       <input id="proCode" type="text" autocomplete="off" placeholder="언락 코드 입력" data-en-ph="Enter unlock code" aria-label="언락 코드">
@@ -1857,15 +1880,38 @@ window.hbStore=(function(){
 })();
 // PRO_CODES 에 코드를 넣으면 즉시 조절/무력화된다. 콘솔 __hbSetPro(1) 로 소유자/테스트 언락.
 window.hbPro=(function(){
-  var FKEY='hb_pro', PKEY='hb_photo_day';
+  var FKEY='hb_pro', UKEY='hb_pro_until', PKEY='hb_photo_day';
   // ── 무료 한도 (여기만 바꾸면 조절·해제 가능) ──
   var FREE_PHOTO_PER_DAY=5;   // 사진 인식: 무료 하루 5회 / Pro 무제한
   var FREE_3GU_ROUTES=1;      // 3구 물리 경로: 무료 대표 1개 / Pro 전체
-  // ── 언락 코드 (결제 연동 전 수동 발급용) — 예: ['HB-PRO-XXXX'] ──
-  // 'ADMIN1983' = 소유자 개인 코드 (Pro 코드 입력창에 넣으면 영구 Pro)
-  var PRO_CODES=['ADMIN1983'];
-  function is(){ try{ return localStorage.getItem(FKEY)==='1'; }catch(e){ return false; } }
-  function set(v){ try{ if(v) localStorage.setItem(FKEY,'1'); else localStorage.removeItem(FKEY); }catch(e){} }
+  var DAY_MS=24*60*60*1000;   // 1일권 유효 기간
+  // ── 언락 코드 (결제 연동 전 수동 발급용) ──
+  //  PRO_CODES     = 영구(₩4,900) · PRO_DAY_CODES = 1일권(₩1,000)
+  //  판매될 때마다 하나씩 골라 보내고, 쓴 건 표시해 두세요(다 쓰면 더 채웁니다).
+  //  ⚠ 클라이언트 전용이라 소스에 노출됨 — MVP 감수, 실제 결제(서버) 붙이면 사라짐.
+  var PRO_CODES=['ADMIN1983',   // 소유자 개인 코드(영구)
+    'HBP-4K9X2','HBP-7M3Q7','HBP-Q8W5R','HBP-2Z6N4','HBP-9F1T8',
+    'HBP-5C7B3','HBP-J3H9M','HBP-6R2V5','HBP-8D4L1','HBP-T5G7K',
+    'HBP-3N8P6','HBP-W9X2C','HBP-1B6F4','HBP-K7M3Q','HBP-Z2R8T'];
+  var PRO_DAY_CODES=[
+    'HBD-2A7K9','HBD-8M4X1','HBD-Q3W6R','HBD-5Z9N2','HBD-7F3T4',
+    'HBD-1C8B6','HBD-J9H2M','HBD-4R7V3','HBD-6D1L8','HBD-T3G5K',
+    'HBD-9N4P2','HBD-W2X7C','HBD-3B6F1','HBD-K8M4Q','HBD-Z7R2T',
+    'HBD-5A1K8','HBD-2M9X4','HBD-Q7W3R','HBD-8Z5N6','HBD-3F9T1'];
+  function now(){ try{ return Date.now(); }catch(e){ return 0; } }
+  function is(){
+    try{
+      if(localStorage.getItem(FKEY)==='1') return true;          // 영구
+      var until=+localStorage.getItem(UKEY)||0;
+      return until>now();                                        // 1일권 유효 중
+    }catch(e){ return false; }
+  }
+  function untilTs(){ try{ if(localStorage.getItem(FKEY)==='1') return Infinity;
+    var u=+localStorage.getItem(UKEY)||0; return u>now()?u:0; }catch(e){ return 0; } }
+  function set(v){ try{ if(v) localStorage.setItem(FKEY,'1');
+    else { localStorage.removeItem(FKEY); localStorage.removeItem(UKEY); } }catch(e){} }  // 해제는 둘 다 정리
+  function setDay(){ try{ var base=Math.max(now(), +localStorage.getItem(UKEY)||0);
+    localStorage.setItem(UKEY, base+DAY_MS); }catch(e){} }        // 남은 기간에 하루 더
   window.__hbSetPro=function(v){ set(!!v); return is(); };   // 소유자·테스트용 콘솔 스위치
   function today(){ try{ return new Date().toISOString().slice(0,10); }catch(e){ return ''; } }
   function pstate(){ try{ var s=JSON.parse(localStorage.getItem(PKEY)||'{}');
@@ -1873,8 +1919,14 @@ window.hbPro=(function(){
   function photoLeft(){ if(is()) return Infinity; return Math.max(0, FREE_PHOTO_PER_DAY - (pstate().n|0)); }
   function notePhoto(){ if(is()) return; try{ var s=pstate(); s.n=(s.n|0)+1;
     localStorage.setItem(PKEY,JSON.stringify(s)); }catch(e){} }
-  function redeem(code){ code=(code||'').trim(); if(code&&PRO_CODES.indexOf(code)>=0){ set(true); return true; } return false; }
-  return { is:is, set:set, redeem:redeem, photoLeft:photoLeft, notePhoto:notePhoto,
+  // 반환: 'perm'(영구) · 'day'(1일권) · false(잘못된 코드)
+  function redeem(code){ code=(code||'').trim();
+    if(!code) return false;
+    if(PRO_CODES.indexOf(code)>=0){ set(true); return 'perm'; }
+    if(PRO_DAY_CODES.indexOf(code)>=0){ setDay(); return 'day'; }
+    return false;
+  }
+  return { is:is, set:set, redeem:redeem, photoLeft:photoLeft, notePhoto:notePhoto, untilTs:untilTs,
     FREE_PHOTO_PER_DAY:FREE_PHOTO_PER_DAY, FREE_3GU_ROUTES:FREE_3GU_ROUTES };
 })();
 
@@ -7251,32 +7303,38 @@ if(typeof window!=='undefined')
 // ===== Pro 페이월 + 유료화 검증 (0·1단계) =====
 // 클릭 자체가 '지불의사 신호'다. 결제는 아직 config로 비워둔다(0단계 검증 후 연결).
 (function(){
-  // ── 결제 연결 (외부 링크 + 수동 코드) ──
-  //  ① CHECKOUT_URL 에 판매 페이지(Gumroad/토스/폼 등)를 넣으면 'Pro 구매하기'가 그리로 열림
-  //  ② 구매자에게 코드를 발급하고, 그 코드를 hbPro 모듈의 PRO_CODES 배열에 추가
-  //  ③ 구매자가 '구매 후 받은 코드 입력'에 넣으면 Pro 언락
-  //  PRICE 를 채우면 구매 버튼에 가격 표시. 비워두면 링크만 '준비 중'으로 뜸(클릭은 계측).
-  var CHECKOUT_URL='';       // 예: 'https://gumroad.com/l/xxxx' (판매/체크아웃 페이지)
-  var PRICE='';              // 예: '₩4,900'
-  var DONATE_URL='';         // 예: 토스 / 카카오 / BuyMeACoffee 후원 링크
-  var PRO_INTEREST_URL='';   // (CHECKOUT_URL 비었을 때의 폴백 — 관심 설문 등)
+  // ── 결제 연결 (수동 발급 방식) ──
+  //  ① '구매 문의하기' → CONTACT_URL(오픈카톡/이메일 등)이 열림
+  //  ② 결제(1일권 ₩1,000 / 영구 ₩4,900) 안내 후, hbPro 의 코드 배열에서 하나를 발급
+  //     (영구=PRO_CODES · 1일권=PRO_DAY_CODES)
+  //  ③ 구매자가 코드를 입력하면 Pro 언락 (1일권은 24시간, 영구는 계속)
+  //  ★ CONTACT_URL 만 사장님 창구로 바꾸면 됩니다. (이메일이면 'mailto:...' 형태)
+  var CONTACT_URL='mailto:studioroom.skb@gmail.com?subject=Hello%20Billiard%20Pro%20%EA%B5%AC%EB%A7%A4%20%EB%AC%B8%EC%9D%98&body=%EC%9B%90%ED%95%98%EB%8A%94%20%EC%83%81%ED%92%88%3A%201%EC%9D%BC%EA%B6%8C(1000%EC%9B%90)%20/%20%EC%98%81%EA%B5%AC(4900%EC%9B%90)%20%EC%A4%91%20%EA%B3%A8%EB%9D%BC%20%EC%A0%81%EC%96%B4%EC%A3%BC%EC%84%B8%EC%9A%94.';
   var modal=document.getElementById('proModal');
   var chip=document.getElementById('proTeaser');
   if(!modal||!chip) return;
-  if(PRICE){ var _bb=document.getElementById('proBuy'); if(_bb) _bb.textContent=window.hbLang.t('Pro 구매하기','Buy Pro')+' · '+PRICE; }
   var note=document.getElementById('proNote');
   var lead=document.getElementById('proLead');
   function leadText(ctx){ var L=window.hbLang;
     if(ctx==='photo') return L.t('무료 사진 인식은 하루 5회예요. Pro로 무제한으로 쓰거나 내일 다시 이용할 수 있어요.','Free photo scan is 5/day. Go Pro for unlimited, or use it again tomorrow.');
     if(ctx==='routes3') return L.t('무료는 3구 대표 경로 1개만 보여드려요. Pro에서 다중·고급 경로 전체를 볼 수 있어요.','Free shows only 1 three-cushion path; Pro shows all multi/advanced paths.');
-    return L.t('더 깊이 파고드는 분들을 위한 기능이에요. 관심을 남겨 주시면 우선순위에 반영합니다.','Features for those who want to go deeper. Leave your interest to shape our priorities.'); }
+    return L.t('더 깊이 파고드는 분들을 위한 기능이에요. 코드가 있으면 아래에 입력하고, 없으면 [구매 문의하기]로 결제 안내를 받으세요.','Features for those who want to go deeper. Have a code? Enter it below. Otherwise tap [Ask to buy].'); }
   var lastFocus=null;
   function pro(){ return !!(window.hbPro && window.hbPro.is()); }
   // 스토어(플레이·앱스토어) 빌드에서는 외부 결제 유도가 정책 위반이라 구매·후원 줄을 아예 숨긴다.
   var storeBuild=!!(window.hbStore && window.hbStore.is());
   function syncState(){
     var p=pro();
-    var a=document.getElementById('proActive'); if(a) a.hidden=!p;
+    var a=document.getElementById('proActive');
+    if(a){ a.hidden=!p;
+      if(p){
+        var u=window.hbPro&&window.hbPro.untilTs?window.hbPro.untilTs():Infinity;
+        if(u===Infinity){ a.textContent=window.hbLang.t('✓ Pro 활성화 — 모든 기능이 열렸습니다 (영구).','✓ Pro active — all features unlocked (lifetime).'); }
+        else { var dt=new Date(u); var hh=('0'+dt.getHours()).slice(-2), mm=('0'+dt.getMinutes()).slice(-2);
+          a.textContent=window.hbLang.t('✓ Pro 활성화 — 1일권 사용 중 ('+(dt.getMonth()+1)+'/'+dt.getDate()+' '+hh+':'+mm+'까지).',
+            '✓ Pro active — day pass until '+(dt.getMonth()+1)+'/'+dt.getDate()+' '+hh+':'+mm+'.'); }
+      }
+    }
     var buy=document.getElementById('proBuyRow'); if(buy) buy.style.display=(p||storeBuild)?'none':'';
     var rr=document.getElementById('proRedeemRow'); if(rr) rr.style.display=p?'none':'';
     var rel=document.getElementById('proReleaseRow'); if(rel) rel.hidden=!p;   // Pro일 때만 해제 노출
@@ -7309,22 +7367,19 @@ if(typeof window!=='undefined')
   chip.addEventListener('click', function(){ open(); });
   modal.querySelectorAll('[data-proclose]').forEach(function(el){ el.addEventListener('click', close); });
   window.addEventListener('keydown', function(e){ if(!modal.hidden && e.key==='Escape') close(); });
-  document.getElementById('proBuy').addEventListener('click', function(){
+  var buyBtn=document.getElementById('proBuy');
+  if(buyBtn) buyBtn.addEventListener('click', function(){
     window.hbTrack&&window.hbTrack('buy_click');
-    var url=CHECKOUT_URL||PRO_INTEREST_URL;
-    if(url){ try{ window.open(url,'_blank','noopener'); }catch(e){} close(); }
-    else thanks(window.hbLang.t('구매 링크 준비 중이에요 — 곧 열립니다. (관심 감사합니다!)','Purchase link coming soon — thanks for your interest!'));
-  });
-  document.getElementById('proDonate').addEventListener('click', function(){
-    window.hbTrack&&window.hbTrack('donate_click');
-    if(DONATE_URL){ try{ window.open(DONATE_URL,'_blank','noopener'); }catch(e){} close(); }
-    else thanks(window.hbLang.t('후원 준비 중이에요. 마음 감사합니다 🙏','Support is coming soon — thank you 🙏'));
+    if(CONTACT_URL){ try{ window.open(CONTACT_URL,'_blank','noopener'); }catch(e){ location.href=CONTACT_URL; } }
+    else thanks(window.hbLang.t('구매 문의 창구 준비 중이에요.','Purchase contact coming soon.'));
   });
   document.getElementById('proRedeem').addEventListener('click', function(){
     var el=document.getElementById('proCode');
-    var ok=window.hbPro && window.hbPro.redeem(el?el.value:'');
-    if(ok){ window.hbTrack&&window.hbTrack('redeem_ok'); syncState();
-      thanks(window.hbLang.t('Pro가 활성화되었습니다! 🎉 다음 계산부터 모든 경로가 열려요.','Pro activated! 🎉 All paths unlock from the next calculation.'));
+    var r=window.hbPro && window.hbPro.redeem(el?el.value:'');
+    if(r){ window.hbTrack&&window.hbTrack('redeem_ok',{type:r}); syncState();
+      thanks(r==='day'
+        ? window.hbLang.t('1일권이 활성화되었습니다! 🎉 24시간 동안 모든 기능이 열려요.','Day pass activated! 🎉 All features for 24 hours.')
+        : window.hbLang.t('Pro가 활성화되었습니다! 🎉 이제 모든 기능이 열렸어요.','Pro activated! 🎉 All features unlocked.'));
       try{ if(window.__hb3refresh) window.__hb3refresh(); }catch(e){} }
     else { window.hbTrack&&window.hbTrack('redeem_fail'); thanks(window.hbLang.t('코드가 올바르지 않아요. 다시 확인해 주세요.','Invalid code. Please check and try again.'),true); }
   });
