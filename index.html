@@ -1289,9 +1289,9 @@
     <div class="tune-row">
       <span class="tune-label">내 실력</span>
       <div class="tune-options" id="g3-skillseg">
-        <button data-skill="beg">초급</button>
-        <button data-skill="mid" class="on">중급</button>
-        <button data-skill="adv">상급</button>
+        <button data-skill="beg" data-en-html="Beginner<small>~15 pt</small>">초급<small>~15점</small></button>
+        <button data-skill="mid" class="on" data-en-html="Intermediate<small>~30 pt</small>">중급<small>~30점</small></button>
+        <button data-skill="adv" data-en-html="Advanced<small>30 pt~</small>">상급<small>30점~</small></button>
       </div>
     </div>
     <div class="tune-row">
@@ -7115,8 +7115,8 @@ if(typeof window!=='undefined')
                        en:['2) Place the balls','Grab a ball on the table and drag to move it.'] },
     { sel:'#g4-settings', open:'#g4-settings', ko:['③ 샷·개인 설정','샷 파워·쿠션 수·내 실력을 여기서 정해요. 특히 내 실력(초급~100점 / 중급~250점 / 상급250점~)을 맞추면 칠 수 있는 경로만 추천해요. 구장 조건에선 천·쿠션 반발을 우리 대에 맞춥니다.'],
                           en:['3) Shot & personal settings','Set shot power, cushion count and your skill here. Matching your skill (Beginner ~100 / Intermediate ~250 / Advanced 250+) filters to shots you can actually make. Table condition tunes cloth/cushion to your table.'] },
-    { sel:'#g4-photo', ko:['④ 사진으로 자동 배치','당구대 사진을 찍으면 공 위치를 자동으로 읽어줘요. 사진은 기기 안에서만 처리돼요.'],
-                       en:['4) Auto-place by photo','Take a photo of the table and it reads the ball positions. Photos never leave your device.'] },
+    { sel:'#g4-photo', ko:['④ 사진으로 자동 배치','당구대 사진을 넣으면 노란 점 4개가 나와요. 그 점을 당구대 네 모서리(쿠션 안쪽 꼭짓점)에 맞춘 뒤 [공 인식 → 경로 계산]을 눌러야 정확히 읽어요. 사진은 기기 안에서만 처리돼요.'],
+                       en:['4) Auto-place by photo','Drop in a table photo and 4 yellow dots appear. Drag them onto the table’s four inner corners, then tap [Detect → Calculate]. Photos never leave your device.'] },
     { sel:'#g4-calc', ko:['⑤ 경로 계산','공을 배치했으면 이 버튼! 득점 경로를 성공률·정석 코스와 함께 찾아줘요.'],
                       en:['5) Calculate paths','Once placed, tap this. It finds scoring paths with success rate and standard courses.'] },
     { sel:'#g4-routes', ko:['⑥ 제안 경로','계산된 경로가 여기 카드로 나와요. 카드를 누르면 그 경로가 당구대에 그려져요.'],
