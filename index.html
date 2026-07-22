@@ -5755,11 +5755,22 @@ const SPEEDS3=[
 //  앞돌리기/뒤돌리기 같은 세부명은 배치·유파마다 갈려 틀린 지시가 될 수 있으니,
 //  객관적으로 분명한 것만 이름 붙이고 3쿠션 정석은 '정석 코스'로 통칭한다.
 function classify3(rails, railsBefore, cush, travelRails){
-  const between=rails.slice((railsBefore||'').length);
+  rails = rails || '';
   const isLong=c=>c==='T'||c==='B';
-  if((railsBefore||'').length>=1) return {name:'와리가리', en:'Bank-first', boost:4};   // 선행 쿠션(되돌려치기·옆돌리기)
+  const opp={T:'B',B:'T',L:'R',R:'L'};
+  // 와리가리(횡단샷·더블 쿠션) = 마주 보는 평행 쿠션 사이를 '왕복'하는 지그재그.
+  //  정의상 '두 번 이상 연속'(더블 쿠션)이라, 한 번 가로지르는 것(예 …B-T…)은 아니고
+  //  X → 맞은편 → 다시 X (한 왕복 사이클)이 있어야 한다. 예: T-B-T, B-T-B, L-R-L, R-L-R.
+  //  (코너 도는 정석은 장·단이 번갈아 나올 뿐, 같은 축을 왕복하지 않는다)
+  let zigzag=false;
+  for(let k=2;k<rails.length;k++){
+    if(rails[k]===opp[rails[k-1]] && rails[k-1]===opp[rails[k-2]]){ zigzag=true; break; }
+  }
+  if(zigzag) return {name:'와리가리', en:'Zigzag (traverse)', boost:5};
   if(cush>=4 && travelRails>=2.6)  return {name:'대회전', en:'Grand tour', boost:5};      // 크게 한 바퀴
+  const between=rails.slice((railsBefore||'').length);
   if(cush===3 && between.length>=3){
+    // 정석 3쿠션 = 장·단이 번갈아(수직 전환) 코너를 도는 깔끔한 코스
     const alt=(isLong(between[0])!==isLong(between[1])) && (isLong(between[1])!==isLong(between[2]));
     if(alt) return isLong(between[0])
       ? {name:'정석 코스 (장-단-장)', en:'Textbook (long-short-long)', boost:5}
@@ -5772,6 +5783,13 @@ async function solve3(onProgress){
   const cue=balls.cue;
   const cands=[];
   let done=0;
+  // 초구(사용자가 아직 공을 안 옮긴 기본 배치)에서는 대부분 '먼 공'을 먼저 친다 →
+  // 그 경로에 우선순위를 살짝 가산한다. 사용자가 배치를 바꾼 뒤엔(userPlaced) 적용 안 함.
+  const farBall = len(sub(cue,balls.obj)) >= len(sub(cue,balls.target)) ? 'obj' : 'target';
+  // 가산 18 ≈ 성공률 18%p. '대부분 먼 공' — 웬만하면 먼 공 경로가 앞서되,
+  // 가까운 공이 18%p 넘게 확실히 쉬우면 그건 그대로 위로 올라온다.
+  const farBoost = r => (!userPlaced && r && r.fk===farBall) ? 18 : 0;
+  const rankOf  = r => r.prob*100 + (r.recBoost||0) + farBoost(r);
   const spinN=P.skill.keys?Object.keys(P.skill.keys).length:SPINS3.length;
   // 진행률 추정 — 전수 스캔 + 상위 10후보 MC
   //   + 표시 3경로 × (속도 2종 재조준 17 + 속도 3종 MC 24 + 확정 속도 정밀 24)
@@ -5948,7 +5966,7 @@ async function solve3(onProgress){
   // (가산 4~5점 ≈ 성공률 4~5%p). 전략이 같은 near-중복은 접는다 —
   // (첫 적구·뱅크 여부·쿠션수·당점)이 같으면 조준점만 다른 사실상 같은 경로다.
   // 서로 다른 전략의 경로가 최대 6개 뽑히게 해 재현성 재검(kept) 뒤 5개까지 남긴다.
-  out.sort((a,b)=>(b.prob*100+(b.recBoost||0))-(a.prob*100+(a.recBoost||0)) || b.score-a.score);
+  out.sort((a,b)=>rankOf(b)-rankOf(a) || b.score-a.score);
   const picked=[], sig=new Set();
   for(const r of out){
     if(picked.length>=6) break;
@@ -6009,10 +6027,11 @@ async function solve3(onProgress){
     // 정석 코스 이름을 확정 속도의 실제 경로로 다시 분류(속도가 바뀌면 경로도 바뀜)
     const patK=classify3(sim.rails, sim.railsBefore, sim.cushAtSecond, best.travel/PW);
     best.pattern=patK.name; best.patternEn=patK.en; best.recBoost=patK.boost;
+    best.rails=sim.rails;   // 레일 순서(검증·디버그용, 카드엔 안 씀)
     kept.push(best);
   }
   // 성공률 우선, 정석 코스 우선순위 가산(≈4~5%p) — 유명한 코스가 앞에 온다
-  kept.sort((a,b)=>(b.prob*100+(b.recBoost||0))-(a.prob*100+(a.recBoost||0)));
+  kept.sort((a,b)=>rankOf(b)-rankOf(a));
   if(kept.length>5) kept.length=5;   // 최대 5개
   // 경로를 찾긴 했으나 전부 재현성이 없어 버린 경우를 빈 결과와 구분한다
   kept.dropped=picked.length-kept.length;
