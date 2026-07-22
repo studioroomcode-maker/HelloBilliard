@@ -458,7 +458,8 @@
     flex:1; background:#1b1610; border:2px solid #312819;
     color:#9b9484; font-family:'Bricolage Grotesque',sans-serif;
     font-weight:800; font-size:15px; padding:9px 10px; border-radius:12px;
-    cursor:pointer; transition:all .15s; letter-spacing:-0.01em;
+    cursor:pointer; letter-spacing:-0.01em;
+    transition:background .15s, border-color .15s, color .15s, box-shadow .15s;
   }
   .sport-tabs button.on {
     background:linear-gradient(180deg,#2a8a5f,#1f6b4a);
@@ -768,7 +769,7 @@
 
   /* ============================================================
      UI 개편 레이어 (3차) · mobile-app-ui-design 스킬
-     시그니처=일렉트릭 시안 · 라이트/다크 토글 · 히어로 카드 · 마이크로 모션.
+     시그니처=골드(웜 차콜 프레임) · 라이트/다크 토글 · 히어로 카드 · 마이크로 모션.
      기능 불변. 되돌리기: 이 블록 + 헤더 토글 + 테마 스크립트 제거.
      ============================================================ */
   :root{
@@ -986,7 +987,8 @@
   @keyframes rc-in{ from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:none; } }
   .routes.just .rcard{ animation:rc-in .42s cubic-bezier(.2,.75,.25,1) both;
     animation-delay:var(--d,0ms); }
-  @keyframes hero-pop{ 0%{ transform:scale(.6); opacity:0; } 62%{ transform:scale(1.12); } 100%{ transform:scale(1); opacity:1; } }
+  /* 성공률 숫자 등장 — 오버슈트(>1 바운스) 없이 ease-out 으로 차오르게 */
+  @keyframes hero-pop{ from{ transform:scale(.72); opacity:0; } to{ transform:scale(1); opacity:1; } }
   .routes.just .rcard .rc-pct{ display:inline-block;
     animation:hero-pop .5s cubic-bezier(.2,.8,.2,1) both; animation-delay:calc(var(--d,0ms) + 80ms); }
 
@@ -1482,8 +1484,11 @@
   .pro-card h2 b{ color:#e8b45f; }
   .pro-lead{ font-size:13px; color:var(--tx-2,#c9c2b0); margin-bottom:14px; }
   .pro-list{ list-style:none; padding:0; margin:0 0 18px; display:flex; flex-direction:column; gap:9px; }
-  .pro-list li{ font-size:13.5px; color:var(--tx-2,#c9c2b0); line-height:1.4; }
+  .pro-list li{ font-size:13.5px; color:var(--tx-2,#c9c2b0); line-height:1.4;
+    display:flex; align-items:flex-start; gap:9px; }
   .pro-list li b{ color:var(--tx-1,#f4f1e8); }
+  /* Pro 기능 아이콘 — 앱 공통 stroke 아이콘 voice(16×16·1.5)로, 이모지 대체 */
+  .pro-list .pro-ico{ flex:0 0 auto; margin-top:1px; color:var(--accent); }
   .pro-actions{ display:flex; gap:9px; }
   .pro-actions .tool{ flex:1; justify-content:center; }
   .pro-redeem{ display:flex; gap:8px; margin-top:10px; }
@@ -1702,7 +1707,10 @@
   #hbTut{ position:fixed; inset:0; z-index:120; }
   /* 스포트라이트 — 큰 box-shadow 로 대상 주변만 어둡게 파낸다(마스크 불필요) */
   .hbtut-spot{ position:absolute; border-radius:12px; pointer-events:none;
-    box-shadow:0 0 0 9999px rgba(8,7,5,.72); transition:all .28s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 0 0 9999px rgba(8,7,5,.72);
+    transition:top .28s cubic-bezier(.4,0,.2,1), left .28s cubic-bezier(.4,0,.2,1),
+               width .28s cubic-bezier(.4,0,.2,1), height .28s cubic-bezier(.4,0,.2,1),
+               box-shadow .28s cubic-bezier(.4,0,.2,1);
     outline:2px solid var(--accent,#e8b53e); outline-offset:2px; }
   .hbtut-spot.center{ box-shadow:0 0 0 9999px rgba(8,7,5,.82); outline:none; }
   /* 클릭 가로채기용 투명 막 — 실수로 뒤 요소가 눌리지 않게 */
@@ -1743,9 +1751,9 @@
     <h2 id="proTitle">Hello Billiard <b>Pro</b></h2>
     <p class="pro-lead" id="proLead">더 깊이 파고드는 분들을 위한 기능을 준비하고 있어요. 관심을 남겨 주시면 우선순위에 반영합니다.</p>
     <ul class="pro-list">
-      <li data-en-html="📷 <b>Unlimited photo scan</b> — free is 3/day">📷 <b>사진 인식 무제한</b> — 무료는 하루 3회</li>
-      <li data-en-html="🎯 <b>3-cushion multi/advanced paths</b> — free shows 1">🎯 <b>3구 다중·고급 경로</b> — 무료는 대표 1개</li>
-      <li data-en-html="🖼 <b>No watermark on exported images</b>">🖼 <b>내보낸 이미지 워터마크 제거</b></li>
+      <li data-en-html="<svg class=&quot;pro-ico&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;15&quot; height=&quot;15&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.5&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; aria-hidden=&quot;true&quot;><rect x=&quot;1.5&quot; y=&quot;4.5&quot; width=&quot;13&quot; height=&quot;9&quot; rx=&quot;2&quot;/><circle cx=&quot;8&quot; cy=&quot;9&quot; r=&quot;2.6&quot;/><path d=&quot;M5.5 4.5l1-2h3l1 2&quot;/></svg><b>Unlimited photo scan</b> — free is 3/day"><svg class="pro-ico" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg><b>사진 인식 무제한</b> — 무료는 하루 3회</li>
+      <li data-en-html="<svg class=&quot;pro-ico&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;15&quot; height=&quot;15&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.5&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; aria-hidden=&quot;true&quot;><circle cx=&quot;2.5&quot; cy=&quot;8&quot; r=&quot;1.5&quot;/><path d=&quot;M4 8h2.6&quot;/><path d=&quot;M6.6 8l4-3.3&quot;/><path d=&quot;M6.6 8l4 3.3&quot;/></svg><b>3-cushion multi/advanced paths</b> — free shows 1"><svg class="pro-ico" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="2.5" cy="8" r="1.5"/><path d="M4 8h2.6"/><path d="M6.6 8l4-3.3"/><path d="M6.6 8l4 3.3"/></svg><b>3구 다중·고급 경로</b> — 무료는 대표 1개</li>
+      <li data-en-html="<svg class=&quot;pro-ico&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;15&quot; height=&quot;15&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.5&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; aria-hidden=&quot;true&quot;><rect x=&quot;1.5&quot; y=&quot;3&quot; width=&quot;13&quot; height=&quot;10&quot; rx=&quot;2&quot;/><circle cx=&quot;5&quot; cy=&quot;6.3&quot; r=&quot;1.2&quot;/><path d=&quot;M2.5 12.5l3.8-3.6 2.3 2 2.8-2.8 2.1 2.4&quot;/></svg><b>No watermark on exported images</b>"><svg class="pro-ico" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="3" width="13" height="10" rx="2"/><circle cx="5" cy="6.3" r="1.2"/><path d="M2.5 12.5l3.8-3.6 2.3 2 2.8-2.8 2.1 2.4"/></svg><b>내보낸 이미지 워터마크 제거</b></li>
     </ul>
     <div id="proActive" class="pro-active" hidden data-en="✓ Pro is active — all features unlocked.">✓ Pro가 활성화되어 있어요 — 모든 기능이 열렸습니다.</div>
     <div class="pro-release" id="proReleaseRow" hidden>
