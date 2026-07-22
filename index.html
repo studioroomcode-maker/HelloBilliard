@@ -1128,17 +1128,17 @@
         <div class="tune-row">
           <span class="tune-label" data-en="Cloth">천 상태</span>
           <div class="tune-options">
-            <button data-tune="cloth" data-value="slow" data-en="Slow">느림</button>
-            <button data-tune="cloth" data-value="normal" class="on" data-en="Normal">보통</button>
-            <button data-tune="cloth" data-value="fast" data-en="Fast">빠름</button>
+            <button data-table="cloth" data-value="slow" data-en="Slow">느림</button>
+            <button data-table="cloth" data-value="normal" class="on" data-en="Normal">보통</button>
+            <button data-table="cloth" data-value="fast" data-en="Fast">빠름</button>
           </div>
         </div>
         <div class="tune-row">
           <span class="tune-label" data-en="Cushion">쿠션</span>
           <div class="tune-options">
-            <button data-tune="cushion" data-value="short" data-en="Short">짧음</button>
-            <button data-tune="cushion" data-value="normal" class="on" data-en="Normal">보통</button>
-            <button data-tune="cushion" data-value="long" data-en="Long">김</button>
+            <button data-table="cushion" data-value="short" data-en="Short">짧음</button>
+            <button data-table="cushion" data-value="normal" class="on" data-en="Normal">보통</button>
+            <button data-table="cushion" data-value="long" data-en="Long">김</button>
           </div>
         </div>
         <div class="tune-row">
@@ -1280,11 +1280,11 @@
   <div class="mode-panel" id="panel-m3">
   <div class="col-board">
   <details class="venue" style="margin:0 0 12px">
-  <summary>개인 설정 <span class="venue-sub">내 실력 · 내 수구 색 · 테이블 보정</span></summary>
+  <summary>개인 설정 <span class="venue-sub">내 실력 · 내 수구 색 · 구장 조건</span></summary>
   <!-- 이 값들은 3구 계산에 그대로 쓰이는데 예전에는 4구 탭에만 있었다.
        3구만 쓰는 사람은 사진 인식이 내 수구를 반대로 잡아도 고칠 방법을
-       찾지 못했다. 저장소(hb_skill·hb4_myball·hb4_calib)는 4구와 공유하므로
-       한쪽에서 바꾸면 양쪽에 반영된다. -->
+       찾지 못했다. 저장소(hb_skill·hb4_myball·hb4_calib·hb_table)는 4구와
+       공유하므로 한쪽에서 바꾸면 양쪽에 반영된다. -->
   <div class="tune-controls" style="margin-top:8px">
     <div class="tune-row">
       <span class="tune-label">내 실력</span>
@@ -1301,27 +1301,48 @@
         <button data-myball="yellow"><svg class="bicon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#f0c542" stroke="#b89220"/></svg> 노란공</button>
       </div>
     </div>
-    <div class="tune-row">
-      <span class="tune-label">쿠션 보정</span>
-      <div class="tune-options">
-        <button data-cal="cush" data-d="-1">− 짧게</button>
-        <button class="cal-val" data-cal-val="cush" disabled>0</button>
-        <button data-cal="cush" data-d="1">+ 길게</button>
+    <details class="venue">
+      <summary data-en-html="Table condition <span class=&quot;venue-sub&quot;>Cloth · Cushion · Calibration</span>">구장 조건 <span class="venue-sub">천 상태 · 쿠션 · 테이블 보정</span></summary>
+      <div class="tune-controls" style="margin:8px 0 0">
+        <div class="tune-row">
+          <span class="tune-label" data-en="Cloth">천 상태</span>
+          <div class="tune-options">
+            <button data-table="cloth" data-value="slow" data-en="Slow">느림</button>
+            <button data-table="cloth" data-value="normal" class="on" data-en="Normal">보통</button>
+            <button data-table="cloth" data-value="fast" data-en="Fast">빠름</button>
+          </div>
+        </div>
+        <div class="tune-row">
+          <span class="tune-label" data-en="Cushion">쿠션</span>
+          <div class="tune-options">
+            <button data-table="cushion" data-value="short" data-en="Short">짧음</button>
+            <button data-table="cushion" data-value="normal" class="on" data-en="Normal">보통</button>
+            <button data-table="cushion" data-value="long" data-en="Long">김</button>
+          </div>
+        </div>
+        <div class="tune-row">
+          <span class="tune-label">쿠션 보정</span>
+          <div class="tune-options">
+            <button data-cal="cush" data-d="-1">− 짧게</button>
+            <button class="cal-val" data-cal-val="cush" disabled>0</button>
+            <button data-cal="cush" data-d="1">+ 길게</button>
+          </div>
+        </div>
+        <div class="tune-row">
+          <span class="tune-label">구름 보정</span>
+          <div class="tune-options">
+            <button data-cal="roll" data-d="-1">− 짧게</button>
+            <button class="cal-val" data-cal-val="roll" disabled>0</button>
+            <button data-cal="roll" data-d="1">+ 길게</button>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="tune-row">
-      <span class="tune-label">구름 보정</span>
-      <div class="tune-options">
-        <button data-cal="roll" data-d="-1">− 짧게</button>
-        <button class="cal-val" data-cal-val="roll" disabled>0</button>
-        <button data-cal="roll" data-d="1">+ 길게</button>
-      </div>
-    </div>
+    </details>
   </div>
   <p class="hint" style="margin-top:8px">사진 인식은 <b>내 수구 색</b>으로 수구를 고릅니다 —
-    잘못 잡히면 여기서 바꾸고 다시 인식하세요. 실제 공이 예측보다 짧게 반사되면
-    쿠션 보정 「− 짧게」, 덜 굴러가면 구름 보정을 조절합니다.
-    <b>경로 계산</b>에 바로 반영되고 4구 탭과 값을 공유합니다.</p>
+    잘못 잡히면 여기서 바꾸고 다시 인식하세요. <b>구장 조건</b>에서 천·쿠션 반발을
+    우리 대에 맞추고, 실제 공이 예측보다 짧게 반사되면 쿠션 보정 「− 짧게」,
+    덜 굴러가면 구름 보정을 조절합니다. <b>경로 계산</b>에 바로 반영되고 4구 탭과 값을 공유합니다.</p>
   </details>
 
   <div class="toolbar" id="g3-toolbar" style="margin-bottom:10px"></div>
@@ -2140,7 +2161,7 @@ let activeBall='cue', dragging=null, routes=[], selected=0;
 let sortMode='best', allRoutes=[];   // 정렬 필터 — 계산된 전체 후보를 보관해 재정렬
 let shownRoutes=[];   // 고정 선발된 표시 경로(최대 5) — 정렬 탭은 이걸 순서만 바꾼다
 let allRoutesLow=[];   // 성공률 3% 미만 후보 — '다른 순서' 참고 경로로만 쓰려고 따로 보관
-const tuneState={power:'normal', cloth:'normal', cushion:'normal'};
+const tuneState={power:'normal'};   // 천/쿠션은 table(구장 조건)로 이동 — 4구·3구 공유
 // 쿠션 수 규칙 — 'any'=추천(무관), 1/2=정확히 그 횟수, 3=3회 이상 (쓰리쿠션 룰).
 // 기준: 수구가 '두 번째 적구'를 맞히기 전까지 닿은 쿠션 총수 (첫 적구 전 뱅크 포함)
 let cushRule='any';
@@ -2189,6 +2210,17 @@ function loadCalib(){
 function saveCalib(){
   try{ localStorage.setItem('hb4_calib',JSON.stringify(calib)); }catch(e){}
 }
+// 구장 조건(천 상태·쿠션) — 캘리브레이션처럼 4구·3구가 저장소 하나(hb_table)를 공유해
+// 어느 탭에서 바꿔도 양쪽 물리에 함께 반영된다. (3구 phyParams 는 이 값을 직접 읽는다)
+const table=loadTable();
+function loadTable(){
+  try{
+    const t=JSON.parse(localStorage.getItem('hb_table')||'{}');
+    return {cloth:CLOTH_PRESETS[t.cloth]?t.cloth:'normal',
+            cushion:CUSHION_PRESETS[t.cushion]?t.cushion:'normal'};
+  }catch(e){ return {cloth:'normal', cushion:'normal'}; }
+}
+function saveTable(){ try{ localStorage.setItem('hb_table',JSON.stringify(table)); }catch(e){} }
 
 // ── 실력 3단계 — 초급은 두께·회전 제어가 어렵다는 전제 ──
 // · 회전: 초급 = 무회전/끌기/밀기만, 중급 = 혼합 회전 제외, 상급 = 전부
@@ -2216,8 +2248,8 @@ function getSkill(){
 
 function physParams(){
   const p=POWER_PRESETS[tuneState.power];
-  const c=CLOTH_PRESETS[tuneState.cloth];
-  const k=CUSHION_PRESETS[tuneState.cushion];
+  const c=CLOTH_PRESETS[table.cloth];
+  const k=CUSHION_PRESETS[table.cushion];
   const sk=SKILLS[getSkill()];
   return {
     skill:sk,
@@ -3548,6 +3580,20 @@ function syncCalib(){
   });
 }
 syncCalib();
+// ⑥-b 구장 조건(천 상태·쿠션) — 캘리브레이션과 같은 구조. 4구·3구 두 탭에 같은
+// 컨트롤이 있고 저장소(hb_table)가 하나라 어느 쪽을 눌러도 양쪽에 반영된다.
+document.querySelectorAll('[data-table]').forEach(b=>
+  b.addEventListener('click',()=>{
+    table[b.dataset.table]=b.dataset.value;
+    saveTable(); syncTable();
+    routes=[];selected=0;renderCards();draw();drawPhoto();
+    if(typeof window!=='undefined'&&window.__hb3refresh) window.__hb3refresh();
+  }));
+function syncTable(){
+  document.querySelectorAll('[data-table]').forEach(b=>
+    b.classList.toggle('on', table[b.dataset.table]===b.dataset.value));
+}
+syncTable();
 // 실력 단계 버튼 (4구 쪽 — 3구와 localStorage 공유)
 function syncSkill(){
   const k=getSkill();
@@ -5593,16 +5639,28 @@ function getSkill3(){
     return SKILLS3[k]?k:'mid';
   }catch(e){ return 'mid'; }
 }
+// 구장 조건 프리셋 — 이 스코프에선 4구쪽 CLOTH/CUSHION_PRESETS 가 안 보여(별도 블록)
+// 같은 값을 여기 둔다. 저장소(hb_table)는 4구와 공유 → 어느 탭에서 바꿔도 함께 반영.
+const CLOTH3={slow:{mus:0.22,mur:0.015,spread:1.15}, normal:{mus:0.20,mur:0.012,spread:1.00}, fast:{mus:0.18,mur:0.009,spread:0.92}};
+const CUSH3 ={short:{e:0.80,muc:0.26,spread:1.10}, normal:{e:0.85,muc:0.20,spread:1.00}, long:{e:0.90,muc:0.14,spread:1.05}};
+function loadTable3(){
+  try{ const t=JSON.parse(localStorage.getItem('hb_table')||'{}');
+    return {cloth:CLOTH3[t.cloth]?t.cloth:'normal', cushion:CUSH3[t.cushion]?t.cushion:'normal'}; }
+  catch(e){ return {cloth:'normal', cushion:'normal'}; }
+}
 function phyParams(){
   const sk=SKILLS3[getSkill3()];
-  const p={mus:0.20, mur:0.012, ec:0.85, muc:0.20, ebb:0.93, mubb:0.06,
-           speed:PHY_BASE_SPEED, aimSigma:0.010*sk.aim, spdSigma:0.05*sk.spd,
+  const T=loadTable3();
+  const cl=CLOTH3[T.cloth], cu=CUSH3[T.cushion];
+  // 천=미끄럼/구름 저항, 쿠션=반발/접선 마찰. normal 이면 예전 기본값과 동일(호환).
+  const p={mus:cl.mus, mur:cl.mur, ec:cu.e, muc:cu.muc, ebb:0.93, mubb:0.06,
+           speed:PHY_BASE_SPEED, aimSigma:0.010*sk.aim*cl.spread*cu.spread, spdSigma:0.05*sk.spd,
            spinSigma:0.08*sk.spin, skill:sk};
   try{
     const c=JSON.parse(localStorage.getItem('hb4_calib')||'{}');
-    p.ec=clamp(0.85+(c.cush|0)*0.015,0.60,0.97);
-    p.muc=clamp(0.20-(c.cush|0)*0.02,0.06,0.40);
-    p.mur=0.012*Math.pow(1.07,-(c.roll|0));
+    p.ec=clamp(cu.e+(c.cush|0)*0.015,0.60,0.97);
+    p.muc=clamp(cu.muc-(c.cush|0)*0.02,0.06,0.40);
+    p.mur=cl.mur*Math.pow(1.07,-(c.roll|0));
   }catch(e){}
   return p;
 }
