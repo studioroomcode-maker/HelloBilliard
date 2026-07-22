@@ -2733,8 +2733,30 @@ function pickTop(list,key){
 }
 // 표시 경로 선발 — 정렬 모드와 무관하게 '다양한 최대 5개'를 고정 선발한다.
 // 정렬 탭은 이 고정 목록의 순서만 바꾼다(applySort). 같은 결과를 어떤 순으로 볼지 = 필터.
+// 초구(기본 배치)에서 정석대로 '먼 적구'부터 치는지 기준을 잡는다 — 수구에서 더 먼 적구.
+function farFirstBall4(){
+  const c=balls.cue;
+  return len(sub(c,balls.r1))>=len(sub(c,balls.r2))?'r1':'r2';
+}
+// 4구는 이 스코프에 userPlaced 플래그가 없다(3구 쪽 변수) — 공이 정식 초구 배치(defaults)
+// 그대로인지로 '초구 세팅'을 판정한다. 사진/드래그/랜덤 배치는 좌표가 달라져 false.
+function atPreset4(){
+  for(const k in defaults){
+    const a=balls[k], d=defaults[k];
+    if(!a||Math.abs(a.x-d.x)>0.5||Math.abs(a.y-d.y)>0.5) return false;
+  }
+  return true;
+}
 function sortedRoutes(){
   if(!allRoutes.length) return [];
+  // 초구 세팅(정식 초구 배치 그대로)은 당구 정석대로 '먼 적구'를 먼저 친다 — 가까운 적구
+  // 먼저 치는 경로는 빼고, '다른 순서' 참고 경로도 붙이지 않는다. 배치를 바꿨거나
+  // 먼 적구 경로가 아예 없으면 평소대로 전부 보여준다.
+  if(atPreset4()){
+    const far=farFirstBall4();
+    const only=allRoutes.filter(r=>r.first===far);
+    if(only.length) return pickDiverse(only);
+  }
   return withReference(pickDiverse(allRoutes));
 }
 // 고정 선발된 경로를 선택한 정렬 기준으로 재정렬 (참고 경로는 항상 맨 뒤)
@@ -5977,6 +5999,12 @@ async function solve3(onProgress){
     const {gather}=gather3(r.final);
     out.push({...c, prob, gather, pattern:pat.name, patternEn:pat.en, recBoost:pat.boost,
       score:prob*100+pat.boost+c.tol+(gather||0)*0.05});
+  }
+  // 초구 세팅(기본 배치)은 정석대로 '먼 공'을 먼저 친다 — 먼 공 경로가 하나라도 있으면
+  // 가까운 공 먼저 치는 경로는 제외한다. (사용자가 배치를 바꾸면 userPlaced=true라 제외 안 함)
+  if(!userPlaced){
+    const farOnly=out.filter(r=>r.fk===farBall);
+    if(farOnly.length){ out.length=0; out.push(...farOnly); }
   }
   // 성공률(쉬운 것)을 기본으로 하되, 유명한 정석 코스에 우선순위를 가산한다 —
   // 성공률이 비슷하면 대회전·와리가리·장단장 같은 정석 코스가 먼저 추천된다
