@@ -1470,7 +1470,7 @@
     border:1px solid var(--line-soft,#3a3327); background:var(--surface-2,#241d15);
     color:var(--tx-1,#f4f1e8); font-size:13px; }
   .pro-redeem input::placeholder{ color:var(--tx-3,#8a8272); }
-  .pro-redeem .tool{ flex:0 0 auto; }
+  .pro-redeem .tool{ flex:0 0 auto; min-width:76px; padding-left:20px; padding-right:20px; }
   .pro-active{ margin:2px 0 4px; padding:10px 12px; border-radius:12px; font-size:13px;
     font-weight:700; color:#5fd08a; background:rgba(95,208,138,.1);
     border:1px solid rgba(95,208,138,.35); }
@@ -1722,7 +1722,7 @@
     <h2 id="proTitle">Hello Billiard <b>Pro</b></h2>
     <p class="pro-lead" id="proLead">더 깊이 파고드는 분들을 위한 기능을 준비하고 있어요. 관심을 남겨 주시면 우선순위에 반영합니다.</p>
     <ul class="pro-list">
-      <li data-en-html="📷 <b>Unlimited photo scan</b> — free is 5/day">📷 <b>사진 인식 무제한</b> — 무료는 하루 5회</li>
+      <li data-en-html="📷 <b>Unlimited photo scan</b> — free is 3/day">📷 <b>사진 인식 무제한</b> — 무료는 하루 3회</li>
       <li data-en-html="🎯 <b>3-cushion multi/advanced paths</b> — free shows 1">🎯 <b>3구 다중·고급 경로</b> — 무료는 대표 1개</li>
       <li data-en-html="🖼 <b>No watermark on exported images</b>">🖼 <b>내보낸 이미지 워터마크 제거</b></li>
     </ul>
@@ -1898,7 +1898,7 @@ window.hbStore=(function(){
 window.hbPro=(function(){
   var FKEY='hb_pro', UKEY='hb_pro_until', PKEY='hb_photo_day';
   // ── 무료 한도 (여기만 바꾸면 조절·해제 가능) ──
-  var FREE_PHOTO_PER_DAY=5;   // 사진 인식: 무료 하루 5회 / Pro 무제한
+  var FREE_PHOTO_PER_DAY=3;   // 사진 인식: 무료 하루 3회 / Pro 무제한
   var FREE_3GU_ROUTES=1;      // 3구 물리 경로: 무료 대표 1개 / Pro 전체
   var FREE_4GU_ROUTES=1;      // 4구 경로: 무료 대표 1개 / Pro 전체
   var DAY_MS=24*60*60*1000;   // 1일권 유효 기간
@@ -7375,15 +7375,16 @@ if(typeof window!=='undefined')
   //  ② 결제(1일권 ₩1,000 / 영구 ₩4,900) 안내 후, hbPro 의 코드 배열에서 하나를 발급
   //     (영구=PRO_CODES · 1일권=PRO_DAY_CODES)
   //  ③ 구매자가 코드를 입력하면 Pro 언락 (1일권은 24시간, 영구는 계속)
-  //  ★ CONTACT_URL 만 사장님 창구로 바꾸면 됩니다. (이메일이면 'mailto:...' 형태)
-  var CONTACT_URL='mailto:studioroom.skb@gmail.com?subject=Hello%20Billiard%20Pro%20%EA%B5%AC%EB%A7%A4%20%EB%AC%B8%EC%9D%98&body=%EC%9B%90%ED%95%98%EB%8A%94%20%EC%83%81%ED%92%88%3A%201%EC%9D%BC%EA%B6%8C(1000%EC%9B%90)%20/%20%EC%98%81%EA%B5%AC(4900%EC%9B%90)%20%EC%A4%91%20%EA%B3%A8%EB%9D%BC%20%EC%A0%81%EC%96%B4%EC%A3%BC%EC%84%B8%EC%9A%94.';
+  //  ★ CONTACT_EMAIL 만 사장님 창구로 바꾸면 됩니다.
+  //    (mailto: 새 탭 열기는 메일앱 없는 브라우저에서 "사이트에 연결할 수 없음" 오류 → 앱 안에서 주소를 바로 안내/복사)
+  var CONTACT_EMAIL='contact@studioroomkr.com';
   var modal=document.getElementById('proModal');
   var chip=document.getElementById('proTeaser');
   if(!modal||!chip) return;
   var note=document.getElementById('proNote');
   var lead=document.getElementById('proLead');
   function leadText(ctx){ var L=window.hbLang;
-    if(ctx==='photo') return L.t('무료 사진 인식은 하루 5회예요. Pro로 무제한으로 쓰거나 내일 다시 이용할 수 있어요.','Free photo scan is 5/day. Go Pro for unlimited, or use it again tomorrow.');
+    if(ctx==='photo') return L.t('무료 사진 인식은 하루 3회예요. Pro로 무제한으로 쓰거나 내일 다시 이용할 수 있어요.','Free photo scan is 3/day. Go Pro for unlimited, or use it again tomorrow.');
     if(ctx==='routes3') return L.t('무료는 3구 대표 경로 1개만 보여드려요. Pro에서 다중·고급 경로 전체를 볼 수 있어요.','Free shows only 1 three-cushion path; Pro shows all multi/advanced paths.');
     if(ctx==='routes4') return L.t('무료는 4구 대표 경로 1개만 보여드려요. Pro에서 다중 경로 전체를 볼 수 있어요.','Free shows only 1 four-ball path; Pro shows all paths.');
     return L.t('더 깊이 파고드는 분들을 위한 기능이에요. 위 상품을 눌러 카카오페이로 바로 결제하거나, 코드가 있으면 아래에 입력하세요.','Features for those who want to go deeper. Tap a plan to pay with KakaoPay, or enter a code below.'); }
@@ -7435,10 +7436,20 @@ if(typeof window!=='undefined')
   chip.addEventListener('click', function(){ open(); });
   modal.querySelectorAll('[data-proclose]').forEach(function(el){ el.addEventListener('click', close); });
   window.addEventListener('keydown', function(e){ if(!modal.hidden && e.key==='Escape') close(); });
-  // 문의(수동/기타) — 카카오 미설정이거나 질문용
+  // 문의(수동/기타) — 카카오 미설정이거나 질문용.
+  // mailto 새 탭은 메일앱 없는 브라우저에서 깨지므로, 주소를 앱 안에서 바로 보여주고 클립보드에 복사.
   function contact(){
-    if(CONTACT_URL){ try{ window.open(CONTACT_URL,'_blank','noopener'); }catch(e){ location.href=CONTACT_URL; } }
-    else thanks(window.hbLang.t('구매 문의 창구 준비 중이에요.','Purchase contact coming soon.'));
+    var base=window.hbLang.t('구매·문의는 이메일로 보내주세요 → '+CONTACT_EMAIL,
+                             'For purchase/inquiries, email us → '+CONTACT_EMAIL);
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(CONTACT_EMAIL).then(function(){
+          thanks(base+window.hbLang.t(' (주소를 복사했어요)',' (address copied)'));
+        }, function(){ thanks(base); });
+        return;
+      }
+    }catch(e){}
+    thanks(base);
   }
   var buyBtn=document.getElementById('proBuy');
   if(buyBtn) buyBtn.addEventListener('click', function(){ window.hbTrack&&window.hbTrack('contact_click'); contact(); });
@@ -7515,11 +7526,16 @@ if(typeof window!=='undefined')
         .then(function(d){ if(d&&d.ok) afterUnlock(d.plan); })
         .catch(function(){})
         .finally(cleanUrl);
-    } else if(pay==='fail'||pay==='cancel'){
+    } else if(pay){
       open();
-      thanks(pay==='cancel'
-        ? window.hbLang.t('결제를 취소했어요. 언제든 다시 시도할 수 있어요.','Payment cancelled. You can try again anytime.')
-        : window.hbLang.t('결제가 완료되지 않았어요. 다시 시도해 주세요.','Payment didn’t go through. Please try again.'), true);
+      var why=q.get('e');   // 서버가 남긴 원인 코드(있으면)
+      if(pay==='cancel'){
+        thanks(window.hbLang.t('결제를 취소했어요. 언제든 다시 시도할 수 있어요.','Payment cancelled. You can try again anytime.'), false);
+      } else {
+        var msg=window.hbLang.t('결제가 완료되지 않았어요. 다시 시도해 주세요.','Payment didn’t go through. Please try again.');
+        if(why) msg += ' ('+why+')';
+        thanks(msg, true);
+      }
       cleanUrl();
     }
   })();

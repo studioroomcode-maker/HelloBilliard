@@ -15,13 +15,21 @@ module.exports = async function handler(req, res){
   const ADMIN = process.env.KAKAO_ADMIN_KEY;
   const SECRET = process.env.HB_SIGN_SECRET;
   const clearCookie = 'hbpay=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax';
-  const bail = function(q){ res.setHeader('Set-Cookie', clearCookie); res.writeHead(302, { Location: '/?pay=' + q }); res.end(); };
+  // detail = 원인 코드(짧게). 앱 알림에 (원인)으로 표시 + 서버 로그로 남겨 디버깅.
+  const bail = function(q, detail){
+    if(detail) console.error('[kakao-approve]', q, detail);
+    const e = detail ? '&e=' + encodeURIComponent(String(detail).slice(0, 60)) : '';
+    res.setHeader('Set-Cookie', clearCookie);
+    res.writeHead(302, { Location: '/?pay=' + q + e });
+    res.end();
+  };
 
-  if(!ADMIN || !SECRET) return bail('unavailable');
+  if(!ADMIN || !SECRET) return bail('unavailable', 'no_keys');
 
   const pgToken = req.query && (req.query.pg_token || req.query.pgToken);
   const st = verify(readCookie(req, 'hbpay'), SECRET);
-  if(!pgToken || !st || !st.tid) return bail('expired');
+  // 쿠키 유실(SameSite/브라우저)인지 pg_token 누락인지 구분해 원인을 남긴다.
+  if(!pgToken || !st || !st.tid) return bail('expired', !pgToken ? 'no_pg_token' : 'no_cookie');
 
   const form = new URLSearchParams({
     cid: CID,
@@ -41,9 +49,9 @@ module.exports = async function handler(req, res){
       body: form.toString(),
     });
     const data = await r.json();
-    if(!r.ok || !data.aid) return bail('fail');
+    if(!r.ok || !data.aid) return bail('fail', (data && (data.msg || data.error_code)) || ('http_' + r.status));
   }catch(e){
-    return bail('error');
+    return bail('error', (e && e.message) || 'exception');
   }
 
   // 승인 성공 → 언락 토큰(짧은 만료) 발급 후 앱으로. verify-unlock 이 재검증한다.
