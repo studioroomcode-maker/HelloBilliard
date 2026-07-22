@@ -1488,7 +1488,10 @@
   .pro-buy{ margin:4px 0 6px; }
   .pro-plans{ display:flex; gap:8px; margin-bottom:10px; }
   .pro-plan{ flex:1; text-align:center; padding:11px 8px; border-radius:14px;
-    border:1px solid var(--line,#3a3327); background:var(--surface-2,#241d15); }
+    border:1px solid var(--line,#3a3327); background:var(--surface-2,#241d15);
+    font:inherit; cursor:pointer; transition:transform .1s, border-color .15s, background .15s; }
+  .pro-plan:hover{ border-color:var(--accent-line,#b8863a); background:var(--surface,#1b1712); }
+  .pro-plan:active{ transform:scale(.98); }
   .pro-plan.best{ border-color:rgba(232,181,62,.55); background:rgba(232,181,62,.08); }
   .pro-plan .pp-name{ display:block; font-size:12px; font-weight:700; color:var(--tx-2,#c9c2b0); }
   .pro-plan .pp-price{ display:block; font-size:19px; font-weight:800; color:var(--tx-1,#f4f1e8); margin:2px 0 1px; }
@@ -1508,7 +1511,7 @@
   .rcard.locked .desc,
   .rcard.locked .rdetail,
   .rcard.locked .metrics,
-  .rcard.locked .miss{ filter:blur(4.5px); opacity:.6; pointer-events:none; user-select:none; }
+  .rcard.locked .miss{ filter:blur(9px) saturate(.7); opacity:.45; pointer-events:none; user-select:none; }
   .rcard.locked .rc-top{ filter:none; }              /* 이 부분만 보이게 */
   .rc-lock{ position:absolute; left:50%; top:64%; transform:translate(-50%,-50%);
     display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
@@ -1734,19 +1737,19 @@
     </div>
     <div class="pro-buy" id="proBuyRow">
       <div class="pro-plans">
-        <div class="pro-plan">
+        <button class="pro-plan" type="button" data-plan="day">
           <span class="pp-name" data-en="1-day pass">1일권</span>
           <span class="pp-price">₩1,000</span>
           <span class="pp-sub" data-en="24 hours">24시간</span>
-        </div>
-        <div class="pro-plan best">
+        </button>
+        <button class="pro-plan best" type="button" data-plan="perm">
           <span class="pp-name" data-en="Lifetime">영구</span>
           <span class="pp-price">₩4,900</span>
           <span class="pp-sub" data-en="one-time">한 번만</span>
-        </div>
+        </button>
       </div>
-      <button class="tool primary" id="proBuy" type="button" data-en="Ask to buy">구매 문의하기</button>
-      <p class="pro-buy-note" data-en="Message us — we’ll guide payment and send an unlock code. Enter it below to unlock instantly.">문의 주시면 결제 안내 후 <b>언락 코드</b>를 보내드려요. 아래에 입력하면 바로 열립니다.</p>
+      <p class="pro-buy-note" id="proBuyNote" data-en="Tap a plan to pay with KakaoPay — unlocked instantly after payment.">위 상품을 누르면 카카오페이로 결제 → 결제 즉시 자동으로 열립니다.</p>
+      <button class="tool" id="proBuy" type="button" data-en="Other inquiries">기타 문의</button>
     </div>
     <div class="pro-redeem" id="proRedeemRow">
       <input id="proCode" type="text" autocomplete="off" placeholder="언락 코드 입력" data-en-ph="Enter unlock code" aria-label="언락 코드">
@@ -1940,7 +1943,8 @@ window.hbPro=(function(){
     if(PRO_DAY_CODES.indexOf(code)>=0){ setDay(); return 'day'; }
     return false;
   }
-  return { is:is, set:set, redeem:redeem, photoLeft:photoLeft, notePhoto:notePhoto, untilTs:untilTs,
+  function unlock(plan){ if(plan==='day') setDay(); else set(true); }   // 결제 성공 시 활성화
+  return { is:is, set:set, redeem:redeem, unlock:unlock, photoLeft:photoLeft, notePhoto:notePhoto, untilTs:untilTs,
     FREE_PHOTO_PER_DAY:FREE_PHOTO_PER_DAY, FREE_3GU_ROUTES:FREE_3GU_ROUTES, FREE_4GU_ROUTES:FREE_4GU_ROUTES };
 })();
 
@@ -7363,7 +7367,7 @@ if(typeof window!=='undefined')
     if(ctx==='photo') return L.t('무료 사진 인식은 하루 5회예요. Pro로 무제한으로 쓰거나 내일 다시 이용할 수 있어요.','Free photo scan is 5/day. Go Pro for unlimited, or use it again tomorrow.');
     if(ctx==='routes3') return L.t('무료는 3구 대표 경로 1개만 보여드려요. Pro에서 다중·고급 경로 전체를 볼 수 있어요.','Free shows only 1 three-cushion path; Pro shows all multi/advanced paths.');
     if(ctx==='routes4') return L.t('무료는 4구 대표 경로 1개만 보여드려요. Pro에서 다중 경로 전체를 볼 수 있어요.','Free shows only 1 four-ball path; Pro shows all paths.');
-    return L.t('더 깊이 파고드는 분들을 위한 기능이에요. 코드가 있으면 아래에 입력하고, 없으면 [구매 문의하기]로 결제 안내를 받으세요.','Features for those who want to go deeper. Have a code? Enter it below. Otherwise tap [Ask to buy].'); }
+    return L.t('더 깊이 파고드는 분들을 위한 기능이에요. 위 상품을 눌러 카카오페이로 바로 결제하거나, 코드가 있으면 아래에 입력하세요.','Features for those who want to go deeper. Tap a plan to pay with KakaoPay, or enter a code below.'); }
   var lastFocus=null;
   function pro(){ return !!(window.hbPro && window.hbPro.is()); }
   // 스토어(플레이·앱스토어) 빌드에서는 외부 결제 유도가 정책 위반이라 구매·후원 줄을 아예 숨긴다.
@@ -7412,11 +7416,29 @@ if(typeof window!=='undefined')
   chip.addEventListener('click', function(){ open(); });
   modal.querySelectorAll('[data-proclose]').forEach(function(el){ el.addEventListener('click', close); });
   window.addEventListener('keydown', function(e){ if(!modal.hidden && e.key==='Escape') close(); });
-  var buyBtn=document.getElementById('proBuy');
-  if(buyBtn) buyBtn.addEventListener('click', function(){
-    window.hbTrack&&window.hbTrack('buy_click');
+  // 문의(수동/기타) — 카카오 미설정이거나 질문용
+  function contact(){
     if(CONTACT_URL){ try{ window.open(CONTACT_URL,'_blank','noopener'); }catch(e){ location.href=CONTACT_URL; } }
     else thanks(window.hbLang.t('구매 문의 창구 준비 중이에요.','Purchase contact coming soon.'));
+  }
+  var buyBtn=document.getElementById('proBuy');
+  if(buyBtn) buyBtn.addEventListener('click', function(){ window.hbTrack&&window.hbTrack('contact_click'); contact(); });
+  // 플랜(1일권/영구) 클릭 → 카카오페이 결제. 서버에 키가 없으면(501) 수동 문의로 폴백.
+  function buy(plan){
+    window.hbTrack&&window.hbTrack('buy_click',{plan:plan});
+    var note=document.getElementById('proBuyNote');
+    if(note){ note.textContent=window.hbLang.t('결제창을 여는 중…','Opening payment…'); }
+    fetch('/api/kakao-ready',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:plan})})
+      .then(function(r){ return r.ok?r.json():{configured:false}; })
+      .then(function(d){
+        if(d && d.configured && d.redirect){ location.href=d.redirect; return; }
+        contact();   // 카카오 미설정 → 수동 문의
+      })
+      .catch(function(){ contact(); })
+      .finally(function(){ if(note){ note.textContent=window.hbLang.t('위 상품을 누르면 카카오페이로 결제 → 결제 즉시 자동으로 열립니다.','Tap a plan to pay with KakaoPay — unlocked instantly after payment.'); } });
+  }
+  modal.querySelectorAll('.pro-plan').forEach(function(el){
+    el.addEventListener('click', function(){ buy(el.getAttribute('data-plan')); });
   });
   document.getElementById('proRedeem').addEventListener('click', function(){
     var el=document.getElementById('proCode');
@@ -7451,6 +7473,37 @@ if(typeof window!=='undefined')
   });
   syncState();   // 최초 로드 시 칩/버튼 상태 반영
   window.hbTrack&&window.hbTrack('app_open');
+
+  // ── 카카오페이 결제 복귀 처리 (?unlock=… / ?pay=fail|cancel) ──
+  (function(){
+    var q; try{ q=new URLSearchParams(location.search); }catch(e){ return; }
+    var unlock=q.get('unlock'), pay=q.get('pay');
+    function cleanUrl(){ try{ history.replaceState(null,'',location.pathname); }catch(e){} }
+    function afterUnlock(plan){
+      if(!window.hbPro||!window.hbPro.unlock) return;
+      window.hbPro.unlock(plan);
+      window.hbTrack&&window.hbTrack('pay_ok',{plan:plan});
+      syncState();
+      try{ if(window.__hb3refresh) window.__hb3refresh(); }catch(e){}
+      open();   // Pro 창을 열어 결과 안내
+      thanks(plan==='day'
+        ? window.hbLang.t('결제 완료! 🎉 1일권이 켜졌어요 — 24시간 동안 모든 기능이 열립니다.','Payment done! 🎉 Day pass on — all features for 24 hours.')
+        : window.hbLang.t('결제 완료! 🎉 Pro가 켜졌어요 — 이제 모든 기능이 열립니다.','Payment done! 🎉 Pro on — all features unlocked.'));
+    }
+    if(unlock){
+      fetch('/api/verify-unlock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:unlock})})
+        .then(function(r){ return r.json(); })
+        .then(function(d){ if(d&&d.ok) afterUnlock(d.plan); })
+        .catch(function(){})
+        .finally(cleanUrl);
+    } else if(pay==='fail'||pay==='cancel'){
+      open();
+      thanks(pay==='cancel'
+        ? window.hbLang.t('결제를 취소했어요. 언제든 다시 시도할 수 있어요.','Payment cancelled. You can try again anytime.')
+        : window.hbLang.t('결제가 완료되지 않았어요. 다시 시도해 주세요.','Payment didn’t go through. Please try again.'), true);
+      cleanUrl();
+    }
+  })();
 })();
 
 
