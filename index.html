@@ -5781,15 +5781,22 @@ function simulate3(dir,speed,spin,P,rec){
       const ox=cueIsA?c.nx:-c.nx, oy=cueIsA?c.ny:-c.ny;
       c.aimSide=(cvx*oy-cvy*ox)>=0?'L':'R';
       if(!res.first){ res.first=other; res.firstInfo=c; res.cushBeforeFirst=res.cush; }
-      else if(other!==res.first&&!res.second){
-        res.second=other; res.cushAtSecond=res.cush; res.secondInfo=c;
-        // 키스 감지 — 두 번째 적구가 수구에 맞기 전 이미 (제1적구에 밀려) 움직였는가.
-        // 밀려났다면 수구는 '시작 위치'가 아닌 '밀려난 위치'에서 맞히므로, 공을
-        // 시작 위치에 그리는 정적 그림은 선이 그 공을 빗나가 보인다(오해 유발).
-        const b2=B3[other];
-        res.secondMoved=Math.hypot(b2.x-balls[other].x, b2.y-balls[other].y);
-        // 규칙: 두 번째 적구 접촉 전 쿠션 3회 이상이어야 득점
-        if(res.cush>=3) res.success=true; else res.fail=true;
+      else if(!res.second){
+        if(other!==res.first){
+          res.second=other; res.cushAtSecond=res.cush; res.secondInfo=c;
+          // 키스 감지 — 두 번째 적구가 수구에 맞기 전 이미 (제1적구에 밀려) 움직였는가.
+          // 밀려났다면 수구는 '시작 위치'가 아닌 '밀려난 위치'에서 맞히므로, 공을
+          // 시작 위치에 그리는 정적 그림은 선이 그 공을 빗나가 보인다(오해 유발).
+          const b2=B3[other];
+          res.secondMoved=Math.hypot(b2.x-balls[other].x, b2.y-balls[other].y);
+          // 규칙: 두 번째 적구 접촉 전 쿠션 3회 이상이어야 득점
+          if(res.cush>=3) res.success=true; else res.fail=true;
+        } else {
+          // 첫 적구 재접촉 = 키스. 수구가 득점(둘째 적구) 전 제1적구를 다시 건드리면
+          // 궤도가 틀어져 재현이 매우 어렵다(실전의 대표적 실패 요인). 물리엔 이미
+          // 반영돼 있으나, 그림만 보면 왜 이 선이 되는지 모르므로 카드에 경고로 표시한다.
+          res.firstKiss=true;
+        }
       }
     }
     for(const o of S){
@@ -6121,6 +6128,7 @@ async function solve3(onProgress){
       for(const q of sim.paths.cue){ const dd=Math.hypot(q.x-balls[sim.second].x,q.y-balls[sim.second].y); if(dd<mind) mind=dd; }
       best.kiss=mind>2.5*BALL_R;
     }
+    best.firstKiss=!!sim.firstKiss;   // 수구가 득점 전 제1적구를 다시 건드림(키스)
     const g=gather3(sim.final);
     best.gather=g.gather; best.gatherAvg=g.gatherAvg;
     // 수구가 실제로 구른 거리 — '몇 레일 파워'의 근거가 되는 측정값
@@ -6303,6 +6311,8 @@ function renderPhyCards(){
     const gEN=(r.gather!=null&&r.gatherAvg)?`<br>Gather ${r.gather}% = post-shot <b>gap between reds (50%)</b> + cue→each red (25% each), weighted avg ~<b>${cm}cm</b>`:'';
     const kKO=r.kiss?`<br><b style="color:var(--warn)">키스 경로</b> — 제1적구가 제2적구를 먼저 건드려 밀어낸 뒤 그 자리에서 득점합니다. 그림의 선이 <b>제자리에 그려진 제2적구를 빗나가</b> 보이는 건 이 때문이며, 키스는 재현이 까다로워 성공률이 낮습니다.`:'';
     const kEN=r.kiss?`<br><b style="color:var(--warn)">Kiss path</b> — Object 1 nudges Object 2 first, then scores. That's why the line seems to <b>miss the drawn Object 2</b>; kisses are hard to reproduce, so success is low.`:'';
+    const fkKO=r.firstKiss?`<br><b style="color:var(--warn)">키스 위험(제1적구)</b> — 수구가 쿠션을 돌아 나온 뒤 득점 전에 <b>제1적구(먼저 맞힌 공)를 다시 건드립니다</b>. 물리적으론 이 궤도가 나오지만, 이 재접촉으로 궤도가 틀어져 실전 재현이 매우 어렵고 성공률이 낮습니다.`:'';
+    const fkEN=r.firstKiss?`<br><b style="color:var(--warn)">Kiss risk (Object 1)</b> — after banking, the cue <b>touches Object 1 (the first ball) again</b> before scoring. The path is physically real, but this re-contact throws it off and makes it very hard to reproduce.`:'';
     const locked=g3Locked(i);
     return `<div class="rcard ${i===phySel?'sel':''} ${locked?'locked':''}" data-i="${i}" style="--d:${i*70}ms">
       <div class="rc-top">
@@ -6321,10 +6331,11 @@ function renderPhyCards(){
         `Cue → ${cushBefore>0?`<b>${cushBefore} cush</b> → `:''}${NAME[r.fk]} <b>${thickLabel} thick</b> → <b>${cushBetween} cush</b> → score ${NAME[r.fk==='obj'?'target':'obj']} · power <b>${({'약하게':'Soft','보통':'Medium','강하게':'Hard','아주 약하게':'Very soft','아주 강하게':'Very hard','세게':'Hard','살살':'Very soft','빡세게':'Very hard'}[r.power]||r.power)}</b> (cue rolls ${rail} rails)`
       )}
         <details class="rdetail"><summary>${L.t('기술 상세','Details')}</summary><div>${L.t(
-        `추천 파워는 약·중·강 세 속도를 각각 24회씩 시뮬레이션해 <b>이 경로에서 성공률이 가장 높았던 속도</b>입니다 — 수구가 실제로 구른 거리는 <b>${rail}레일</b>(장쿠션 ${railcm}cm 기준)입니다. 테이블 반응에 따라 달라지는 <b>근삿값</b>이니 첫 샷으로 감을 잡고 조절하세요.<br>성공률은 이 속도에서 실전 오차 몬테카를로 <b>48회</b> 시뮬레이션한 예상치 (5% 단위 표시) — 실제 사용자 통계가 아닙니다${gKO}${kKO}`,
-        `Recommended power = best of soft/medium/hard (24 sims each) for this path — the cue rolled <b>${rail} rails</b> (long rail ${railcm}cm). It's an <b>approximation</b> that varies with the table, so take a first shot and adjust.<br>Success = 48-shot Monte-Carlo estimate at this speed (5% steps) — not real user stats${gEN}${kEN}`
+        `추천 파워는 약·중·강 세 속도를 각각 24회씩 시뮬레이션해 <b>이 경로에서 성공률이 가장 높았던 속도</b>입니다 — 수구가 실제로 구른 거리는 <b>${rail}레일</b>(장쿠션 ${railcm}cm 기준)입니다. 테이블 반응에 따라 달라지는 <b>근삿값</b>이니 첫 샷으로 감을 잡고 조절하세요.<br>성공률은 이 속도에서 실전 오차 몬테카를로 <b>48회</b> 시뮬레이션한 예상치 (5% 단위 표시) — 실제 사용자 통계가 아닙니다${gKO}${kKO}${fkKO}`,
+        `Recommended power = best of soft/medium/hard (24 sims each) for this path — the cue rolled <b>${rail} rails</b> (long rail ${railcm}cm). It's an <b>approximation</b> that varies with the table, so take a first shot and adjust.<br>Success = 48-shot Monte-Carlo estimate at this speed (5% steps) — not real user stats${gEN}${kEN}${fkEN}`
       )}</div></details></div>
       ${r.kiss?`<div class="miss" style="margin-top:6px;font-size:12px">${L.t('⚠ 키스 경로 — 제1적구가 제2적구를 건드립니다 (선이 제2적구를 빗나가 보임)','⚠ Kiss path — Object 1 touches Object 2 (line seems to miss Object 2)')}</div>`:''}
+      ${r.firstKiss?`<div class="miss" style="margin-top:6px;font-size:12px">${L.t('⚠ 키스 위험 — 수구가 쿠션을 돈 뒤 제1적구를 다시 건드립니다 (재현 어려움)','⚠ Kiss risk — the cue re-contacts Object 1 after banking (hard to reproduce)')}</div>`:''}
       <div class="metrics">
         <div class="metric">
           <div class="mlabel">${L.label('tip')}</div>
