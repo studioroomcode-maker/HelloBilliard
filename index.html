@@ -1206,11 +1206,9 @@
     <div class="photo-wrap">
       <canvas id="g4-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
         style="width:100%;border-radius:8px;touch-action:pan-y;cursor:crosshair"></canvas>
-      <div class="actions photo-float">
-        <button class="tool primary" id="g4-detect" data-en="Detect → Calculate">공 인식 → 경로 계산</button>
-        <button class="tool" id="g4-swapCue" data-en="Cue ⇄ Opp.">수구 ⇄ 상대</button>
-        <button class="tool" id="g4-photoCancel" data-en="Close">닫기</button>
-      </div>
+    </div>
+    <div class="actions photo-actions">
+      <button class="tool primary" id="g4-detect" data-en="Detect → Calculate">공 인식 → 경로 계산</button>
     </div>
     <p class="hint" id="g4-photoMsg" style="margin-top:8px"></p>
   </div>
@@ -1238,7 +1236,7 @@
     <b>v4 physics engine</b> · a time-step simulation scaled to real proportions (ball 65.5mm / table 2844mm). It integrates the slide→roll friction transition, so draw/follow curves and post-cushion swerve are reproduced (Alciatore data: rolling half-ball separation ≈34°, stun ≈90° tangent line). All four balls are tracked, and kiss and foul (opponent-cue contact) paths are filtered out. Besides direct shots, it also searches <b>bank shots</b> (1–2 cushions first, then to the object ball). The card's <b>success rate (%)</b> is not real user stats — it's the expected scoring ratio over a <b>90-shot Monte-Carlo</b> that adds skill-based execution error to aim, power and english. Shots that happen to bank in and score also count per the rules.<br><br>
     <b>Skill</b> · Beginner uses only no-spin/draw/follow, and only <b>within half a tip of center</b> (no extreme high/low english), excludes thin cuts and uses larger execution error, so success rates read realistically. Advanced uses every technique incl. mixed english & thin cuts with precise error. The card's <b>gather (%)</b> is a weighted average giving <b>50% to the gap between the two reds</b> and 25% each to the cue→each-red approach distance from the next shot's start, showing how favorable the leave is (setting shared with the 3-cushion tab).<br><br>
     <b>Table calibration</b> · if real balls <b>rebound shorter</b> than predicted, tap cushion "− shorter"; if <b>longer</b>, tap "+ longer" to fit the model to your table. Adjust roll calibration if the ball rolls less/more than predicted. Values are saved permanently on this device.<br><br>
-    <b><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> Photo scan</b> · shoot from as high as possible with the table centered for best recognition. The 4 yellow dots go to the <b>inner corner where the cushion wall meets the cloth</b> (not the wood frame or rail top); auto-detect picks only the cloth area and insets by the cushion-top width (≈5cm). It back-computes the camera position to auto-correct the parallax from cushion height (37mm) and ball height (33mm), and re-centers half-shadowed balls by circle-fit. Pick <b>my ball color</b> (white/yellow) in settings; when two cue balls can't be told apart (e.g. a two-white set) they're assigned arbitrarily with a notice, so press [Cue ⇄ Opp.] to swap. Colors are classified relatively (robust to lighting — a white ball looking yellowish under warm light is still told apart), and right after detection the best path is auto-calculated and <b>overlaid on the photo in perspective</b>. Tapping a route card also changes the photo's path. Photos never leave your device.</p>
+    <b><svg class="bicon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="9" rx="2"/><circle cx="8" cy="9" r="2.6"/><path d="M5.5 4.5l1-2h3l1 2"/></svg> Photo scan</b> · shoot from as high as possible with the table centered for best recognition. The 4 yellow dots go to the <b>inner corner where the cushion wall meets the cloth</b> (not the wood frame or rail top); auto-detect picks only the cloth area and insets by the cushion-top width (≈5cm). It back-computes the camera position to auto-correct the parallax from cushion height (37mm) and ball height (33mm), and re-centers half-shadowed balls by circle-fit. Pick <b>my ball color</b> (white/yellow) in settings; when two cue balls can't be told apart (e.g. a two-white set) they're assigned arbitrarily with a notice, and you can correct their positions on the table below. Colors are classified relatively (robust to lighting — a white ball looking yellowish under warm light is still told apart), and right after detection the best path is auto-calculated and <b>overlaid on the photo in perspective</b>. Tapping a route card also changes the photo's path. Photos never leave your device.</p>
     <p class="hint" data-lang="ko">엔진은 무회전·끌어치기·밀어치기·좌우 시네루를 조합해 득점 경로를 탐색하고,
     전략이 서로 다른 경로를 최대 5개 추려 제안합니다. 카드를 누르면 해당 경로가 당구대에 표시됩니다.<br><br>
     <b>v4 물리 엔진</b> · 실측 비율(공 65.5mm / 대대 2844mm)로 스케일을 맞춘
@@ -1268,8 +1266,8 @@
     카메라 위치를 사진에서 역산해 쿠션 벽 높이(37mm)와 공 높이(33mm)가 만드는
     원근 시차도 자동 보정되며, 그늘로 반쪽만 보이는 공은 공 반지름 원 맞춤으로
     중심을 재보정합니다. <b>내 수구 색</b>(흰공/노란공)은 설정에서 선택할 수 있고,
-    흰공 2개 세트처럼 두 수구를 자동 구분할 수 없을 때는 임의 배정 후 안내가 뜨니
-    [수구 ⇄ 상대] 버튼으로 바꾸면 됩니다.
+    흰공 2개 세트처럼 두 수구를 자동 구분할 수 없을 때는 임의 배정 후 안내가 뜨며,
+    잘못 배정된 공은 아래 당구대에서 직접 위치를 조정할 수 있습니다.
     공 색은 조명에 강한 상대 기준으로 분류되고(노란 조명에서 흰공이 노랗게 보여도
     구분), 인식 직후 최적 경로가 자동 계산되어 <b>사진 위에도 원근에 맞춰 겹쳐
     표시</b>됩니다. 경로 카드를 누르면 사진의 경로도 함께 바뀝니다.
@@ -1387,10 +1385,9 @@
     <div class="photo-wrap">
       <canvas id="g3-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
         style="width:100%;border-radius:8px;touch-action:pan-y;cursor:crosshair"></canvas>
-      <div class="actions photo-float">
-        <button class="tool primary" id="g3-detect" data-en="Detect">공 인식</button>
-        <button class="tool" id="g3-photoCancel" data-en="Close">닫기</button>
-      </div>
+    </div>
+    <div class="actions photo-actions">
+      <button class="tool primary" id="g3-detect" data-en="Detect → Calculate">공 인식 → 경로 계산</button>
     </div>
     <p class="hint" id="g3-photoMsg" style="margin-top:8px"></p>
   </div>
@@ -1579,25 +1576,17 @@
   }
   .felt-pick .hsel { padding-left: 26px; }
 
-  /* ===== 사진 인식 — 버튼을 사진 위에 띄운다 =====
-     사진이 길면 버튼이 화면 밖으로 밀려 '다음에 뭘 눌러야 하는지' 안 보였다.
-     사진 하단에 글래스 칩으로 고정해 항상 눈에 들어오게 한다. */
-  .photo-wrap { position: relative; }
+  /* ===== 사진 인식 — 사진 아래에 단일 다음 단계 버튼 ===== */
   .photo-wrap > canvas { display: block; }
-  .actions.photo-float {
-    position: absolute; z-index: 6;
-    left: 50%; transform: translateX(-50%);
-    bottom: 10px; margin: 0; width: auto; max-width: calc(100% - 16px);
-    display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
-    padding: 6px; border-radius: 12px;
-    background: rgba(16,14,10,.68);
-    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-    border: 1px solid rgba(244,241,232,.16);
-    box-shadow: 0 6px 18px rgba(0,0,0,.5);
+  .actions.photo-actions {
+    margin-top: 10px;
+    width: 100%;
   }
-  .actions.photo-float .tool {
-    flex: 0 0 auto; min-width: 0; min-height: 34px;
-    padding: 7px 12px; font-size: 12px;
+  .actions.photo-actions .tool {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    white-space: nowrap;
   }
 
   /* ===== 폰 가로모드 — 다이를 화면 가득, 컨트롤은 다이 위에 띄운다 =====
@@ -4269,7 +4258,7 @@ document.getElementById('g4-file').addEventListener('change',e=>{
       photoMarks=null; photoH=null; photoHinv=null; photoMissing=[]; camW=null;
       photoPanel.style.display='block';
       document.body.classList.add('photo-open');   // 사진 작업 중엔 보드 고정 해제
-      photoMsg.textContent=window.hbLang.t('모서리를 쿠션 안쪽 경계 근처로 자동 보정했습니다. 노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인·조정한 뒤 "공 인식"을 누르세요. 벽 높이·공 높이 시차는 자동 보정됩니다.','Corners auto-set near the inner cushion edge. Adjust the 4 yellow dots to the inner corners where cushion meets cloth, then press "Detect". Wall/ball-height parallax is auto-corrected.');
+      photoMsg.textContent=window.hbLang.t('모서리를 쿠션 안쪽 경계 근처로 자동 보정했습니다. 노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인·조정한 뒤 "공 인식 → 경로 계산"을 누르세요. 벽 높이·공 높이 시차는 자동 보정됩니다.','Corners auto-set near the inner cushion edge. Adjust the 4 yellow dots to the inner corners where cushion meets cloth, then press "Detect → Calculate". Wall/ball-height parallax is auto-corrected.');
       drawPhoto();
       if(photoPanel.scrollIntoView) photoPanel.scrollIntoView({behavior:'smooth'});
     }catch(err){
@@ -4417,27 +4406,6 @@ pcv.addEventListener('touchstart',pDown,{passive:false});
 pcv.addEventListener('touchmove',pMove,{passive:false});
 window.addEventListener('touchend',pUp);
 
-document.getElementById('g4-photoCancel').addEventListener('click',()=>{
-  photoPanel.style.display='none';
-  document.body.classList.remove('photo-open');
-  photoImgData=null; photoMarks=null; photoH=null;
-  photoHinv=null; photoMissing=[]; camW=null;
-});
-// 수구 ⇄ 상대 수구 위치 교환 — 흰공 2개 세트에서 배정이 뒤바뀐 경우용
-document.getElementById('g4-swapCue').addEventListener('click',()=>{
-  const t={x:balls.cue.x,y:balls.cue.y};
-  balls.cue.x=balls.cue2.x; balls.cue.y=balls.cue2.y;
-  balls.cue2.x=t.x; balls.cue2.y=t.y;
-  if(photoH){
-    photoMarks=['cue','r1','r2','cue2'].map(k=>{
-      const pp=applyH(photoH,balls[k].x,balls[k].y);
-      return {x:pp.x,y:pp.y,color:markColor(k)};
-    });
-  }
-  routes=[]; selected=0; solveGen++; draw(); renderCards(); drawPhoto();
-  pushHist();   // 수구⇄상대 교환도 히스토리 기록
-  requestRecalc();
-});
 document.getElementById('g4-detect').addEventListener('click',()=>{
   if(!photoImgData||!photoCorners) return;
   const oc=orderCorners(photoCorners);
@@ -4527,8 +4495,8 @@ document.getElementById('g4-detect').addEventListener('click',()=>{
     return;
   }
   photoMsg.textContent=window.hbLang.t(
-    `인식 완료: ${got.join(' · ')} — 계산된 경로가 사진 위에 겹쳐 표시됩니다. 경로 카드를 누르면 사진의 경로도 바뀝니다.${res.ambiguous?' ⚠ 두 수구가 모두 흰색에 가까워 임의로 배정했습니다 — 바뀌었으면 [수구 ⇄ 상대]를 누르세요.':''}`,
-    `Recognized all balls — the calculated path overlays on the photo. Tap a route card to change the path shown.${res.ambiguous?' ⚠ Both cue balls look near-white, so they were assigned arbitrarily — press [Cue ⇄ Opp.] if swapped.':''}`);
+    `인식 완료: ${got.join(' · ')} — 계산된 경로가 사진 위에 겹쳐 표시됩니다. 경로 카드를 누르면 사진의 경로도 바뀝니다.${res.ambiguous?' ⚠ 두 수구가 모두 흰색에 가까워 임의로 배정했습니다 — 잘못 배정됐다면 아래 당구대에서 공 위치를 조정하세요.':''}`,
+    `Recognized all balls — the calculated path overlays on the photo. Tap a route card to change the path shown.${res.ambiguous?' ⚠ Both cue balls look near-white, so they were assigned arbitrarily — adjust their positions on the table below if needed.':''}`);
   routes=[]; selected=0; solveGen++; draw(); renderCards();
   pushHist();               // 사진 인식 배치도 히스토리 기록
   requestRecalc();          // 최적 경로 자동 계산 (계산 중이면 끝난 뒤)
@@ -6543,7 +6511,7 @@ document.getElementById('g3-file').addEventListener('change',e=>{
       p3Marks=null; p3Hinv=null; p3H=null; cam3=null; p3Missing=[];
       p3Panel.style.display='block';
       document.body.classList.add('photo-open');   // 사진 작업 중엔 보드 고정 해제
-      p3Msg.textContent='노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인한 뒤 "공 인식"을 누르세요.';
+      p3Msg.textContent='노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인한 뒤 "공 인식 → 경로 계산"을 누르세요.';
       drawP3();
       if(p3Panel.scrollIntoView) p3Panel.scrollIntoView({behavior:'smooth'});
     }catch(err){
@@ -6717,11 +6685,6 @@ window.addEventListener('mouseup',p3Up);
 p3cv.addEventListener('touchstart',p3Down,{passive:false});
 p3cv.addEventListener('touchmove',p3Move,{passive:false});
 window.addEventListener('touchend',p3Up);
-document.getElementById('g3-photoCancel').addEventListener('click',()=>{
-  p3Panel.style.display='none';
-  document.body.classList.remove('photo-open');
-  p3Img=null; p3Marks=null; p3Hinv=null; p3H=null; cam3=null; p3Missing=[];
-});
 document.getElementById('g3-detect').addEventListener('click',()=>{
   if(!p3Img||!p3Corners) return;
   const V=window.__hbVision;
