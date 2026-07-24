@@ -1,4 +1,4 @@
-// 정렬 필터 테스트 — 각 모드에서 카드 순서 기준 검증
+// 정렬 필터 테스트 — 추천순/쿠션수순 동작과 나머지 필터 잠금 검증
 const fs = require('fs');
 const html = fs.readFileSync(require('path').join(__dirname,'..','index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
@@ -51,14 +51,13 @@ setTimeout(() => {
   };
   report('추천순(기본)');
   const click = v => handlers['sort-' + v + ':click'][0].call(sortBtns.find(b => b.dataset.sort === v));
-  click('cush');   // 재계산 트리거 (setTimeout 30ms + solve)
+  click('cush');
   setTimeout(() => {
     report('쿠션수순(재계산)');
-    click('prob');   // cush→prob 전환도 재계산
-    setTimeout(() => {
-      report('성공률순(재계산)');
-      click('gather'); report('공모임순(즉시)');
-      click('best');   report('추천순(즉시)');
-    }, 4000);
+    const before=els['g4-routes'].innerHTML;
+    click('prob');
+    click('gather');
+    console.log('잠금 필터 유지:', before===els['g4-routes'].innerHTML?'OK':'FAIL');
+    click('best'); report('추천순(즉시)');
   }, 4000);
 }, 3500);

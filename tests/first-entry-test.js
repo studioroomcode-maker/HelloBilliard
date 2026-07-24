@@ -94,7 +94,20 @@ check('사용자 배치는 탭 전환 후에도 유지된다', strip('g3-nums') 
 // 회귀 대상: 예시 배치가 시스템 숫자만 맞고 물리적으로 어려우면 경로가 전부
 // 걸러져 "경로를 찾지 못했습니다"가 나온다 — 예시는 물리로도 답이 나와야 한다.
 (async () => {
+  // --- 6) 정식 초구 물리 경로는 먼 빨간공(target)을 먼저 맞힌다 ---
   handlers['g3-reset:click'][0]();     // 기본 배치 + 시스템 미선택
+  check('정식 초구 좌표로 판정된다', t.atPreset());
+  let opening = null;
+  for (let i = 0; i < 3 && !(opening && opening.length); i++) {
+    handlers['g3-phys:click'][0]();
+    for (let k = 0; k < 900 && t.routes() === null; k++)
+      await new Promise(r => setImmediate(r));
+    opening = t.routes();
+  }
+  check('초구 경로가 먼 빨간공부터 친다',
+    !!(opening && opening.length) && opening.every(r => r.fk === 'target'));
+
+  // --- 7) 예시 배치는 [물리 경로 제안]에도 답을 줘야 한다 ---
   handlers['g3-example:click'][0]();   // 예시(파이브 폴백) 배치
   const cueAt = { x: balls.cue.x, y: balls.cue.y };
   let got = 0;

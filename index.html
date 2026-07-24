@@ -423,6 +423,13 @@
     padding:9px 6px; border-radius:8px; cursor:pointer;
   }
   .seg button.on { background:var(--accent); color:var(--ink); border-color:var(--accent); }
+  .seg button.sort-locked {
+    position:relative; opacity:.5; cursor:not-allowed;
+    color:var(--tx-3, #9b9484); border-color:var(--line, #3a3024);
+  }
+  .seg button.sort-locked::after {
+    content:'🔒'; margin-left:4px; font-size:10px; filter:grayscale(1);
+  }
   .panel {
     margin-top:14px; background:#1b1610; border:1.5px solid #312819;
     border-radius:11px; padding:13px 16px;
@@ -1026,11 +1033,11 @@
 </script>
 <script id="hb-theme-init">
 // 테마(라이트/다크) 초기 적용 — 렌더 전에 실행해 깜빡임 방지.
-// 저장값 없으면 시스템 설정을 따른다.
+// 저장값이 없으면 다크 모드로 시작하고, 사용자가 고른 값은 계속 존중한다.
 (function(){
   try{
     var t=localStorage.getItem('hb_theme');
-    if(!t) t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
+    if(!t) t='dark';
     t = t==='light'?'light':'dark';
     document.documentElement.setAttribute('data-theme', t);
     var mt=document.querySelector('meta[name="theme-color"]');
@@ -1220,8 +1227,8 @@
     <div class="seg" id="g4-sortseg">
       <button data-sort="best" class="on" data-en="Best">추천순</button>
       <button data-sort="cush" data-en="Cushions">쿠션수순</button>
-      <button data-sort="prob" data-en="Success %">성공률순</button>
-      <button data-sort="gather" data-en="Gather">공모임순</button>
+      <button data-sort="prob" class="sort-locked" data-en="Success %" disabled aria-disabled="true" title="준비 중">성공률순</button>
+      <button data-sort="gather" class="sort-locked" data-en="Gather" disabled aria-disabled="true" title="준비 중">공모임순</button>
     </div>
   </div>
 
@@ -1878,6 +1885,38 @@ window.hbTapGuard=function(){
     },
     cancel:function(){ s=null; }
   };
+};
+// 사진 속 모서리·공 위치를 손가락으로 가리지 않고 미세 조정하는 공용 돋보기.
+// 각 사진 캔버스가 기본 이미지와 마커를 먼저 그린 뒤 마지막에 호출한다.
+window.hbDrawPhotoLoupe=function(canvas,ctx,p,ring){
+  if(!canvas||!ctx||!p) return;
+  var Z=2.6, Rl=Math.min(120,canvas.width/3.2,canvas.height/3.2);
+  if(!(Rl>12)) return;
+  var half=Rl/Z;
+  var lx=p.x<canvas.width/2 ? canvas.width-Rl-6 : Rl+6;
+  var ly=Math.max(Rl+6,Math.min(canvas.height-Rl-6,p.y));
+  var sx=p.x-half, sy=p.y-half, sw=2*half, sh=2*half;
+  var dx=lx-Rl, dy=ly-Rl;
+  if(sx<0){ dx-=sx*Z; sw+=sx; sx=0; }
+  if(sy<0){ dy-=sy*Z; sh+=sy; sy=0; }
+  if(sx+sw>canvas.width) sw=canvas.width-sx;
+  if(sy+sh>canvas.height) sh=canvas.height-sy;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl+4,0,7);
+  ctx.fillStyle='rgba(0,0,0,.48)'; ctx.fill();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7); ctx.clip();
+  ctx.fillStyle='#14110d'; ctx.fillRect(lx-Rl,ly-Rl,2*Rl,2*Rl);
+  if(sw>0&&sh>0) ctx.drawImage(canvas,sx,sy,sw,sh,dx,dy,sw*Z,sh*Z);
+  ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(lx-Rl,ly); ctx.lineTo(lx+Rl,ly);
+  ctx.moveTo(lx,ly-Rl); ctx.lineTo(lx,ly+Rl); ctx.stroke();
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7);
+  ctx.strokeStyle=ring||'#e8b53e'; ctx.lineWidth=3.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(lx,ly,Rl,0,7);
+  ctx.strokeStyle='rgba(255,255,255,.65)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.restore();
 };
 
 // 사진 인식이 끝나면 결과(경로)를 바로 볼 수 있게 위쪽 당구대로 부드럽게 이동한다.
@@ -3474,10 +3513,12 @@ document.querySelectorAll('#g4-tuning [data-crule]').forEach(b=>
       x.classList.toggle('on',x===b));
     routes=[];allRoutes=[];selected=0;renderCards();draw();drawPhoto();
   }));
-// 정렬 필터 버튼 — 성공률/공모임/추천은 즉시 재정렬,
-// 쿠션수순은 다쿠션 후보 탐색이 필요해 재계산한다
+// 제안 경로 필터 — 현재 추천순·쿠션수순만 제공한다.
+// 성공률순·공모임순은 UI와 입력 로직 양쪽에서 잠가 우회 선택도 막는다.
+const G4_SORT_ENABLED=new Set(['best','cush']);
 document.querySelectorAll('#g4-sortseg button').forEach(b=>
   b.addEventListener('click',()=>{
+    if(!G4_SORT_ENABLED.has(b.dataset.sort)) return;
     sortMode=b.dataset.sort;
     document.querySelectorAll('#g4-sortseg button').forEach(x=>
       x.classList.toggle('on',x===b));
@@ -4175,7 +4216,7 @@ const photoPanel=document.getElementById('g4-photoPanel');
 const pcv=document.getElementById('g4-photoCv');
 const pctx=pcv.getContext('2d');
 const photoMsg=document.getElementById('g4-photoMsg');
-let photoImgData=null, photoCorners=null, photoDrag=-1, photoMarks=null;
+let photoImgData=null, photoCorners=null, photoDrag=-1, photoMarks=null, photoLoupePoint=null;
 let photoH=null;      // 테이블→사진 호모그래피 (공 인식 후 설정 — 경로 오버레이용)
 let photoHinv=null;   // 사진→테이블 (탭으로 미인식 공 직접 지정용)
 let photoMissing=[];  // 미인식 공 목록 — 사진 탭 순서대로 지정된다
@@ -4304,6 +4345,9 @@ function drawPhoto(){
     routes.forEach((r,i)=>{ if(i!==selected&&!g4Locked(i)) drawPhotoRoute(r,routeColor(i),0.22); });
     if(routes[selected]&&!g4Locked(selected)) drawPhotoRoute(routes[selected],routeColor(selected),0.95);
   }
+  const lp=photoDrag>=0?photoCorners[photoDrag]:photoLoupePoint;
+  if(lp) window.hbDrawPhotoLoupe(pcv,pctx,lp,
+    photoDrag>=0?'#e8b53e':(photoMissing.length?markColor(photoMissing[0]):'#e8b53e'));
 }
 function photoPt(p){ return applyH(photoH,p.x,p.y); }
 function strokePhotoPath(pts,color,w){
@@ -4359,7 +4403,14 @@ function pDown(e){
     if(d<bd){bd=d;best=i;}
   });
   // 모서리 점을 직접 잡았을 때만 제스처 점유 — 그 외는 스크롤을 막지 않는다
-  if(bd<pcv.width/12){ e.preventDefault(); photoDrag=best; return; }
+  if(bd<pcv.width/12){
+    e.preventDefault(); photoLoupePoint=null; photoDrag=best; drawPhoto(); return;
+  }
+  if(photoHinv&&photoMissing.length){
+    photoLoupePoint=p; drawPhoto();
+    pTapG.start(e,function(){ pTapPlace(photoLoupePoint||p); });
+    return;
+  }
   pTapG.start(e,function(){ pTapPlace(p); });
 }
 // 미인식 공 직접 지정 — '짧은 탭'으로 확정됐을 때만 실행된다
@@ -4392,19 +4443,28 @@ function pTapPlace(p){
 }
 function pMove(e){
   pTapG.move(e);
-  if(photoDrag<0) return;
-  e.preventDefault();
   const p=ppos(e);
-  photoCorners[photoDrag]={x:clamp(p.x,0,pcv.width-1), y:clamp(p.y,0,pcv.height-1)};
-  drawPhoto();
+  if(photoDrag>=0){
+    e.preventDefault();
+    photoCorners[photoDrag]={x:clamp(p.x,0,pcv.width-1), y:clamp(p.y,0,pcv.height-1)};
+    drawPhoto();
+  } else if(photoLoupePoint){
+    photoLoupePoint={x:clamp(p.x,0,pcv.width-1),y:clamp(p.y,0,pcv.height-1)};
+    drawPhoto();
+  }
 }
-function pUp(){ pTapG.up(); photoDrag=-1; }
+function pUp(){
+  const hadLoupe=photoDrag>=0||!!photoLoupePoint;
+  pTapG.up(); photoDrag=-1; photoLoupePoint=null;
+  if(hadLoupe) drawPhoto();
+}
 pcv.addEventListener('mousedown',pDown);
 pcv.addEventListener('mousemove',pMove);
 window.addEventListener('mouseup',pUp);
 pcv.addEventListener('touchstart',pDown,{passive:false});
 pcv.addEventListener('touchmove',pMove,{passive:false});
 window.addEventListener('touchend',pUp);
+window.addEventListener('touchcancel',pUp);
 
 document.getElementById('g4-detect').addEventListener('click',()=>{
   if(!photoImgData||!photoCorners) return;
@@ -4495,8 +4555,8 @@ document.getElementById('g4-detect').addEventListener('click',()=>{
     return;
   }
   photoMsg.textContent=window.hbLang.t(
-    `인식 완료: ${got.join(' · ')} — 계산된 경로가 사진 위에 겹쳐 표시됩니다. 경로 카드를 누르면 사진의 경로도 바뀝니다.${res.ambiguous?' ⚠ 두 수구가 모두 흰색에 가까워 임의로 배정했습니다 — 잘못 배정됐다면 아래 당구대에서 공 위치를 조정하세요.':''}`,
-    `Recognized all balls — the calculated path overlays on the photo. Tap a route card to change the path shown.${res.ambiguous?' ⚠ Both cue balls look near-white, so they were assigned arbitrarily — adjust their positions on the table below if needed.':''}`);
+    `인식 완료: ${got.join(' · ')} — 계산된 경로가 사진 위에 겹쳐 표시됩니다. 경로 카드를 누르면 사진의 경로도 바뀝니다. 쿠션의 네 모서리가 모두 나오도록 찍어주세요.${res.ambiguous?' ⚠ 두 수구가 모두 흰색에 가까워 임의로 배정했습니다 — 잘못 배정됐다면 아래 당구대에서 공 위치를 조정하세요.':''}`,
+    `Recognized all balls — the calculated path overlays on the photo. Tap a route card to change the path shown. Keep all four cushion corners visible in the photo.${res.ambiguous?' ⚠ Both cue balls look near-white, so they were assigned arbitrarily — adjust their positions on the table below if needed.':''}`);
   routes=[]; selected=0; solveGen++; draw(); renderCards();
   pushHist();               // 사진 인식 배치도 히스토리 기록
   requestRecalc();          // 최적 경로 자동 계산 (계산 중이면 끝난 뒤)
@@ -4576,6 +4636,12 @@ const balls={
 };
 const defaults=JSON.parse(JSON.stringify(
   Object.fromEntries(Object.entries(balls).map(([k,v])=>[k,{x:v.x,y:v.y}]))));
+// 정식 초구 좌표가 그대로인지로만 판정한다. 시스템 예시나 사진 배치는
+// userPlaced=false일 수 있어도 초구가 아니므로 빨간공 우선 규칙을 적용하지 않는다.
+function atPreset3(){
+  return ['cue','obj','target'].every(k=>
+    Math.abs(balls[k].x-defaults[k].x)<0.5&&Math.abs(balls[k].y-defaults[k].y)<0.5);
+}
 
 // 모든 시스템에서 공 3개를 표시한다 — 파이브앤하프·플러스는 계산에
 // 제1적구를 쓰지 않지만(빈쿠션 시스템), 실전 배치 그대로 보이게 하고
@@ -5865,13 +5931,11 @@ async function solve3(onProgress){
   const cue=balls.cue;
   const cands=[];
   let done=0;
-  // 초구(사용자가 아직 공을 안 옮긴 기본 배치)에서는 대부분 '먼 공'을 먼저 친다 →
-  // 그 경로에 우선순위를 살짝 가산한다. 사용자가 배치를 바꾼 뒤엔(userPlaced) 적용 안 함.
-  const farBall = len(sub(cue,balls.obj)) >= len(sub(cue,balls.target)) ? 'obj' : 'target';
-  // 가산 18 ≈ 성공률 18%p. '대부분 먼 공' — 웬만하면 먼 공 경로가 앞서되,
-  // 가까운 공이 18%p 넘게 확실히 쉬우면 그건 그대로 위로 올라온다.
-  const farBoost = r => (!userPlaced && r && r.fk===farBall) ? 18 : 0;
-  const rankOf  = r => r.prob*100 + (r.recBoost||0) + farBoost(r);
+  // 정식 초구에서는 먼 공인 빨간공(target)을 반드시 먼저 친다.
+  // 일반 배치에서는 두 적구를 모두 탐색하고 성공률·정석 코스로 정렬한다.
+  const opening=atPreset3(), openingFirst='target';
+  const openingBoost = r => (opening && r && r.fk===openingFirst) ? 18 : 0;
+  const rankOf  = r => r.prob*100 + (r.recBoost||0) + openingBoost(r);
   const spinN=P.skill.keys?Object.keys(P.skill.keys).length:SPINS3.length;
   // 진행률 추정 — 전수 스캔 + 상위 10후보 MC
   //   + 표시 3경로 × (속도 2종 재조준 17 + 속도 3종 MC 24 + 확정 속도 정밀 24)
@@ -6043,11 +6107,10 @@ async function solve3(onProgress){
     out.push({...c, prob, gather, pattern:pat.name, patternEn:pat.en, recBoost:pat.boost,
       score:prob*100+pat.boost+c.tol+(gather||0)*0.05});
   }
-  // 초구 세팅(기본 배치)은 정석대로 '먼 공'을 먼저 친다 — 먼 공 경로가 하나라도 있으면
-  // 가까운 공 먼저 치는 경로는 제외한다. (사용자가 배치를 바꾸면 userPlaced=true라 제외 안 함)
-  if(!userPlaced){
-    const farOnly=out.filter(r=>r.fk===farBall);
-    if(farOnly.length){ out.length=0; out.push(...farOnly); }
+  // 초구 세팅은 빨간공 선접촉 경로가 하나라도 있으면 가까운 노란공 선접촉 경로를 제외한다.
+  if(opening){
+    const redFirst=out.filter(r=>r.fk===openingFirst);
+    if(redFirst.length){ out.length=0; out.push(...redFirst); }
   }
   // 성공률(쉬운 것)을 기본으로 하되, 유명한 정석 코스에 우선순위를 가산한다 —
   // 성공률이 비슷하면 대회전·와리가리·장단장 같은 정석 코스가 먼저 추천된다
@@ -6476,7 +6539,7 @@ const p3cv=document.getElementById('g3-photoCv');
 const p3ctx=p3cv.getContext('2d');
 const p3Panel=document.getElementById('g3-photoPanel');
 const p3Msg=document.getElementById('g3-photoMsg');
-let p3Img=null, p3Corners=null, p3Drag=-1, p3Marks=null, p3Hinv=null, cam3=null;
+let p3Img=null, p3Corners=null, p3Drag=-1, p3Marks=null, p3Hinv=null, cam3=null, p3LoupePoint=null;
 let p3H=null;        // 테이블→사진 — 물리 경로를 사진 위에 겹쳐 그릴 때 사용
 let p3Missing=[];
 const NAME3={cue:'수구',obj:'제1적구',target:'제2적구'};
@@ -6624,6 +6687,9 @@ function drawP3(){
       phyRoutes.forEach((r,i)=>{ if(i!==phySel&&!g3Locked(i)) drawOne(r,PHY_COLORS[i],0.22); });
     if(phyRoutes[phySel]&&!g3Locked(phySel)) drawOne(phyRoutes[phySel],PHY_COLORS[phySel],0.95);
   }
+  const lp=p3Drag>=0?p3Corners[p3Drag]:p3LoupePoint;
+  if(lp) window.hbDrawPhotoLoupe(p3cv,p3ctx,lp,
+    p3Drag>=0?'#e8b53e':(p3Missing.length?balls[p3Missing[0]].color:'#e8b53e'));
 }
 function p3pos(e){
   const r=p3cv.getBoundingClientRect();
@@ -6641,7 +6707,14 @@ function p3Down(e){
     if(d<bd){bd=d;best=i;}
   });
   // 모서리 점을 직접 잡았을 때만 제스처 점유 — 그 외는 스크롤을 막지 않는다
-  if(bd<p3cv.width/12){ e.preventDefault(); p3Drag=best; return; }
+  if(bd<p3cv.width/12){
+    e.preventDefault(); p3LoupePoint=null; p3Drag=best; drawP3(); return;
+  }
+  if(p3Hinv&&p3Missing.length){
+    p3LoupePoint=p; drawP3();
+    p3TapG.start(e,function(){ p3TapPlace(p3LoupePoint||p); });
+    return;
+  }
   p3TapG.start(e,function(){ p3TapPlace(p); });
 }
 // 미인식 공 탭 지정 — '짧은 탭'으로 확정됐을 때만 실행된다
@@ -6672,19 +6745,28 @@ function p3TapPlace(p){
 }
 function p3Move(e){
   p3TapG.move(e);
-  if(p3Drag<0) return;
-  e.preventDefault();
   const p=p3pos(e);
-  p3Corners[p3Drag]={x:clamp(p.x,0,p3cv.width-1), y:clamp(p.y,0,p3cv.height-1)};
-  drawP3();
+  if(p3Drag>=0){
+    e.preventDefault();
+    p3Corners[p3Drag]={x:clamp(p.x,0,p3cv.width-1), y:clamp(p.y,0,p3cv.height-1)};
+    drawP3();
+  } else if(p3LoupePoint){
+    p3LoupePoint={x:clamp(p.x,0,p3cv.width-1),y:clamp(p.y,0,p3cv.height-1)};
+    drawP3();
+  }
 }
-function p3Up(){ p3TapG.up(); p3Drag=-1; }
+function p3Up(){
+  const hadLoupe=p3Drag>=0||!!p3LoupePoint;
+  p3TapG.up(); p3Drag=-1; p3LoupePoint=null;
+  if(hadLoupe) drawP3();
+}
 p3cv.addEventListener('mousedown',p3Down);
 p3cv.addEventListener('mousemove',p3Move);
 window.addEventListener('mouseup',p3Up);
 p3cv.addEventListener('touchstart',p3Down,{passive:false});
 p3cv.addEventListener('touchmove',p3Move,{passive:false});
 window.addEventListener('touchend',p3Up);
+window.addEventListener('touchcancel',p3Up);
 document.getElementById('g3-detect').addEventListener('click',()=>{
   if(!p3Img||!p3Corners) return;
   const V=window.__hbVision;
@@ -7184,6 +7266,7 @@ if(typeof window!=='undefined')
 if(typeof window!=='undefined')
   // setSystem: 테스트가 토글 걱정 없이 특정 시스템을 켜거나(sys) 끄게(null) 한다.
   window.__hb3test={balls, play, sol:()=>solution, routes:()=>phyRoutes, BALL_R,
+    atPreset:()=>atPreset3(),
     system:()=>system,
     setSystem:(sys)=>{
       if(!sys){ setSystemNone(); return; }

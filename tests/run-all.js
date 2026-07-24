@@ -22,8 +22,9 @@ const CASES = [
   { f: 'g3-test.js', match: [/득점 라인/, /단-장-장/, /물리 경로 제안/] },
   { f: 'skill-test.js', match: [/4구 \[beg\]/, /4구 \[adv\]/, /혼합 당점 배제 확인: OK/] },
   { f: 'crule-test.js', match: [/규칙 \[any\]/, /규칙 \[1\]/, /규칙 \[3\]/] },
-  { f: 'sort-test.js', match: [/쿠션수순\(재계산\)/, /추천순/] },
+  { f: 'sort-test.js', match: [/쿠션수순\(재계산\)/, /잠금 필터 유지: OK/, /추천순/] },
   // ── UI 마크업 단위 검증 ──
+  { f: 'requested-ui-test.js', exit0: true, match: [/요청 UI 회귀 검사 통과/] },
   { f: 'overlap-test.js', exit0: true, match: [/겹침 검증 회귀: OK/] },
   { f: 'block-test.js', match: [/경고 포함: OK/] },
   { f: 'block2-test.js', match: [/제2적구 출발-경로 차단 검사 통과/] },
