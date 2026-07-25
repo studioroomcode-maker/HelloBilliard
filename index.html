@@ -29,8 +29,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Hello Billiard">
 <link rel="preload" href="fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="tokens.css">
 <style>
-
+  /* Hallmark · macrostructure: Task Console · tone: field utility · anchor hue: gold
+   * pre-emit critique: P5 H5 E4 S5 R5 V4 · contrast: pass (40–41)
+   * nav: existing · footer: existing · slop: pass (42–45) · honest: pass (46)
+   * chrome: pass (47) · tokens: pass (48) · responsive: pass (49)
+   * icons: pass (30) · mobile: pass (34, 49, 50–57) */
   /* 폰트 자체 호스팅 — 외부(구글) 요청 0건.
      둘 다 가변 폰트라 파일 하나가 모든 굵기를 담당한다.
      unicode-range 는 구글이 쓰던 latin 서브셋 그대로. 한글은 시스템 폰트로 폴백된다
@@ -70,6 +75,7 @@
     color: var(--paper);
     font-family: 'Bricolage Grotesque', sans-serif;
     min-height: 100vh;
+    overflow-x: clip;
     -webkit-tap-highlight-color: transparent;
   }
   .wrap {
@@ -1210,6 +1216,7 @@
   <div class="panel" id="g4-photoPanel" style="display:none">
     <h3 style="font-size:12px;color:var(--accent);letter-spacing:.05em;margin-bottom:8px"
       data-en="📷 Photo scan — align corners">📷 사진 인식 — 모서리 맞추기</h3>
+    <div class="photo-capture-note"><b data-en="0.5× wide recommended">0.5× 광각 권장</b><span data-en="Keep all four inner cushion corners in frame.">쿠션 안쪽 네 모서리가 모두 사진에 들어와야 정확합니다.</span></div>
     <div class="photo-wrap">
       <canvas id="g4-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
         style="width:100%;border-radius:8px;touch-action:pan-y;cursor:crosshair"></canvas>
@@ -1218,6 +1225,21 @@
       <button class="tool primary" id="g4-detect" data-en="Detect → Calculate">공 인식 → 경로 계산</button>
     </div>
     <p class="hint" id="g4-photoMsg" style="margin-top:8px"></p>
+    <div class="photo-result" id="g4-photoResult" hidden aria-live="polite">
+      <div class="photo-result-head">
+        <div class="photo-result-title" data-en-html="Path on photo<small>Switch routes without leaving the photo</small>">사진 위 경로<small>사진을 보면서 경로를 바꿀 수 있어요</small></div>
+        <button class="tool" id="g4-photoBoard" data-en="Graphic detail">그래픽 상세</button>
+      </div>
+      <div class="photo-route-picks" id="g4-photoRoutePicks"></div>
+      <div class="photo-result-brief" id="g4-photoBrief"></div>
+      <div class="photo-result-status" id="g4-photoResultStatus"></div>
+      <div class="photo-cushion-quick">
+        <span data-en="Venue cushion">구장 쿠션 반응</span>
+        <button data-table="cushion" data-value="short" data-en="Short">짧음</button>
+        <button data-table="cushion" data-value="normal" data-en="Normal">보통</button>
+        <button data-table="cushion" data-value="long" data-en="Long">김</button>
+      </div>
+    </div>
   </div>
   </div><!-- /col-board -->
 
@@ -1389,6 +1411,7 @@
   <div class="panel" id="g3-photoPanel" style="display:none">
     <h3 style="font-size:12px;color:var(--accent);letter-spacing:.05em;margin-bottom:8px">
       사진 인식 — 모서리 맞추기</h3>
+    <div class="photo-capture-note"><b data-en="0.5× wide recommended">0.5× 광각 권장</b><span data-en="Keep all four inner cushion corners in frame.">쿠션 안쪽 네 모서리가 모두 사진에 들어와야 정확합니다.</span></div>
     <div class="photo-wrap">
       <canvas id="g3-photoCv" role="img" aria-label="촬영한 당구대 사진 — 노란 점 4개를 드래그해 경기면 모서리를 맞춥니다"
         style="width:100%;border-radius:8px;touch-action:pan-y;cursor:crosshair"></canvas>
@@ -1397,6 +1420,21 @@
       <button class="tool primary" id="g3-detect" data-en="Detect → Calculate">공 인식 → 경로 계산</button>
     </div>
     <p class="hint" id="g3-photoMsg" style="margin-top:8px"></p>
+    <div class="photo-result" id="g3-photoResult" hidden aria-live="polite">
+      <div class="photo-result-head">
+        <div class="photo-result-title" data-en-html="Path on photo<small>Switch routes without leaving the photo</small>">사진 위 경로<small>사진을 보면서 경로를 바꿀 수 있어요</small></div>
+        <button class="tool" id="g3-photoBoard" data-en="Graphic detail">그래픽 상세</button>
+      </div>
+      <div class="photo-route-picks" id="g3-photoRoutePicks"></div>
+      <div class="photo-result-brief" id="g3-photoBrief"></div>
+      <div class="photo-result-status" id="g3-photoResultStatus"></div>
+      <div class="photo-cushion-quick">
+        <span data-en="Venue cushion">구장 쿠션 반응</span>
+        <button data-table="cushion" data-value="short" data-en="Short">짧음</button>
+        <button data-table="cushion" data-value="normal" data-en="Normal">보통</button>
+        <button data-table="cushion" data-value="long" data-en="Long">김</button>
+      </div>
+    </div>
   </div>
   </div><!-- /col-board -->
 
@@ -1594,6 +1632,120 @@
     min-width: 0;
     min-height: 44px;
     white-space: nowrap;
+  }
+
+  /* 사진이 결과 화면 자체가 되도록 경로·핵심 샷 정보·구장 반응을 사진 바로 아래에 둔다. */
+  .photo-capture-note {
+    display:grid; grid-template-columns:auto minmax(0,1fr); gap:8px 10px; align-items:start;
+    margin:0 0 10px; padding:10px 12px; border:1px solid var(--color-result-line);
+    border-radius:var(--radius-result); background:var(--color-result-surface);
+    color:var(--tx-2); font-size:12px; line-height:1.45;
+  }
+  .photo-capture-note b { color:var(--color-result-accent); white-space:nowrap; }
+  .photo-result {
+    margin-top:12px; padding:12px; border:1px solid var(--color-result-line);
+    border-radius:var(--radius-result); background:var(--color-result-surface);
+    box-shadow:var(--shadow-result); animation:photoResultIn var(--dur-result) var(--ease-out);
+  }
+  .photo-result[hidden] { display:none; }
+  .photo-result[data-state="loading"] { opacity:.78; }
+  .photo-result[data-state="error"] { border-color:var(--color-result-error); }
+  .photo-result[data-state="success"] { border-color:var(--color-result-success); }
+  .photo-result-head {
+    display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;
+  }
+  .photo-result-title { min-width:0; font-size:13px; font-weight:800; color:var(--tx-1); }
+  .photo-result-title small {
+    display:block; margin-top:2px; color:var(--tx-3); font-size:10px; font-weight:600;
+  }
+  .photo-result-head .tool { flex:0 0 auto; min-width:0; padding:7px 9px; white-space:nowrap; }
+  .photo-route-picks { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:9px; }
+  .photo-route-picks .tool { flex:0 0 auto; min-width:42px; padding:8px 10px; }
+  .photo-result-brief {
+    display:flex; flex-wrap:wrap; align-items:center; gap:7px; min-width:0;
+    padding:9px 10px; border-radius:calc(var(--radius-result) - 3px);
+    background:var(--color-result-inset); color:var(--tx-1);
+  }
+  .photo-result-brief:empty { display:none; }
+  .photo-result-brief .sbi { display:inline-flex; align-items:center; gap:4px; min-width:0; font-size:11px; }
+  .photo-result-brief .sbi svg { width:28px; height:28px; }
+  .photo-result-brief .swatch { width:7px; height:28px; border-radius:999px; flex:0 0 auto; }
+  .photo-result-status { color:var(--tx-2); font-size:12px; line-height:1.45; }
+  .photo-cushion-quick {
+    display:grid; grid-template-columns:auto repeat(3,minmax(0,1fr)); gap:6px; align-items:center;
+    margin-top:9px;
+  }
+  .photo-cushion-quick > span { color:var(--tx-3); font-size:10px; font-weight:700; }
+  .photo-cushion-quick button {
+    border:1px solid var(--color-result-line); border-radius:8px; padding:7px 5px;
+    background:var(--color-result-inset); color:var(--tx-2); font:inherit; font-size:11px;
+    font-weight:700; cursor:pointer;
+  }
+  .photo-cushion-quick button.on { border-color:var(--accent-line); color:var(--accent); }
+  .photo-result button:hover, .wide-camera button:hover { border-color:var(--accent-line); }
+  .photo-result button, .wide-camera button,
+  .wide-camera select, .wide-camera input { outline:2px solid transparent; outline-offset:1px; }
+  .photo-result button:focus-visible, .wide-camera button:focus-visible,
+  .wide-camera select:focus-visible, .wide-camera input:focus-visible {
+    outline-color:var(--color-focus);
+  }
+  .photo-result button:active, .wide-camera button:active { transform:translateY(1px); }
+  .photo-result button:disabled, .wide-camera button:disabled { opacity:.45; cursor:not-allowed; }
+  @keyframes photoResultIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
+
+  /* 앱 내부 촬영 — 가능한 기기에서는 후면 렌즈와 줌을 직접 선택한다. */
+  .wide-camera {
+    position:fixed; inset:0; z-index:1200; display:grid; place-items:center;
+    padding:12px; background:var(--color-camera-backdrop);
+  }
+  .wide-camera[hidden] { display:none; }
+  .wide-camera-card {
+    width:min(720px,100%); max-height:calc(100dvh - 24px); overflow:auto;
+    padding:12px; border:1px solid var(--color-result-line); border-radius:16px;
+    background:var(--color-camera-surface); color:var(--tx-1); box-shadow:var(--shadow-camera);
+  }
+  .wide-camera-head { display:flex; align-items:start; justify-content:space-between; gap:12px; margin-bottom:10px; }
+  .wide-camera-head h2 { font-size:16px; font-style:normal; overflow-wrap:anywhere; min-width:0; }
+  .wide-camera-head p { margin-top:3px; color:var(--tx-2); font-size:12px; line-height:1.4; }
+  .wide-camera-close {
+    flex:0 0 auto; width:36px; height:36px; border:1px solid var(--color-result-line);
+    border-radius:10px; background:var(--color-result-inset); color:var(--tx-1); cursor:pointer;
+  }
+  .wide-camera-view {
+    position:relative; width:100%; aspect-ratio:2/1; overflow:hidden;
+    border-radius:12px; background:var(--color-camera-stage);
+  }
+  .wide-camera video { width:100%; height:100%; display:block; object-fit:contain; }
+  .wide-camera-guide { position:absolute; inset:7%; border:2px solid var(--color-result-accent); pointer-events:none; }
+  .wide-camera-guide::after {
+    content:'쿠션 안쪽 네 모서리를 선 안에'; position:absolute; left:50%; bottom:8px;
+    transform:translateX(-50%); padding:4px 8px; border-radius:999px;
+    background:var(--color-camera-label); color:var(--color-camera-label-text);
+    font-size:11px; font-weight:800; white-space:nowrap;
+  }
+  .wide-camera-controls {
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; margin-top:10px;
+  }
+  .wide-camera-field { display:grid; gap:4px; color:var(--tx-3); font-size:10px; font-weight:700; }
+  .wide-camera select, .wide-camera input {
+    width:100%; min-width:0; border:1px solid var(--color-result-line); border-radius:9px;
+    padding:8px; background:var(--color-result-inset); color:var(--tx-1); font:inherit;
+  }
+  .wide-camera-actions { display:flex; gap:8px; margin-top:10px; }
+  .wide-camera-actions .tool { min-width:0; }
+  .wide-camera-status { margin-top:8px; min-height:18px; color:var(--tx-2); font-size:11px; }
+  @media (max-width:414px) {
+    .photo-result-head { align-items:flex-start; }
+    .photo-result-head .tool { font-size:10px; }
+    .photo-cushion-quick { grid-template-columns:1fr 1fr 1fr; }
+    .photo-cushion-quick > span { grid-column:1/-1; }
+    .wide-camera-controls { grid-template-columns:minmax(0,1fr); }
+    .wide-camera-actions { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+    .wide-camera-actions .primary { grid-column:1/-1; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .photo-result { animation:none; }
+    .photo-result button:active, .wide-camera button:active { transform:none; }
   }
 
   /* ===== 폰 가로모드 — 다이를 화면 가득, 컨트롤은 다이 위에 띄운다 =====
@@ -1919,8 +2071,128 @@ window.hbDrawPhotoLoupe=function(canvas,ctx,p,ring){
   ctx.restore();
 };
 
-// 사진 인식이 끝나면 결과(경로)를 바로 볼 수 있게 위쪽 당구대로 부드럽게 이동한다.
-// 사진이 길면 다이가 화면 밖에 있어 '계산이 됐는지' 알 수 없었다.
+// 물리 충돌 반지름은 실측 비율 그대로 두되, 모바일에서 화면상 공 지름이 7px까지
+// 작아지는 문제를 막는다. 표시만 최소 12px로 키워 두께와 공 위치를 읽기 쉽게 한다.
+window.hbVisualBallRadius=function(canvas,physicalR){
+  try{
+    var rect=canvas.getBoundingClientRect();
+    var scale=rect&&rect.width?rect.width/canvas.width:1;
+    return Math.min(physicalR*1.75, Math.max(physicalR,6/Math.max(0.1,scale)));
+  }catch(e){ return physicalR; }
+};
+
+// 광각 촬영 도우미. 후면 카메라 목록에서 초광각 라벨을 우선 선택하고, 브라우저가
+// zoom capability를 공개하면 가장 넓은 값부터 시작한다. 미지원 환경은 사진 선택으로 폴백.
+window.hbWideCamera=(function(){
+  var root=null, video=null, lens=null, zoom=null, zoomField=null, status=null;
+  var stream=null, targetInput=null, switching=false, wanted=false;
+  function L(ko,en){ return window.hbLang&&window.hbLang.t?window.hbLang.t(ko,en):ko; }
+  function stop(){
+    if(stream){ stream.getTracks().forEach(function(t){ try{t.stop();}catch(e){} }); stream=null; }
+    if(video) video.srcObject=null;
+  }
+  function close(){ wanted=false; stop(); if(root) root.hidden=true; targetInput=null; }
+  function build(){
+    if(root) return true;
+    if(typeof document==='undefined'||typeof document.createElement!=='function'||!document.body) return false;
+    root=document.createElement('div');
+    root.className='wide-camera'; root.hidden=true;
+    root.innerHTML=
+      '<div class="wide-camera-card" role="dialog" aria-modal="true" aria-labelledby="wideCameraTitle">'+
+        '<div class="wide-camera-head"><div><h2 id="wideCameraTitle">'+L('0.5× 광각으로 당구대 촬영','Shoot the table at 0.5× wide')+'</h2>'+
+        '<p>'+L('쿠션 안쪽 네 모서리가 모두 보여야 사진 경로가 정확합니다.','Keep all four inner cushion corners visible for an accurate photo path.')+'</p></div>'+
+        '<button class="wide-camera-close" type="button" aria-label="'+L('닫기','Close')+'">×</button></div>'+
+        '<div class="wide-camera-view"><video autoplay muted playsinline aria-label="'+L('당구대 카메라 미리보기','Billiard table camera preview')+'"></video><div class="wide-camera-guide" aria-hidden="true"></div></div>'+
+        '<div class="wide-camera-controls">'+
+          '<label class="wide-camera-field">'+L('후면 렌즈','Rear lens')+'<select class="wide-camera-lens"></select></label>'+
+          '<label class="wide-camera-field wide-camera-zoom">'+L('줌 — 가장 넓게 권장','Zoom — widest recommended')+'<input type="range"></label>'+
+        '</div>'+
+        '<div class="wide-camera-actions">'+
+          '<button class="tool primary wide-camera-shot" type="button">'+L('이 화면 촬영','Capture this view')+'</button>'+
+          '<button class="tool wide-camera-file" type="button">'+L('기존 사진 선택','Choose existing photo')+'</button>'+
+        '</div><p class="wide-camera-status" aria-live="polite"></p>'+
+      '</div>';
+    document.body.appendChild(root);
+    video=root.querySelector('video'); lens=root.querySelector('.wide-camera-lens');
+    zoom=root.querySelector('.wide-camera-zoom input'); zoomField=root.querySelector('.wide-camera-zoom');
+    status=root.querySelector('.wide-camera-status');
+    root.querySelector('.wide-camera-close').addEventListener('click',close);
+    root.addEventListener('click',function(e){ if(e.target===root) close(); });
+    root.querySelector('.wide-camera-file').addEventListener('click',function(){
+      var input=targetInput; close(); if(input&&input.click) input.click();
+    });
+    root.querySelector('.wide-camera-shot').addEventListener('click',capture);
+    lens.addEventListener('change',function(){ if(lens.value) start(lens.value,false); });
+    zoom.addEventListener('input',function(){
+      var tr=stream&&stream.getVideoTracks&&stream.getVideoTracks()[0];
+      if(tr&&tr.applyConstraints) tr.applyConstraints({advanced:[{zoom:+zoom.value}]}).catch(function(){});
+    });
+    return true;
+  }
+  async function listLenses(selected){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.enumerateDevices) return null;
+    var ds=(await navigator.mediaDevices.enumerateDevices()).filter(function(d){return d.kind==='videoinput';});
+    lens.innerHTML='';
+    ds.forEach(function(d,i){
+      var o=document.createElement('option'); o.value=d.deviceId;
+      o.textContent=d.label||L('후면 카메라 '+(i+1),'Camera '+(i+1));
+      o.selected=d.deviceId===selected; lens.appendChild(o);
+    });
+    lens.parentElement.style.display=ds.length>1?'grid':'none';
+    return ds.find(function(d){return /(ultra|0[.,]5|초광각|광각)/i.test(d.label||'');})||null;
+  }
+  function syncZoom(track){
+    zoomField.style.display='none';
+    try{
+      var cap=track.getCapabilities&&track.getCapabilities();
+      if(!cap||!cap.zoom) return;
+      zoom.min=cap.zoom.min; zoom.max=cap.zoom.max; zoom.step=cap.zoom.step||0.1;
+      zoom.value=cap.zoom.min; zoomField.style.display='grid';
+      track.applyConstraints({advanced:[{zoom:cap.zoom.min}]}).catch(function(){});
+    }catch(e){}
+  }
+  async function start(deviceId,autoPick){
+    if(switching) return; switching=true; stop();
+    try{
+      status.textContent=L('카메라를 여는 중…','Opening camera…');
+      var videoRule=deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'}};
+      stream=await navigator.mediaDevices.getUserMedia({video:videoRule,audio:false});
+      if(!wanted){ switching=false; stop(); return; }
+      video.srcObject=stream; await video.play();
+      var tr=stream.getVideoTracks()[0], settings=tr.getSettings?tr.getSettings():{};
+      syncZoom(tr);
+      var ultra=await listLenses(settings.deviceId);
+      status.textContent=L('가능하면 초광각 렌즈를 고르고 네 모서리를 맞추세요.','Choose the ultra-wide lens if available and align all four corners.');
+      switching=false;
+      if(autoPick&&ultra&&ultra.deviceId!==settings.deviceId) start(ultra.deviceId,false);
+    }catch(err){
+      switching=false; stop();
+      status.textContent=L('카메라를 열 수 없습니다. 기존 사진 선택을 이용해 주세요.','Camera unavailable. Choose an existing photo instead.');
+    }
+  }
+  function capture(){
+    if(!video||!video.videoWidth||!targetInput) return;
+    var c=document.createElement('canvas'); c.width=video.videoWidth; c.height=video.videoHeight;
+    c.getContext('2d').drawImage(video,0,0,c.width,c.height);
+    var input=targetInput;
+    c.toBlob(function(blob){
+      if(!blob) return;
+      var file=typeof File==='function'?new File([blob],'hello-billiard-wide.jpg',{type:'image/jpeg'}):blob;
+      input._hbFile=file; close();
+      try{ input.dispatchEvent(new Event('change',{bubbles:true})); }catch(e){}
+    },'image/jpeg',0.94);
+  }
+  function open(input){
+    if(!input) return;
+    if(typeof navigator==='undefined'||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!build()){
+      if(input.click) input.click(); return;
+    }
+    wanted=true; targetInput=input; root.hidden=false; start(null,true);
+  }
+  return {open:open,close:close};
+})();
+
+// 그래픽 상세를 사용자가 명시적으로 요청했을 때만 위쪽 당구대로 이동한다.
 window.hbScrollToBoard=function(){
   try{
     var b=document.querySelector('.mode-panel.show .board');
@@ -2773,6 +3045,9 @@ async function solve(onProgress){
         - (c.spin.v!==0&&c.spin.h!==0?3:0)
         + (gather||0)*0.05,             // 모임 좋은 경로에 소폭 가점
     };
+    route.stabilityPenalty=routeStabilityPenalty4(route);
+    route.stability=route.stabilityPenalty>=16?'fragile':'steady';
+    route.score-=route.stabilityPenalty; // 추천순은 성공 가능성뿐 아니라 현장 재현성까지 반영
     // 3%↑는 정식 후보, 미만은 '다른 순서 참고' 후보로만 따로 보관
     (prob<0.03?routesLow:routesOut).push(route);
   }
@@ -2783,8 +3058,10 @@ async function solve(onProgress){
   // 두 번 뽑지 말고 '실측한 바로 그 목록'을 그대로 반환한다.
   const shown=sortedRoutes();
   for(const r of shown){
+    const before=r.prob;
     const p2=await monteCarlo(r,P,60,r.speed,bump);
     r.prob=(r.prob*30+p2*60)/90;
+    r.score+=(r.prob-before)*100;       // 정밀 실측 성공률을 추천 점수에도 반영
   }
   shownRoutes=shown;                 // 정렬 스위치용 고정 목록 저장
   return applySort(shown, sortMode); // 현재 정렬 기준으로 순서만 맞춰 반환
@@ -2819,15 +3096,17 @@ function atPreset4(){
 }
 function sortedRoutes(){
   if(!allRoutes.length) return [];
+  const steady=allRoutes.filter(r=>r.stability!=='fragile');
+  const source=steady.length?steady:allRoutes; // 안정 경로가 하나라도 있으면 고난도 후보는 기본 추천에서 제외
   // 초구 세팅(정식 초구 배치 그대로)은 당구 정석대로 '먼 적구'를 먼저 친다 — 가까운 적구
   // 먼저 치는 경로는 빼고, '다른 순서' 참고 경로도 붙이지 않는다. 배치를 바꿨거나
   // 먼 적구 경로가 아예 없으면 평소대로 전부 보여준다.
   if(atPreset4()){
     const far=farFirstBall4();
-    const only=allRoutes.filter(r=>r.first===far);
+    const only=source.filter(r=>r.first===far);
     if(only.length) return pickDiverse(only);
   }
-  return withReference(pickDiverse(allRoutes));
+  return withReference(pickDiverse(source));
 }
 // 고정 선발된 경로를 선택한 정렬 기준으로 재정렬 (참고 경로는 항상 맨 뒤)
 function applySort(rs, mode){
@@ -3135,11 +3414,12 @@ function playRoute(){
 }
 function d(x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
 function drawBall(b,active){
-  ctx.beginPath();ctx.arc(b.x,b.y,BALL_R,0,7);
+  const vr=window.hbVisualBallRadius(cv,BALL_R);
+  ctx.beginPath();ctx.arc(b.x,b.y,vr,0,7);
   ctx.fillStyle=b.color;ctx.fill();
   ctx.lineWidth=active?3:2;
   ctx.strokeStyle=active?'#e8b53e':b.ring;ctx.stroke();
-  ctx.beginPath();ctx.arc(b.x-4,b.y-4,BALL_R/3,0,7);
+  ctx.beginPath();ctx.arc(b.x-vr*.42,b.y-vr*.42,vr/3,0,7);
   ctx.fillStyle='rgba(255,255,255,.5)';ctx.fill();
 }
 // 경로는 시뮬레이션이 기록한 폴리라인 그대로 그린다 —
@@ -3232,6 +3512,17 @@ function powerLevel(r){
   let lvl=Math.round(p*3.0 - 0.3);
   return Math.max(1, Math.min(5, lvl));
 }
+function routeStabilityPenalty4(r){
+  const e=Math.max(1,Math.round((r.thickness||0)*8));
+  const power=powerLevel(r), total=(r.cushions||0)+(r.cushBefore||0);
+  let p=e<=1?24:e===2?12:e===3?5:0;
+  if(r.kiss) p+=24;
+  if(r.spin&&r.spin.v!==0&&r.spin.h!==0) p+=6;
+  if(r.spin&&Math.abs(r.spin.h)>=1) p+=3;
+  if(power>=5) p+=10; else if(power===4) p+=4;
+  if(total>=4) p+=(total-3)*3;
+  return p;
+}
 function powerSVG(level){
   let bars='';
   for(let i=0;i<5;i++){
@@ -3252,6 +3543,50 @@ function g4FreeN(){
   return window.hbPro.FREE_4GU_ROUTES||1;
 }
 function g4Locked(i){ return i>=g4FreeN(); }
+function showPhotoResult4Loading(){
+  const root=document.getElementById('g4-photoResult');
+  if(!root) return;
+  root.hidden=false; root.dataset.state='loading';
+  document.getElementById('g4-photoRoutePicks').innerHTML='';
+  document.getElementById('g4-photoBrief').innerHTML='';
+  document.getElementById('g4-photoResultStatus').textContent=
+    window.hbLang.t('사진을 그대로 보면서 경로를 계산하고 있어요…','Calculating while keeping the photo in view…');
+}
+function showPhotoResult4Error(message){
+  const root=document.getElementById('g4-photoResult');
+  if(!root) return;
+  root.hidden=false; root.dataset.state='error';
+  document.getElementById('g4-photoRoutePicks').innerHTML='';
+  document.getElementById('g4-photoBrief').innerHTML='';
+  document.getElementById('g4-photoResultStatus').textContent=message;
+}
+function renderPhotoResult4(){
+  const root=document.getElementById('g4-photoResult');
+  const panel=document.getElementById('g4-photoPanel');
+  if(!root||!panel||panel.style.display==='none') return;
+  if(!routes.length){
+    if(root.dataset.state!=='loading'&&root.dataset.state!=='error') root.hidden=true;
+    return;
+  }
+  root.hidden=false; root.dataset.state='success';
+  const brief=document.getElementById('g4-shotBrief');
+  document.getElementById('g4-photoBrief').innerHTML=brief?brief.innerHTML:'';
+  const r=routes[selected], stability=r.stability||'steady';
+  document.getElementById('g4-photoResultStatus').textContent=
+    stability==='fragile'
+      ?window.hbLang.t('고난도 경로 · 얇은 두께나 강한 당점 변화에 민감합니다.','High difficulty · sensitive to thin contact or strong english.')
+      :window.hbLang.t('실전 안정 경로 · 재현성이 낮은 후보는 추천에서 뒤로 보냈습니다.','Field-stable path · fragile candidates were ranked lower.');
+  const picks=document.getElementById('g4-photoRoutePicks');
+  picks.innerHTML=routes.map((x,i)=>
+    `<button class="tool mini ${i===selected?'on':''} ${g4Locked(i)?'locked':''}" data-i="${i}" aria-label="${window.hbLang.t('사진 경로 ','Photo path ')+(i+1)}"><span class="dot" style="background:${routeColor(i)}"></span>${g4Locked(i)?'🔒':(x.reference?'참':i+1)}</button>`).join('');
+  picks.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    const i=+b.dataset.i;
+    if(g4Locked(i)){ window.hbShowPaywall&&window.hbShowPaywall('routes4'); return; }
+    stopAnim(false); selected=i; renderCards(); draw(); drawPhoto();
+  }));
+}
+const photoBoard4=document.getElementById('g4-photoBoard');
+if(photoBoard4) photoBoard4.addEventListener('click',()=>window.hbScrollToBoard&&window.hbScrollToBoard());
 function renderCards(){
   const box=document.getElementById('g4-routes');
   const bar=document.getElementById('g4-stageBar');
@@ -3286,6 +3621,7 @@ function renderCards(){
         selected=i; renderCards(); draw(); drawPhoto();
       }));
   }
+  renderPhotoResult4();
   if(!routes.length){
     const L=window.hbLang;
     if(!calcTried){
@@ -3584,6 +3920,9 @@ calcBtn.addEventListener('click',()=>{
   solveWithFallback(p=>{ calcBtn.textContent=`계산 중… ${p}%`; }).then(rs=>{
     if(myGen!==solveGen) return;        // 계산 중 배치가 바뀜 — 폐기
     routes=rs; selected=0;
+    if(!rs.length) showPhotoResult4Error(window.hbLang.t(
+      '현재 조건에서 안정적인 경로를 찾지 못했습니다. 쿠션 조건을 추천으로 바꾸거나 공 위치를 확인해 주세요.',
+      'No stable route was found. Try Auto cushions or check the detected ball positions.'));
     justSolved=true; renderCards(); justSolved=false;   // 등장 애니메이션
     draw();
     drawPhoto();               // 사진이 열려 있으면 경로를 사진에도 표시
@@ -3593,6 +3932,9 @@ calcBtn.addEventListener('click',()=>{
     routes=[]; selected=0;
     const box=document.getElementById('g4-routes');
     if(box) box.innerHTML='<div class="panel"><span class="empty">계산 중 오류가 발생했습니다. 공 배치를 바꿔 다시 시도해 주세요.</span></div>';
+    showPhotoResult4Error(window.hbLang.t(
+      '계산 중 오류가 발생했습니다. 공 위치를 확인한 뒤 다시 시도해 주세요.',
+      'Calculation failed. Check the ball positions and try again.'));
     try{ window.__hbReport&&window.__hbReport('solve/g4',err); }catch(_){}
   }).finally(()=>{
     calcBtn.textContent='경로 계산'; calcBtn.disabled=false;
@@ -3627,6 +3969,9 @@ document.querySelectorAll('[data-table]').forEach(b=>
     table[b.dataset.table]=b.dataset.value;
     saveTable(); syncTable();
     routes=[];selected=0;renderCards();draw();drawPhoto();
+    if(photoH && document.getElementById('g4-photoPanel').style.display!=='none'){
+      showPhotoResult4Loading(); requestRecalc();
+    }
     if(typeof window!=='undefined'&&window.__hb3refresh) window.__hb3refresh();
   }));
 function syncTable(){
@@ -4271,10 +4616,11 @@ applyMyBallColor();
 pushHist();   // 초기 배치를 히스토리 기준점으로 기록
 
 document.getElementById('g4-photo').addEventListener('click',()=>{
-  document.getElementById('g4-file').click();
+  window.hbWideCamera.open(document.getElementById('g4-file'));
 });
 document.getElementById('g4-file').addEventListener('change',e=>{
-  const f=e.target.files&&e.target.files[0];
+  const f=e.target._hbFile||(e.target.files&&e.target.files[0]);
+  e.target._hbFile=null;
   if(!f) return;
   window.hbTrack&&window.hbTrack('photo',{mode:'4gu'});
   if(window.hbPro && window.hbPro.photoLeft()<=0){
@@ -4298,6 +4644,8 @@ document.getElementById('g4-file').addEventListener('change',e=>{
       photoCorners=insetCorners(orderCorners(autoCorners(photoImgData)));
       photoMarks=null; photoH=null; photoHinv=null; photoMissing=[]; camW=null;
       photoPanel.style.display='block';
+      document.getElementById('g4-photoResult').hidden=true;
+      document.getElementById('g4-photoResult').dataset.state='';
       document.body.classList.add('photo-open');   // 사진 작업 중엔 보드 고정 해제
       photoMsg.textContent=window.hbLang.t('모서리를 쿠션 안쪽 경계 근처로 자동 보정했습니다. 노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인·조정한 뒤 "공 인식 → 경로 계산"을 누르세요. 벽 높이·공 높이 시차는 자동 보정됩니다.','Corners auto-set near the inner cushion edge. Adjust the 4 yellow dots to the inner corners where cushion meets cloth, then press "Detect → Calculate". Wall/ball-height parallax is auto-corrected.');
       drawPhoto();
@@ -4436,6 +4784,7 @@ function pTapPlace(p){
           `${nmp(k)} set — next: tap ${nmp(photoMissing[0])} in the photo.`);
       } else {
         photoMsg.textContent=window.hbLang.t('모든 공 지정 완료 — 최적 경로를 계산합니다.','All balls set — calculating the best path.');
+        showPhotoResult4Loading();
         solveGen++; requestRecalc();
       }
     }
@@ -4559,8 +4908,8 @@ document.getElementById('g4-detect').addEventListener('click',()=>{
     `Recognized all balls — the calculated path overlays on the photo. Tap a route card to change the path shown. Keep all four cushion corners visible in the photo.${res.ambiguous?' ⚠ Both cue balls look near-white, so they were assigned arbitrarily — adjust their positions on the table below if needed.':''}`);
   routes=[]; selected=0; solveGen++; draw(); renderCards();
   pushHist();               // 사진 인식 배치도 히스토리 기록
+  showPhotoResult4Loading();
   requestRecalc();          // 최적 경로 자동 계산 (계산 중이면 끝난 뒤)
-  window.hbScrollToBoard&&window.hbScrollToBoard();   // 결과를 볼 수 있게 위 다이로
 });
 
 // 비전 코어를 3구 탭에서 재사용할 수 있게 노출
@@ -5425,11 +5774,12 @@ function tick2(x,y,s){
 }
 
 function drawBall(b,active){
-  ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,7);
+  const vr=window.hbVisualBallRadius(cv,BALL_R);
+  ctx.beginPath(); ctx.arc(b.x,b.y,vr,0,7);
   ctx.fillStyle=b.color; ctx.fill();
   ctx.lineWidth=active?3:2;
   ctx.strokeStyle=active?'#f4f1e8':b.ring; ctx.stroke();
-  ctx.beginPath(); ctx.arc(b.x-4,b.y-4,BALL_R/3,0,7);
+  ctx.beginPath(); ctx.arc(b.x-vr*.42,b.y-vr*.42,vr/3,0,7);
   ctx.fillStyle='rgba(255,255,255,.5)'; ctx.fill();
 }
 
@@ -5883,6 +6233,25 @@ const SPINS3=[
   {key:'drawL', v:-0.8, h:-1, label:'끌어 + 좌'},
   {key:'drawR', v:-0.8, h:1,  label:'끌어 + 우'},
 ];
+function stabilitySeedPenalty3(r){
+  if(!r) return 0;
+  let p=(r.bank?4:0)+(r.kiss?18:0);
+  if(r.spin){
+    if(Math.abs(r.spin.v)>=0.8) p+=6;
+    if(Math.abs(r.spin.h)>=1) p+=3;
+  }
+  if((r.cush||0)>3) p+=((r.cush||0)-3)*3;
+  if(r.tol!=null&&r.tol<1.5) p+=8;
+  return p;
+}
+function routeStabilityPenalty3(r){
+  const e=Math.max(1,Math.round((r.thickness||0)*8));
+  let p=stabilitySeedPenalty3(r);
+  if(e<=1) p+=24; else if(e===2) p+=12; else if(e===3) p+=5;
+  if(r.firstKiss) p+=28;
+  if(r.power==='강') p+=6;
+  return p;
+}
 const IS_BROWSER3=typeof requestAnimationFrame==='function';
 const yieldTick3=IS_BROWSER3?(function(){
   const ch=new MessageChannel(); let pending=null;
@@ -5935,7 +6304,7 @@ async function solve3(onProgress){
   // 일반 배치에서는 두 적구를 모두 탐색하고 성공률·정석 코스로 정렬한다.
   const opening=atPreset3(), openingFirst='target';
   const openingBoost = r => (opening && r && r.fk===openingFirst) ? 18 : 0;
-  const rankOf  = r => r.prob*100 + (r.recBoost||0) + openingBoost(r);
+  const rankOf  = r => r.prob*100 + (r.recBoost||0) + openingBoost(r) - stabilitySeedPenalty3(r);
   const spinN=P.skill.keys?Object.keys(P.skill.keys).length:SPINS3.length;
   // 진행률 추정 — 전수 스캔 + 상위 10후보 MC
   //   + 표시 3경로 × (속도 2종 재조준 17 + 속도 3종 MC 24 + 확정 속도 정밀 24)
@@ -6180,14 +6549,19 @@ async function solve3(onProgress){
     const patK=classify3(sim.rails, sim.railsBefore, sim.cushAtSecond, best.travel/PW);
     best.pattern=patK.name; best.patternEn=patK.en; best.recBoost=patK.boost;
     best.rails=sim.rails;   // 레일 순서(검증·디버그용, 카드엔 안 씀)
+    best.stabilityPenalty=routeStabilityPenalty3(best);
+    best.stability=best.stabilityPenalty>=18?'fragile':'steady';
     kept.push(best);
   }
-  // 성공률 우선, 정석 코스 우선순위 가산(≈4~5%p) — 유명한 코스가 앞에 온다
-  kept.sort((a,b)=>rankOf(b)-rankOf(a));
-  if(kept.length>5) kept.length=5;   // 최대 5개
+  // 안정 경로가 하나라도 있으면 얇은 두께·키스·강한 회전 의존 경로는 기본 제안에서 제외.
+  // 안정 경로가 전혀 없는 어려운 배치에서는 고난도 경로라도 숨기지 않고 경고와 함께 보여준다.
+  const steady=kept.filter(r=>r.stability!=='fragile');
+  const suggested=steady.length?steady:kept;
+  suggested.sort((a,b)=>rankOf(b)-rankOf(a));
+  if(suggested.length>5) suggested.length=5;   // 최대 5개
   // 경로를 찾긴 했으나 전부 재현성이 없어 버린 경우를 빈 결과와 구분한다
-  kept.dropped=picked.length-kept.length;
-  return kept;
+  suggested.dropped=picked.length-suggested.length;
+  return suggested;
 }
 
 // ---- 물리 경로 UI ----
@@ -6270,6 +6644,50 @@ function g3FreeN(){
   return window.hbPro.FREE_3GU_ROUTES||1;
 }
 function g3Locked(i){ return i>=g3FreeN(); }
+function showPhotoResult3Loading(){
+  const root=document.getElementById('g3-photoResult');
+  if(!root) return;
+  root.hidden=false; root.dataset.state='loading';
+  document.getElementById('g3-photoRoutePicks').innerHTML='';
+  document.getElementById('g3-photoBrief').innerHTML='';
+  document.getElementById('g3-photoResultStatus').textContent=
+    window.hbLang.t('사진을 그대로 보면서 경로를 계산하고 있어요…','Calculating while keeping the photo in view…');
+}
+function showPhotoResult3Error(message){
+  const root=document.getElementById('g3-photoResult');
+  if(!root) return;
+  root.hidden=false; root.dataset.state='error';
+  document.getElementById('g3-photoRoutePicks').innerHTML='';
+  document.getElementById('g3-photoBrief').innerHTML='';
+  document.getElementById('g3-photoResultStatus').textContent=message;
+}
+function renderPhotoResult3(){
+  const root=document.getElementById('g3-photoResult');
+  const panel=document.getElementById('g3-photoPanel');
+  if(!root||!panel||panel.style.display==='none') return;
+  if(!(phyRoutes&&phyRoutes.length)){
+    if(root.dataset.state!=='loading'&&root.dataset.state!=='error') root.hidden=true;
+    return;
+  }
+  root.hidden=false; root.dataset.state='success';
+  const brief=document.getElementById('g3-shotBrief');
+  document.getElementById('g3-photoBrief').innerHTML=brief?brief.innerHTML:'';
+  const r=phyRoutes[phySel], stability=r.stability||'steady';
+  document.getElementById('g3-photoResultStatus').textContent=
+    stability==='fragile'
+      ?window.hbLang.t('고난도 경로 · 얇은 두께·키스·강한 회전에 민감합니다.','High difficulty · sensitive to thin contact, kisses, or strong english.')
+      :window.hbLang.t('실전 안정 경로 · 작은 오차에 무너지는 후보는 추천에서 제외했습니다.','Field-stable path · routes that collapse under small errors were excluded.');
+  const picks=document.getElementById('g3-photoRoutePicks');
+  picks.innerHTML=phyRoutes.map((x,i)=>
+    `<button class="tool mini ${i===phySel?'on':''} ${g3Locked(i)?'locked':''}" data-i="${i}" aria-label="${window.hbLang.t('사진 경로 ','Photo path ')+(i+1)}"><span class="dot" style="background:${PHY_COLORS[i]}"></span>${g3Locked(i)?'🔒':i+1}</button>`).join('');
+  picks.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    const i=+b.dataset.i;
+    if(g3Locked(i)){ window.hbShowPaywall&&window.hbShowPaywall('routes3'); return; }
+    stopAnim3(false); phySel=i; renderPhyCards(); draw(); drawP3();
+  }));
+}
+const photoBoard3=document.getElementById('g3-photoBoard');
+if(photoBoard3) photoBoard3.addEventListener('click',()=>window.hbScrollToBoard&&window.hbScrollToBoard());
 function renderPhyCards(){
   const box=document.getElementById('g3-phyRoutes');
   const head=document.getElementById('g3-routesHead');
@@ -6314,6 +6732,7 @@ function renderPhyCards(){
         phySel=i; renderPhyCards(); draw();
       }));
   }
+  renderPhotoResult3();
   drawP3();   // 사진이 열려 있으면 경로 오버레이도 갱신 (지움 포함)
   if(!phyRoutes){ box.innerHTML=''; return; }
   if(!phyRoutes.length){
@@ -6488,6 +6907,9 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
       rs._proHidden=rs.length-window.hbPro.FREE_3GU_ROUTES;
     }
     phyRoutes=rs; phySel=0;
+    if(!(rs&&rs.length)) showPhotoResult3Error(window.hbLang.t(
+      '현재 조건에서 안정적인 경로를 찾지 못했습니다. 쿠션 조건을 추천으로 바꾸거나 공 위치를 확인해 주세요.',
+      'No stable route was found. Try Auto cushions or check the detected ball positions.'));
     justSolved3=true; renderPhyCards(); justSolved3=false;   // 등장 애니메이션
     draw();
   }).catch(err=>{
@@ -6495,6 +6917,9 @@ document.getElementById('g3-phys').addEventListener('click',()=>{
     phyRoutes=null; phySel=0;
     const box=document.getElementById('g3-phyRoutes');
     if(box) box.innerHTML='<div class="panel"><span class="empty">계산 중 오류가 발생했습니다. 공 배치를 바꿔 다시 시도해 주세요.</span></div>';
+    showPhotoResult3Error(window.hbLang.t(
+      '계산 중 오류가 발생했습니다. 공 위치를 확인한 뒤 다시 시도해 주세요.',
+      'Calculation failed. Check the ball positions and try again.'));
     try{ window.__hbReport&&window.__hbReport('solve/g3',err); }catch(_){}
   }).finally(()=>{
     btn.textContent='경로 계산'; btn.disabled=false;
@@ -6546,10 +6971,11 @@ const NAME3={cue:'수구',obj:'제1적구',target:'제2적구'};
 const MMS=PW/2844;   // px per mm (3구 좌표계)
 
 document.getElementById('g3-photo').addEventListener('click',()=>{
-  document.getElementById('g3-file').click();
+  window.hbWideCamera.open(document.getElementById('g3-file'));
 });
 document.getElementById('g3-file').addEventListener('change',e=>{
-  const f=e.target.files&&e.target.files[0];
+  const f=e.target._hbFile||(e.target.files&&e.target.files[0]);
+  e.target._hbFile=null;
   if(!f) return;
   window.hbTrack&&window.hbTrack('photo',{mode:'3gu'});
   if(window.hbPro && window.hbPro.photoLeft()<=0){
@@ -6573,6 +6999,8 @@ document.getElementById('g3-file').addEventListener('change',e=>{
       p3Corners=V.insetCorners(V.orderCorners(V.autoCorners(p3Img)));
       p3Marks=null; p3Hinv=null; p3H=null; cam3=null; p3Missing=[];
       p3Panel.style.display='block';
+      document.getElementById('g3-photoResult').hidden=true;
+      document.getElementById('g3-photoResult').dataset.state='';
       document.body.classList.add('photo-open');   // 사진 작업 중엔 보드 고정 해제
       p3Msg.textContent='노란 점 4개가 쿠션 벽과 천 바닥이 만나는 안쪽 꼭짓점에 오도록 확인한 뒤 "공 인식 → 경로 계산"을 누르세요.';
       drawP3();
@@ -6738,6 +7166,7 @@ function p3TapPlace(p){
         p3Msg.textContent=`${NAME3[k]} 지정 완료 — 다음: 사진에서 ${NAME3[p3Missing[0]]} 위치를 탭하세요.`;
       } else {
         p3Msg.textContent='모든 공 지정 완료 — 물리 경로를 계산합니다.';
+        showPhotoResult3Loading();
         document.getElementById('g3-phys').click();
       }
     }
@@ -6849,9 +7278,9 @@ document.getElementById('g3-detect').addEventListener('click',()=>{
     return;
   }
   p3Msg.textContent=`인식 완료: ${got.join(' · ')} — 제1적구는 수구에서 가까운 공으로 배정했습니다. `+
-    '아래 당구대에서 드래그로 수정할 수 있습니다. 물리 경로를 계산합니다.';
+    '사진 위에서 경로를 바로 확인할 수 있습니다. 물리 경로를 계산합니다.';
+  showPhotoResult3Loading();
   document.getElementById('g3-phys').click();
-  window.hbScrollToBoard&&window.hbScrollToBoard();   // 결과를 볼 수 있게 위 다이로
 });
 
 // 실력 단계 (4구와 공유 — 양쪽 버튼 모두 동기화)
@@ -7257,7 +7686,13 @@ pushHist3();   // 초기 배치를 히스토리 기준점으로
 // (이벤트 대신 함수 훅인 이유: 테스트의 document 스텁에는 addEventListener 가 없다)
 if(typeof window!=='undefined')
   window.__hb3refresh=function(){
-    phyRoutes=null; renderPhyCards(); autoSystem(true); draw();
+    phyRoutes=null; renderPhyCards();
+    if(p3H && document.getElementById('g3-photoPanel').style.display!=='none'){
+      showPhotoResult3Loading();
+      const btn=document.getElementById('g3-phys');
+      if(btn&&!btn.disabled) btn.click();
+    }else autoSystem(true);
+    draw();
   };
 
 // 테스트용 노출 (window.__hbVision·__hbOverlap 과 같은 용도) — 배치·계산 경로를

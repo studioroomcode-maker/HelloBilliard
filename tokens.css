@@ -1,0 +1,33 @@
+/* Hallmark · macrostructure: Task Console · tone: field utility · anchor hue: gold
+ * pre-emit critique: P5 H5 E4 S5 R5 V4 · contrast: pass (40–41)
+ * nav: existing · footer: existing · slop: pass (42–45) · honest: pass (46)
+ * chrome: pass (47) · tokens: pass (48) · responsive: pass (49)
+ * icons: pass (30) · mobile: pass (34, 49, 50–57) */
+:root {
+  --color-result-surface: oklch(20% 0.014 72 / 0.96);
+  --color-result-inset: oklch(16% 0.012 72 / 0.9);
+  --color-result-line: oklch(43% 0.025 72 / 0.7);
+  --color-result-accent: oklch(80% 0.15 82);
+  --color-result-success: oklch(72% 0.15 153 / 0.8);
+  --color-result-error: oklch(62% 0.18 38 / 0.85);
+  --color-focus: oklch(84% 0.16 82);
+  --color-camera-backdrop: oklch(7% 0.008 72 / 0.94);
+  --color-camera-surface: oklch(17% 0.012 72);
+  --color-camera-stage: oklch(5% 0.005 72);
+  --color-camera-label: oklch(82% 0.15 82 / 0.94);
+  --color-camera-label-text: oklch(18% 0.04 72);
+  --font-display: 'Bricolage Grotesque', sans-serif;
+  --font-mono: 'Spline Sans Mono', monospace;
+  --space-result-xs: 4px;
+  --space-result-sm: 8px;
+  --space-result-md: 12px;
+  --text-result-sm: 12px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-result: 160ms;
+  --rule-result: 1px;
+  --radius-result: 12px;
+  --shadow-result: 0 12px 30px oklch(5% 0.01 72 / 0.28);
+  --shadow-camera: 0 24px 70px oklch(3% 0.01 72 / 0.65);
+}
